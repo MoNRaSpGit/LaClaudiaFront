@@ -8,5 +8,9 @@ body {
 }
 
 .landing-bg {
-  background: radial-gradient(circle at top right, #d6f3ff 0%, #f7fbff 45%, #eef5ff 100%);
+  background: radial-gradient(circle at top right, #c4f1e5 0%, #f9fffd 48%, #eef7ff 100%);
+}
+
+.welcome-card {
+  border-top: 6px solid #20c997;
 }

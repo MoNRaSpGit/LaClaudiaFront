@@ -34,12 +34,12 @@ function App() {
       <div className="container py-5">
         <div className="row justify-content-center">
           <div className="col-lg-9">
-            <div className="card shadow-lg border-0">
+            <div className="card shadow-lg border-0 welcome-card">
               <div className="card-body p-4 p-md-5">
-                <p className="text-uppercase text-muted small mb-2">LaClaudia stack base</p>
-                <h1 className="display-5 fw-bold mb-3">Frontend + Backend listos para produccion</h1>
+                <p className="text-uppercase text-muted small mb-2">LaClaudia online</p>
+                <h1 className="display-5 fw-bold mb-3">Bienvenida a LaClaudia</h1>
                 <p className="lead text-secondary mb-4">
-                  Esta base usa React, Vite, Redux Toolkit y Bootstrap en frontend, con Node + Express en backend.
+                  Frontend y backend quedaron conectados para arrancar el proyecto sin friccion.
                 </p>
 
                 <div className="d-flex flex-wrap gap-2 mb-4">
@@ -51,6 +51,7 @@ function App() {
                 </div>
 
                 <div className="p-3 p-md-4 rounded-3 border bg-light">
+                  <p className="mb-3 fw-semibold">Chequeo rapido de backend</p>
                   <div className="d-flex align-items-center justify-content-between flex-wrap gap-3">
                     <div>
                       <p className="mb-1 fw-semibold">Estado de API</p>
@@ -69,7 +70,8 @@ function App() {
                 </div>
 
                 <hr className="my-4" />
-                <p className="small text-muted mb-0">API configurada en: <code>{apiUrl}</code></p>
+                <p className="small text-muted mb-2">API configurada en: <code>{apiUrl}</code></p>
+                <p className="small text-muted mb-0">Si esta pagina carga y el chequeo responde online, deploy OK.</p>
               </div>
             </div>
           </div>
