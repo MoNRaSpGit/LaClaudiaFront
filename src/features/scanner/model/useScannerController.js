@@ -23,7 +23,32 @@ export function useScannerController() {
   }
 
   function openManualProduct() {
-    dispatch(setScanError('Carga manual: la vamos a implementar en el siguiente paso.'));
+    const rawValue = window.prompt('Ingresa el valor del Producto Manual');
+    if (rawValue === null) {
+      return;
+    }
+
+    const normalized = String(rawValue).replace(',', '.').trim();
+    const manualPrice = Number(normalized);
+
+    if (!Number.isFinite(manualPrice) || manualPrice <= 0) {
+      dispatch(setScanError('Ingresa un valor numerico valido mayor a 0.'));
+      return;
+    }
+
+    dispatch(
+      addScannedProduct({
+        id: `manual-${Date.now()}`,
+        nombre: 'Producto Manual',
+        precio_venta: Number(manualPrice.toFixed(2)),
+        stock_actual: 0,
+        categoria: 'manual',
+        barcode: '',
+        barcode_normalized: '',
+        tiene_imagen: false,
+        thumbnail_url: null
+      })
+    );
   }
 
   function chargeCart() {
