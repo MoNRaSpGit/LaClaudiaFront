@@ -3,7 +3,7 @@ import ScannerInput from './components/ScannerInput';
 import ScannerCart from './components/ScannerCart';
 
 function ScannerFeature() {
-  const { apiUrl, scannerState, actions } = useScannerController();
+  const { scannerState, actions } = useScannerController();
 
   return (
     <div className="landing-bg min-vh-100">
@@ -35,7 +35,13 @@ function ScannerFeature() {
 
             <ScannerCart items={scannerState.cartItems} />
 
-            <p className="small text-muted mt-4 mb-0 text-center">API configurada en: <code>{apiUrl}</code></p>
+            {scannerState.cartItems.length > 0 ? (
+              <div className="text-center mt-4">
+                <button type="button" className="btn scanner-charge-btn" onClick={actions.chargeCart}>
+                  Cobrar
+                </button>
+              </div>
+            ) : null}
           </div>
         </div>
       </div>

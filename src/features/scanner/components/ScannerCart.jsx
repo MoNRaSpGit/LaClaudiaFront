@@ -1,4 +1,12 @@
-﻿function ScannerCart({ items }) {
+﻿function ProductThumb({ name, thumbnailUrl }) {
+  if (thumbnailUrl) {
+    return <img src={thumbnailUrl} alt={name} className="scanner-thumb" loading="lazy" />;
+  }
+
+  return <div className="scanner-thumb scanner-thumb-placeholder">Sin imagen</div>;
+}
+
+function ScannerCart({ items }) {
   if (!items.length) {
     return null;
   }
@@ -12,23 +20,22 @@
               <th>Producto</th>
               <th className="text-end">Precio</th>
               <th className="text-end">Cant.</th>
-              <th className="text-end">Subtotal</th>
             </tr>
           </thead>
           <tbody>
             {items.map((item) => {
               const unitPrice = Number(item.precio_venta || 0);
-              const subtotal = unitPrice * Number(item.quantity || 1);
 
               return (
                 <tr key={item.id}>
                   <td>
-                    <div className="fw-semibold">{item.nombre}</div>
-                    <div className="small text-muted">Cod: {item.barcode || '-'}</div>
+                    <div className="d-flex align-items-center gap-3">
+                      <ProductThumb name={item.nombre} thumbnailUrl={item.thumbnail_url} />
+                      <div className="fw-semibold">{item.nombre}</div>
+                    </div>
                   </td>
                   <td className="text-end">${unitPrice.toFixed(2)}</td>
                   <td className="text-end">{item.quantity}</td>
-                  <td className="text-end">${subtotal.toFixed(2)}</td>
                 </tr>
               );
             })}

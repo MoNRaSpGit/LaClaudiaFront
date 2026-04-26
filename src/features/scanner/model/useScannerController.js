@@ -1,11 +1,12 @@
 ﻿import { useDispatch, useSelector } from 'react-redux';
 import {
   addScannedProduct,
+  clearCart,
   setScanBarcode,
   setScanError,
   setScanLoading
 } from '../scannerSlice';
-import { apiUrl, fetchProductByBarcode } from '../services/scanner.api';
+import { fetchProductByBarcode } from '../services/scanner.api';
 
 export function useScannerController() {
   const dispatch = useDispatch();
@@ -25,12 +26,16 @@ export function useScannerController() {
     dispatch(setScanError('Carga manual: la vamos a implementar en el siguiente paso.'));
   }
 
+  function chargeCart() {
+    dispatch(clearCart());
+  }
+
   return {
-    apiUrl,
     scannerState,
     actions: {
       scanCurrentBarcode,
       openManualProduct,
+      chargeCart,
       setScanBarcode: (value) => dispatch(setScanBarcode(value))
     }
   };
