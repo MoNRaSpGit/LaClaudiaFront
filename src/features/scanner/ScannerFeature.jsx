@@ -37,6 +37,7 @@ function ScannerFeature() {
             <ScannerCart
               items={scannerState.cartItems}
               lastScannedItemId={scannerState.lastScannedItemId}
+              onRemoveOne={actions.removeOneFromCart}
             />
 
             {scannerState.cartItems.length > 0 ? (

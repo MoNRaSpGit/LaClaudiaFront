@@ -6,7 +6,7 @@
   return <div className="scanner-thumb scanner-thumb-placeholder">Sin imagen</div>;
 }
 
-function ScannerCart({ items, lastScannedItemId }) {
+function ScannerCart({ items, lastScannedItemId, onRemoveOne }) {
   if (!items.length) {
     return null;
   }
@@ -19,12 +19,15 @@ function ScannerCart({ items, lastScannedItemId }) {
             <tr>
               <th>Producto</th>
               <th className="text-end">Cant.</th>
+              <th className="text-end">Total</th>
+              <th className="text-end"></th>
             </tr>
           </thead>
           <tbody>
             {items.map((item) => {
               const unitPrice = Number(item.precio_venta || 0);
               const isLatest = String(item.id) === String(lastScannedItemId);
+              const lineTotal = unitPrice * Number(item.quantity || 1);
 
               return (
                 <tr key={item.id} className={isLatest ? 'scanner-row-latest' : ''}>
@@ -38,6 +41,17 @@ function ScannerCart({ items, lastScannedItemId }) {
                     </div>
                   </td>
                   <td className="text-end fw-semibold">{item.quantity}</td>
+                  <td className="text-end fw-semibold">${lineTotal.toFixed(2)}</td>
+                  <td className="text-end">
+                    <button
+                      type="button"
+                      className="btn btn-sm scanner-remove-btn"
+                      onClick={() => onRemoveOne(item.id)}
+                      aria-label={`Quitar una unidad de ${item.nombre}`}
+                    >
+                      x
+                    </button>
+                  </td>
                 </tr>
               );
             })}

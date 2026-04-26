@@ -2,6 +2,7 @@
 import {
   addScannedProduct,
   clearCart,
+  decrementCartItem,
   selectScannerTotals,
   setScanBarcode,
   setScanError,
@@ -64,6 +65,7 @@ export function useScannerController() {
       scanCurrentBarcode,
       openManualProduct,
       chargeCart,
+      removeOneFromCart: (id) => dispatch(decrementCartItem(id)),
       setScanBarcode: (value) => dispatch(setScanBarcode(value))
     }
   };
