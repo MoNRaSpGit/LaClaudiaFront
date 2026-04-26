@@ -26,4 +26,5 @@ Variable recomendada en GitHub Actions:
 ## Documentacion tecnica
 
 - Arquitectura: `docs/architecture.md`
-- Diario: `docs/daily/`
+- Bitacora: `docs/bitacora.md`
+- Diario: `docs/daily/` (si se usa)

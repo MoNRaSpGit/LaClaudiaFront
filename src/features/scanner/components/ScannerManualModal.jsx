@@ -1,7 +1,16 @@
-﻿import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
-function ScannerManualModal({ isOpen, onClose, onConfirm }) {
+function ScannerManualModal({ isOpen, onClose, onConfirm, onValueChange }) {
   const [value, setValue] = useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+      setValue('');
+      if (onValueChange) {
+        onValueChange('');
+      }
+    }
+  }, [isOpen]);
 
   if (!isOpen) {
     return null;
@@ -20,7 +29,13 @@ function ScannerManualModal({ isOpen, onClose, onConfirm }) {
           <input
             className="form-control"
             value={value}
-            onChange={(e) => setValue(e.target.value)}
+            onChange={(event) => {
+              const nextValue = event.target.value;
+              setValue(nextValue);
+              if (onValueChange) {
+                onValueChange(nextValue);
+              }
+            }}
             placeholder="Ej: 150"
             autoFocus
           />

@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useScannerController } from './model/useScannerController';
 import ScannerInput from './components/ScannerInput';
 import ScannerCart from './components/ScannerCart';
@@ -8,6 +8,17 @@ import ScannerManualModal from './components/ScannerManualModal';
 function ScannerFeature() {
   const { scannerState, totals, actions } = useScannerController();
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
+
+  const handleManualValueChange = useCallback(
+    (rawValue) => {
+      actions.updateLiveEditorDraft({
+        nombre: 'Producto Manual',
+        precio_venta_raw: String(rawValue || ''),
+        precio_venta: Number(String(rawValue || '').replace(',', '.')) || 0
+      });
+    },
+    [actions]
+  );
 
   return (
     <>
@@ -26,7 +37,10 @@ function ScannerFeature() {
               <button
                 type="button"
                 className="btn scanner-manual-btn"
-                onClick={() => setIsManualModalOpen(true)}
+                onClick={() => {
+                  actions.startManualLiveEditor();
+                  setIsManualModalOpen(true);
+                }}
               >
                 Producto Manual
               </button>
@@ -36,6 +50,9 @@ function ScannerFeature() {
               items={scannerState.cartItems}
               lastScannedItemId={scannerState.lastScannedItemId}
               onRemoveOne={actions.removeOneFromCart}
+              onEditStart={actions.startProductEditLiveEditor}
+              onEditDraftChange={actions.updateLiveEditorDraft}
+              onEditClose={actions.stopLiveEditor}
             />
 
             {scannerState.cartItems.length > 0 ? (
@@ -47,8 +64,12 @@ function ScannerFeature() {
 
       <ScannerManualModal
         isOpen={isManualModalOpen}
-        onClose={() => setIsManualModalOpen(false)}
+        onClose={() => {
+          setIsManualModalOpen(false);
+          actions.stopLiveEditor();
+        }}
         onConfirm={actions.addManualProduct}
+        onValueChange={handleManualValueChange}
       />
     </>
   );

@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 function ProductThumb({ name, thumbnailUrl }) {
   if (thumbnailUrl) {
@@ -16,10 +16,30 @@ function ProductThumb({ name, thumbnailUrl }) {
   );
 }
 
-function ScannerEditModal({ item, isOpen, onClose }) {
+function ScannerEditModal({ item, isOpen, onClose, onDraftChange }) {
   const [draftName, setDraftName] = useState(item?.nombre || '');
   const [draftPrice, setDraftPrice] = useState(item?.precio_venta || '');
   const [draftImage, setDraftImage] = useState(item?.thumbnail_url || '');
+
+  useEffect(() => {
+    setDraftName(item?.nombre || '');
+    setDraftPrice(item?.precio_venta || '');
+    setDraftImage(item?.thumbnail_url || '');
+  }, [item]);
+
+  useEffect(() => {
+    if (!isOpen || !item) {
+      return;
+    }
+
+    onDraftChange({
+      id: item.id,
+      nombre: draftName,
+      precio_venta_raw: String(draftPrice || ''),
+      precio_venta: Number(String(draftPrice || '').replace(',', '.')) || 0,
+      thumbnail_url: draftImage
+    });
+  }, [draftImage, draftName, draftPrice, isOpen, item]);
 
   if (!isOpen || !item) {
     return null;
@@ -54,7 +74,14 @@ function ScannerEditModal({ item, isOpen, onClose }) {
   );
 }
 
-function ScannerCart({ items, lastScannedItemId, onRemoveOne }) {
+function ScannerCart({
+  items,
+  lastScannedItemId,
+  onRemoveOne,
+  onEditStart,
+  onEditDraftChange,
+  onEditClose
+}) {
   const [editingItemId, setEditingItemId] = useState(null);
 
   const editingItem = useMemo(
@@ -87,21 +114,24 @@ function ScannerCart({ items, lastScannedItemId, onRemoveOne }) {
                 const lineTotal = unitPrice * Number(item.quantity || 1);
 
                 return (
-                <tr key={item.id} className={isLatest ? 'scanner-row-latest' : 'scanner-row-default'}>
-                  <td>
-                    <div className="d-flex align-items-center gap-3">
-                      <ProductThumb name={item.nombre} thumbnailUrl={item.thumbnail_url} />
-                      <div>
-                        <div className="fw-semibold scanner-product-name">{item.nombre}</div>
-                        <div className="scanner-price-badge">${unitPrice.toFixed(2)}</div>
+                  <tr key={item.id} className={isLatest ? 'scanner-row-latest' : 'scanner-row-default'}>
+                    <td>
+                      <div className="d-flex align-items-center gap-3">
+                        <ProductThumb name={item.nombre} thumbnailUrl={item.thumbnail_url} />
+                        <div>
+                          <div className="fw-semibold scanner-product-name">{item.nombre}</div>
+                          <div className="scanner-price-badge">${unitPrice.toFixed(2)}</div>
+                        </div>
                       </div>
-                    </div>
-                  </td>
+                    </td>
                     <td className="text-center">
                       <button
                         type="button"
                         className="btn btn-sm btn-outline-secondary"
-                        onClick={() => setEditingItemId(item.id)}
+                        onClick={() => {
+                          setEditingItemId(item.id);
+                          onEditStart(item);
+                        }}
                       >
                         Editar
                       </button>
@@ -129,7 +159,11 @@ function ScannerCart({ items, lastScannedItemId, onRemoveOne }) {
       <ScannerEditModal
         item={editingItem}
         isOpen={Boolean(editingItem)}
-        onClose={() => setEditingItemId(null)}
+        onDraftChange={onEditDraftChange}
+        onClose={() => {
+          setEditingItemId(null);
+          onEditClose();
+        }}
       />
     </>
   );

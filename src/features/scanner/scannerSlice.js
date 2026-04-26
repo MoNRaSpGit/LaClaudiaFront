@@ -8,7 +8,9 @@ const initialState = {
   scanStatus: 'idle',
   scanError: '',
   cartItems: [],
-  lastScannedItemId: null
+  lastScannedItemId: null,
+  lastScannedAt: null,
+  liveEditor: null
 };
 
 function calculateTotals(cartItems = []) {
@@ -57,14 +59,18 @@ const scannerSlice = createSlice({
       const existing = state.cartItems.find((item) => String(item.id) === String(product.id));
       if (existing) {
         existing.quantity += 1;
+        existing.scannedAt = new Date().toISOString();
         state.lastScannedItemId = existing.id;
+        state.lastScannedAt = existing.scannedAt;
       } else {
+        const scannedAt = new Date().toISOString();
         state.cartItems.push({
           ...product,
           quantity: 1,
-          scannedAt: new Date().toISOString()
+          scannedAt
         });
         state.lastScannedItemId = product.id;
+        state.lastScannedAt = scannedAt;
       }
     },
     setScanError(state, action) {
@@ -99,6 +105,28 @@ const scannerSlice = createSlice({
       state.scanError = '';
       state.scanBarcode = '';
       state.lastScannedItemId = null;
+      state.lastScannedAt = null;
+    },
+    setLiveEditor(state, action) {
+      const payload = action.payload || {};
+      state.liveEditor = {
+        type: payload.type || 'manual',
+        title: payload.title || '',
+        description: payload.description || '',
+        draft: payload.draft || null
+      };
+    },
+    updateLiveEditorDraft(state, action) {
+      if (!state.liveEditor) {
+        return;
+      }
+      state.liveEditor.draft = {
+        ...(state.liveEditor.draft || {}),
+        ...(action.payload || {})
+      };
+    },
+    clearLiveEditor(state) {
+      state.liveEditor = null;
     }
   }
 });
@@ -114,7 +142,10 @@ export const {
   incrementCartItem,
   decrementCartItem,
   removeCartItem,
-  clearCart
+  clearCart,
+  setLiveEditor,
+  updateLiveEditorDraft,
+  clearLiveEditor
 } = scannerSlice.actions;
 
 export const selectScannerTotals = (state) => calculateTotals(state.scanner.cartItems);
