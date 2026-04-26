@@ -3,7 +3,7 @@
     <div className="p-3 p-md-4 rounded-3 border bg-light">
       <p className="mb-3 fw-semibold">Escanear producto</p>
       <form
-        className="d-flex flex-column flex-md-row gap-2"
+        className="d-flex"
         onSubmit={(event) => {
           event.preventDefault();
           onSubmit();
@@ -12,15 +12,14 @@
         <input
           type="text"
           className="form-control"
-          placeholder="Ej: 7730123456789"
+          placeholder="Escanea o escribe un codigo de barras"
           value={barcode}
           onChange={(event) => onBarcodeChange(event.target.value)}
+          disabled={scanStatus === 'loading'}
           autoFocus
         />
-        <button type="submit" className="btn btn-primary" disabled={scanStatus === 'loading'}>
-          {scanStatus === 'loading' ? 'Buscando...' : 'Agregar'}
-        </button>
       </form>
+      {scanStatus === 'loading' ? <p className="mb-0 mt-2 text-muted small">Buscando producto...</p> : null}
       {scanError ? <p className="mb-0 mt-2 text-danger small">{scanError}</p> : null}
     </div>
   );

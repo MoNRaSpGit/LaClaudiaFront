@@ -14,3 +14,9 @@ body {
 .welcome-card {
   border-top: 6px solid #20c997;
 }
+
+.scanner-navbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
