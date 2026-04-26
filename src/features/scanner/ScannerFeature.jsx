@@ -10,16 +10,7 @@ function ScannerFeature() {
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
 
   return (
-    <div className="landing-bg min-vh-100">
-      <nav className="navbar navbar-expand-lg bg-white border-bottom scanner-navbar">
-        <div className="container">
-          <span className="navbar-brand fw-bold">LaClaudia</span>
-          <div className="navbar-nav">
-            <span className="nav-link active fw-semibold" aria-current="page">Scanner</span>
-          </div>
-        </div>
-      </nav>
-
+    <>
       <div className="container py-4">
         <div className="row justify-content-center">
           <div className="col-xl-9">
@@ -59,7 +50,7 @@ function ScannerFeature() {
         onClose={() => setIsManualModalOpen(false)}
         onConfirm={actions.addManualProduct}
       />
-    </div>
+    </>
   );
 }
 
