@@ -25,18 +25,13 @@ export function useScannerController() {
     }
   }
 
-  function openManualProduct() {
-    const rawValue = window.prompt('Ingresa el valor del Producto Manual');
-    if (rawValue === null) {
-      return;
-    }
-
+  function addManualProduct(rawValue) {
     const normalized = String(rawValue).replace(',', '.').trim();
     const manualPrice = Number(normalized);
 
     if (!Number.isFinite(manualPrice) || manualPrice <= 0) {
       dispatch(setScanError('Ingresa un valor numerico valido mayor a 0.'));
-      return;
+      return false;
     }
 
     dispatch(
@@ -52,6 +47,8 @@ export function useScannerController() {
         thumbnail_url: null
       })
     );
+
+    return true;
   }
 
   function chargeCart() {
@@ -63,7 +60,7 @@ export function useScannerController() {
     totals,
     actions: {
       scanCurrentBarcode,
-      openManualProduct,
+      addManualProduct,
       chargeCart,
       removeOneFromCart: (id) => dispatch(decrementCartItem(id)),
       setScanBarcode: (value) => dispatch(setScanBarcode(value))

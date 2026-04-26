@@ -1,5 +1,6 @@
 ﻿:root {
   color-scheme: light;
+  --scanner-remove-col-width: 46px;
 }
 
 body {
@@ -171,6 +172,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding-right: var(--scanner-remove-col-width);
 }
 
 .scanner-total-label {
@@ -204,3 +206,5 @@ body {
   padding: 1rem 1rem 1.25rem;
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
 }
+
+

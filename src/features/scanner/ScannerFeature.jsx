@@ -1,10 +1,13 @@
-﻿import { useScannerController } from './model/useScannerController';
+﻿import { useState } from 'react';
+import { useScannerController } from './model/useScannerController';
 import ScannerInput from './components/ScannerInput';
 import ScannerCart from './components/ScannerCart';
 import ScannerCheckout from './components/ScannerCheckout';
+import ScannerManualModal from './components/ScannerManualModal';
 
 function ScannerFeature() {
   const { scannerState, totals, actions } = useScannerController();
+  const [isManualModalOpen, setIsManualModalOpen] = useState(false);
 
   return (
     <div className="landing-bg min-vh-100">
@@ -29,7 +32,11 @@ function ScannerFeature() {
             />
 
             <div className="text-center mt-4">
-              <button type="button" className="btn scanner-manual-btn" onClick={actions.openManualProduct}>
+              <button
+                type="button"
+                className="btn scanner-manual-btn"
+                onClick={() => setIsManualModalOpen(true)}
+              >
                 Producto Manual
               </button>
             </div>
@@ -46,6 +53,12 @@ function ScannerFeature() {
           </div>
         </div>
       </div>
+
+      <ScannerManualModal
+        isOpen={isManualModalOpen}
+        onClose={() => setIsManualModalOpen(false)}
+        onConfirm={actions.addManualProduct}
+      />
     </div>
   );
 }
