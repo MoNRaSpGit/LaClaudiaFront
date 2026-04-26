@@ -305,3 +305,12 @@ body {
     grid-column: span 2;
   }
 }
+
+.scanner-align-control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.82rem;
+  color: #6c757d;
+}

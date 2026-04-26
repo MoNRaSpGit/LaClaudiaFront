@@ -8,6 +8,7 @@ import ScannerManualModal from './components/ScannerManualModal';
 function ScannerFeature() {
   const { scannerState, totals, actions } = useScannerController();
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
+  const [checkoutAlignOffsetPx, setCheckoutAlignOffsetPx] = useState(34);
 
   return (
     <>
@@ -39,7 +40,12 @@ function ScannerFeature() {
             />
 
             {scannerState.cartItems.length > 0 ? (
-              <ScannerCheckout total={totals.total} onCharge={actions.chargeCart} />
+              <ScannerCheckout
+                total={totals.total}
+                onCharge={actions.chargeCart}
+                alignOffsetPx={checkoutAlignOffsetPx}
+                onAdjustOffset={(delta) => setCheckoutAlignOffsetPx((prev) => Math.max(0, prev + delta))}
+              />
             ) : null}
           </div>
         </div>
