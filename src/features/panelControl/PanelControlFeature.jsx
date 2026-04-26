@@ -117,13 +117,15 @@ function PanelControlFeature() {
                 <h1 className="panel-hero-title mb-1">Caja</h1>
                 <p className="panel-hero-subtitle mb-0">{todayLabel}  seguimiento fino de caja, scanner y movimientos.</p>
               </div>
-              <div className="panel-status-pill">Abierta  Admin Nuevo</div>
+              <div className="panel-status-stack">
+                <div className="panel-status-open">Abierta</div>
+                <div className="panel-status-user">Admin Nuevo</div>
+              </div>
             </section>
 
             <section className="panel-section mb-3">
               <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
-                <h2 className="h5 mb-0">Caja diaria</h2>
-                <button type="button" className="btn btn-sm btn-outline-secondary">Ver semana y mes</button>
+                <h2 className="h5 mb-0 panel-section-title">Caja diaria</h2>
               </div>
 
               <div className="panel-grid-6-v2 mb-4">
@@ -133,7 +135,11 @@ function PanelControlFeature() {
 
                 <article className="panel-metric-card-v2 panel-comparison-card">
                   <p className="panel-metric-title">Comparacion</p>
-                  <p className="panel-comparison-row mb-1">Hoy vs ayer</p>
+                  <p className="panel-comparison-row mb-2">Hoy vs ayer</p>
+                  <div className="panel-comparison-values mb-2">
+                    <span>Hoy: <strong>{money(comparison.hoy)}</strong></span>
+                    <span>Ayer: <strong>{money(comparison.ayer)}</strong></span>
+                  </div>
                   <p className={`panel-comparison-value mb-2 ${comparisonClass}`}>{percent(comparisonVsYesterday)}</p>
                   <button type="button" className="btn btn-sm btn-outline-dark" onClick={() => setIsComparisonOpen(true)}>
                     Detalles +
@@ -143,7 +149,7 @@ function PanelControlFeature() {
 
               <div className="panel-layout-grid-v2">
                 <div className="panel-left-stack">
-                  <article className="panel-block-v2 panel-large-block">
+                  <article className="panel-block-v2 panel-large-block panel-block-accent-green">
                     <div className="d-flex align-items-center justify-content-between mb-3">
                       <h3 className="h6 mb-0">Caja en vivo</h3>
                       <span className="badge text-bg-success">En vivo</span>
@@ -156,7 +162,7 @@ function PanelControlFeature() {
                     </ul>
                   </article>
 
-                  <article className="panel-block-v2 panel-large-block">
+                  <article className="panel-block-v2 panel-large-block panel-block-accent-blue">
                     <div className="d-flex align-items-center justify-content-between mb-3">
                       <h3 className="h6 mb-0">Movimientos</h3>
                       <button type="button" className="btn btn-sm btn-outline-secondary">Ver mas</button>
@@ -185,7 +191,7 @@ function PanelControlFeature() {
                 </div>
 
                 <div className="panel-right-stack">
-                  <article className="panel-block-v2 panel-side-block">
+                  <article className="panel-block-v2 panel-side-block panel-block-accent-violet">
                     <div className="d-flex align-items-center justify-content-between mb-3">
                       <h3 className="h6 mb-0">Ranking</h3>
                       <button type="button" className="btn btn-sm btn-outline-secondary">Ver mas</button>
@@ -201,7 +207,7 @@ function PanelControlFeature() {
                     </ol>
                   </article>
 
-                  <article className="panel-block-v2 panel-side-block">
+                  <article className="panel-block-v2 panel-side-block panel-block-accent-orange">
                     <h3 className="h6 mb-3">Registrar pago</h3>
                     <p className="panel-help mb-3">Movimientos manuales, en formato liviano.</p>
                     <div className="d-grid gap-2">
