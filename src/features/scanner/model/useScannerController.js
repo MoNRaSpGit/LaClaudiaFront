@@ -2,6 +2,7 @@
 import {
   addScannedProduct,
   clearCart,
+  selectScannerTotals,
   setScanBarcode,
   setScanError,
   setScanLoading
@@ -11,6 +12,7 @@ import { fetchProductByBarcode } from '../services/scanner.api';
 export function useScannerController() {
   const dispatch = useDispatch();
   const scannerState = useSelector((state) => state.scanner);
+  const totals = useSelector(selectScannerTotals);
 
   async function scanCurrentBarcode() {
     dispatch(setScanLoading());
@@ -57,6 +59,7 @@ export function useScannerController() {
 
   return {
     scannerState,
+    totals,
     actions: {
       scanCurrentBarcode,
       openManualProduct,

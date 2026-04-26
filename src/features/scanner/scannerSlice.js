@@ -7,7 +7,8 @@ const initialState = {
   scanBarcode: '',
   scanStatus: 'idle',
   scanError: '',
-  cartItems: []
+  cartItems: [],
+  lastScannedItemId: null
 };
 
 function calculateTotals(cartItems = []) {
@@ -53,15 +54,17 @@ const scannerSlice = createSlice({
       state.scanError = '';
       state.scanBarcode = '';
 
-      const existing = state.cartItems.find((item) => Number(item.id) === Number(product.id));
+      const existing = state.cartItems.find((item) => String(item.id) === String(product.id));
       if (existing) {
         existing.quantity += 1;
+        state.lastScannedItemId = existing.id;
       } else {
-        state.cartItems.unshift({
+        state.cartItems.push({
           ...product,
           quantity: 1,
           scannedAt: new Date().toISOString()
         });
+        state.lastScannedItemId = product.id;
       }
     },
     setScanError(state, action) {
@@ -69,32 +72,33 @@ const scannerSlice = createSlice({
       state.scanError = action.payload;
     },
     incrementCartItem(state, action) {
-      const itemId = Number(action.payload);
-      const item = state.cartItems.find((entry) => Number(entry.id) === itemId);
+      const itemId = String(action.payload);
+      const item = state.cartItems.find((entry) => String(entry.id) === itemId);
       if (item) {
         item.quantity += 1;
       }
     },
     decrementCartItem(state, action) {
-      const itemId = Number(action.payload);
-      const item = state.cartItems.find((entry) => Number(entry.id) === itemId);
+      const itemId = String(action.payload);
+      const item = state.cartItems.find((entry) => String(entry.id) === itemId);
       if (!item) {
         return;
       }
       item.quantity -= 1;
       if (item.quantity <= 0) {
-        state.cartItems = state.cartItems.filter((entry) => Number(entry.id) !== itemId);
+        state.cartItems = state.cartItems.filter((entry) => String(entry.id) !== itemId);
       }
     },
     removeCartItem(state, action) {
-      const itemId = Number(action.payload);
-      state.cartItems = state.cartItems.filter((entry) => Number(entry.id) !== itemId);
+      const itemId = String(action.payload);
+      state.cartItems = state.cartItems.filter((entry) => String(entry.id) !== itemId);
     },
     clearCart(state) {
       state.cartItems = [];
       state.scanStatus = 'idle';
       state.scanError = '';
       state.scanBarcode = '';
+      state.lastScannedItemId = null;
     }
   }
 });

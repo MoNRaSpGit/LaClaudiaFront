@@ -56,21 +56,20 @@ body {
 }
 
 .scanner-charge-btn {
-  min-height: 56px;
-  min-width: 220px;
+  min-height: 60px;
   padding: 0.75rem 2rem;
   font-size: 1.05rem;
   font-weight: 700;
   color: #fff;
-  background-color: #198754;
-  border: 1px solid #198754;
+  background-color: #111;
+  border: 1px solid #111;
 }
 
 .scanner-charge-btn:hover,
 .scanner-charge-btn:focus {
   color: #fff;
-  background-color: #157347;
-  border-color: #157347;
+  background-color: #000;
+  border-color: #000;
 }
 
 .scanner-thumb {
@@ -89,4 +88,21 @@ body {
   font-size: 0.62rem;
   color: #6c757d;
   background-color: #f8f9fa;
+}
+
+.scanner-row-latest {
+  background-color: #eefcf6;
+}
+
+.scanner-checkout {
+  padding: 1rem 1.25rem;
+  border: 1px solid #dee2e6;
+  border-radius: 0.75rem;
+  background-color: #fff;
+}
+
+.scanner-total {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
 }
