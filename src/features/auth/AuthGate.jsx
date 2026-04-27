@@ -22,6 +22,7 @@ function AuthGate({ children }) {
         onPasswordChange={actions.setPassword}
           onRememberCredentialsChange={actions.setRememberCredentials}
           onSubmit={actions.submitLogin}
+          onQuickAdminLogin={actions.quickLoginAdmin}
           onQuickOperarioLogin={actions.quickLoginOperario}
         />
       );

@@ -139,6 +139,14 @@ export function useAuthGateController() {
     await runLogin(quickUsername, quickPassword);
   }
 
+  async function quickLoginAdmin() {
+    const quickUsername = 'admin';
+    const quickPassword = '1234';
+    setUsername(quickUsername);
+    setPassword(quickPassword);
+    await runLogin(quickUsername, quickPassword);
+  }
+
   function logout() {
     const token = String(user?.sessionToken || '').trim();
     if (token) {
@@ -165,6 +173,7 @@ export function useAuthGateController() {
       setPassword,
       setRememberCredentials,
       submitLogin,
+      quickLoginAdmin,
       quickLoginOperario,
       logout
     }

@@ -9,6 +9,7 @@ function LoginCard({
   onPasswordChange,
   onRememberCredentialsChange,
   onSubmit,
+  onQuickAdminLogin,
   onQuickOperarioLogin
 }) {
   return (
@@ -63,14 +64,24 @@ function LoginCard({
             {isAuthenticating ? 'Entrando...' : 'Entrar al sistema'}
           </button>
 
-          <button
-            type="button"
-            className="btn btn-outline-secondary"
-            disabled={isAuthenticating}
-            onClick={onQuickOperarioLogin}
-          >
-            Entrar como Operario
-          </button>
+          <div className="d-grid gap-2">
+            <button
+              type="button"
+              className="btn btn-outline-secondary"
+              disabled={isAuthenticating}
+              onClick={onQuickAdminLogin}
+            >
+              Entrar como Admin
+            </button>
+            <button
+              type="button"
+              className="btn btn-outline-secondary"
+              disabled={isAuthenticating}
+              onClick={onQuickOperarioLogin}
+            >
+              Entrar como Operario
+            </button>
+          </div>
         </form>
 
         <p className="auth-footnote mt-3 mb-0">
