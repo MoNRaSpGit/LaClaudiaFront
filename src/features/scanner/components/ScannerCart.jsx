@@ -42,7 +42,7 @@ function ScannerEditModal({ item, isOpen, onClose, onDraftChange, onApply, onReq
       precio_venta: Number(String(draftPrice || '').replace(',', '.')) || 0,
       thumbnail_url: draftImage
     });
-  }, [draftImage, draftName, draftPrice, isOpen, item, onDraftChange]);
+  }, [draftImage, draftName, draftPrice, isOpen, item]);
 
   if (!isOpen || !item) {
     return null;
