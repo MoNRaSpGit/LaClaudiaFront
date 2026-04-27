@@ -12,7 +12,7 @@ import {
   updateCartItem,
   updateLiveEditorDraft
 } from '../scannerSlice';
-import { fetchProductByBarcode } from '../services/scanner.api';
+import { fetchProductByBarcode, updateScannerProduct } from '../services/scanner.api';
 import { enqueueScannerSale } from '../services/scanner.salesQueue';
 import { parsePositiveAmount } from '../../../shared/lib/number';
 
@@ -139,6 +139,35 @@ export function useScannerController({ currentUser } = {}) {
     return true;
   }
 
+  async function applyCartItemEdit(payload) {
+    const normalizedPayload = payload || {};
+    dispatch(updateCartItem(normalizedPayload));
+
+    const isManual = Boolean(normalizedPayload.isManual);
+    const candidateProductId = Number(normalizedPayload.productId ?? normalizedPayload.id);
+    const hasValidProductId = Number.isInteger(candidateProductId) && candidateProductId > 0;
+
+    if (isManual || !hasValidProductId) {
+      return true;
+    }
+
+    try {
+      await updateScannerProduct(
+        candidateProductId,
+        {
+          nombre: normalizedPayload.nombre,
+          precio_venta: Number(normalizedPayload.precio_venta || 0),
+          thumbnail_url: normalizedPayload.thumbnail_url ?? null
+        },
+        { token: currentUser?.sessionToken || '' }
+      );
+      return true;
+    } catch (error) {
+      dispatch(setScanError(error?.message || 'No se pudo guardar el cambio en catálogo.'));
+      return false;
+    }
+  }
+
   return {
     scannerState,
     totals,
@@ -148,7 +177,7 @@ export function useScannerController({ currentUser } = {}) {
       addQuickBarcodeProduct,
       chargeCart,
       removeOneFromCart: (id) => dispatch(decrementCartItem(id)),
-      applyCartItemEdit: (payload) => dispatch(updateCartItem(payload)),
+      applyCartItemEdit,
       setScanBarcode: (value) => dispatch(setScanBarcode(value)),
       startManualLiveEditor: () => dispatch(
         setLiveEditor({

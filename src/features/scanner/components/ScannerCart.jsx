@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { parsePositiveAmount } from '../../../shared/lib/number';
 
 function ProductThumb({ name, thumbnailUrl }) {
@@ -42,7 +42,7 @@ function ScannerEditModal({ item, isOpen, onClose, onDraftChange, onApply, onReq
       precio_venta: Number(String(draftPrice || '').replace(',', '.')) || 0,
       thumbnail_url: draftImage
     });
-  }, [draftImage, draftName, draftPrice, isOpen, item]);
+  }, [draftImage, draftName, draftPrice, isOpen, item, onDraftChange]);
 
   if (!isOpen || !item) {
     return null;
@@ -113,19 +113,27 @@ function ScannerEditModal({ item, isOpen, onClose, onDraftChange, onApply, onReq
           <button
             type="button"
             className="btn btn-dark w-50"
-            onClick={() => {
+            onClick={async () => {
               const parsedPrice = parsePositiveAmount(draftPrice);
               if (parsedPrice === null) {
-                setError('Ingresa un precio válido mayor a 0.');
+                setError('Ingresa un precio valido mayor a 0.');
                 return;
               }
 
-              onApply({
+              const saved = await onApply({
                 id: item.id,
+                productId: item.productId ?? item.id,
+                isManual: Boolean(item.isManual),
                 nombre: draftName,
                 precio_venta: parsedPrice,
                 thumbnail_url: String(draftImage || '').trim()
               });
+
+              if (!saved) {
+                setError('No se pudo guardar el cambio en la base de datos.');
+                return;
+              }
+
               onClose();
               if (onRequestScannerFocus) {
                 onRequestScannerFocus();
