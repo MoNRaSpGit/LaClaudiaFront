@@ -7,8 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "build:gh": "vite build --base=/LaClaudiaFront/",
+    "build:gh:prod": "node ./scripts/build-gh-prod.mjs",
     "preview": "vite preview",
-    "deploy": "npm run build:gh && gh-pages -d dist",
+    "deploy": "node ./scripts/deploy-gh.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },

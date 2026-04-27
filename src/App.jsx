@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { Menu, UserRound, LogOut, ShieldCheck } from 'lucide-react';
 import AuthGate from './features/auth/AuthGate';
 import ScannerFeature from './features/scanner/ScannerFeature';
@@ -28,7 +28,7 @@ function Workspace({ user, onLogout }) {
       <nav className="navbar navbar-expand-lg scanner-navbar scanner-navbar-dark border-bottom">
         <div className="container">
           <div className="d-flex align-items-center">
-            <span className="navbar-brand fw-bold mb-0 text-white">LaClaudia Digital</span>
+            <span className="navbar-brand fw-bold mb-0 text-white">S{"\u00FA"}per Nova</span>
           </div>
 
           <div className="d-flex align-items-center gap-2 flex-wrap ms-auto">

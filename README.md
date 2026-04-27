@@ -7,6 +7,7 @@ Frontend del flujo scanner (React + Vite + Redux Toolkit + Bootstrap).
 - `npm run dev`
 - `npm run build`
 - `npm run build:gh`
+- `npm run build:gh:prod`
 - `npm run preview`
 - `npm run deploy`
 - `npm run test`
@@ -15,6 +16,7 @@ Frontend del flujo scanner (React + Vite + Redux Toolkit + Bootstrap).
 ## Variables de entorno
 
 - `VITE_API_URL=http://localhost:4000`
+- `VITE_API_URL_PROD=https://<tu-backend-render>.onrender.com` (solo para build/deploy de producción)
 - `VITE_BASE_PATH=/`
 - `VITE_BOOT_MIN_DELAY_MS=3000` (si se implementa luego por env, hoy esta fijo en codigo para simular arranque)
 
@@ -25,6 +27,11 @@ El workflow `deploy-gh-pages.yml` publica en cada push a `main`.
 Variable recomendada en GitHub Actions:
 
 - `VITE_API_URL_PROD=https://<tu-backend-render>.onrender.com`
+
+Deploy manual seguro (evita publicar con `localhost`):
+
+1. Definir `VITE_API_URL_PROD`
+2. Ejecutar `npm run deploy`
 
 ## Documentacion tecnica
 
