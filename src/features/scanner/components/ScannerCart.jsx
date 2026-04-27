@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { parsePositiveAmount } from '../../../shared/lib/number';
 
 function ProductThumb({ name, thumbnailUrl }) {
   if (thumbnailUrl) {
@@ -16,15 +17,17 @@ function ProductThumb({ name, thumbnailUrl }) {
   );
 }
 
-function ScannerEditModal({ item, isOpen, onClose, onDraftChange }) {
+function ScannerEditModal({ item, isOpen, onClose, onDraftChange, onApply, onRequestScannerFocus }) {
   const [draftName, setDraftName] = useState(item?.nombre || '');
   const [draftPrice, setDraftPrice] = useState(item?.precio_venta || '');
   const [draftImage, setDraftImage] = useState(item?.thumbnail_url || '');
+  const [error, setError] = useState('');
 
   useEffect(() => {
     setDraftName(item?.nombre || '');
     setDraftPrice(item?.precio_venta || '');
     setDraftImage(item?.thumbnail_url || '');
+    setError('');
   }, [item]);
 
   useEffect(() => {
@@ -64,11 +67,74 @@ function ScannerEditModal({ item, isOpen, onClose, onDraftChange }) {
         </div>
 
         <div className="mb-4">
-          <label className="form-label">Imagen URL</label>
-          <input className="form-control" value={draftImage} onChange={(e) => setDraftImage(e.target.value)} />
+          <label className="form-label">Imagen</label>
+          <input
+            type="file"
+            accept="image/*"
+            className="form-control"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (!file) {
+                return;
+              }
+
+              const reader = new FileReader();
+              reader.onload = () => {
+                const base64Image = typeof reader.result === 'string' ? reader.result : '';
+                setDraftImage(base64Image);
+              };
+              reader.onerror = () => {
+                setError('No se pudo cargar la imagen seleccionada.');
+              };
+              reader.readAsDataURL(file);
+            }}
+          />
+          {draftImage ? (
+            <div className="mt-2 d-flex align-items-center gap-2">
+              <img
+                src={draftImage}
+                alt="Vista previa"
+                style={{ width: '56px', height: '56px', objectFit: 'cover', borderRadius: '8px' }}
+              />
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-secondary"
+                onClick={() => setDraftImage('')}
+              >
+                Quitar imagen
+              </button>
+            </div>
+          ) : null}
         </div>
 
-        <button type="button" className="btn btn-dark w-100" onClick={onClose}>Cerrar (visual)</button>
+        {error ? <small className="text-danger d-block mb-2">{error}</small> : null}
+        <div className="d-flex gap-2">
+          <button type="button" className="btn btn-outline-secondary w-50" onClick={onClose}>Cancelar</button>
+          <button
+            type="button"
+            className="btn btn-dark w-50"
+            onClick={() => {
+              const parsedPrice = parsePositiveAmount(draftPrice);
+              if (parsedPrice === null) {
+                setError('Ingresa un precio válido mayor a 0.');
+                return;
+              }
+
+              onApply({
+                id: item.id,
+                nombre: draftName,
+                precio_venta: parsedPrice,
+                thumbnail_url: String(draftImage || '').trim()
+              });
+              onClose();
+              if (onRequestScannerFocus) {
+                onRequestScannerFocus();
+              }
+            }}
+          >
+            Guardar
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -80,7 +146,9 @@ function ScannerCart({
   onRemoveOne,
   onEditStart,
   onEditDraftChange,
-  onEditClose
+  onEditApply,
+  onEditClose,
+  onRequestScannerFocus
 }) {
   const [editingItemId, setEditingItemId] = useState(null);
 
@@ -142,7 +210,12 @@ function ScannerCart({
                       <button
                         type="button"
                         className="btn btn-sm scanner-remove-btn"
-                        onClick={() => onRemoveOne(item.id)}
+                        onClick={() => {
+                          onRemoveOne(item.id);
+                          if (onRequestScannerFocus) {
+                            onRequestScannerFocus();
+                          }
+                        }}
                         aria-label={`Quitar una unidad de ${item.nombre}`}
                       >
                         x
@@ -160,9 +233,14 @@ function ScannerCart({
         item={editingItem}
         isOpen={Boolean(editingItem)}
         onDraftChange={onEditDraftChange}
+        onApply={onEditApply}
+        onRequestScannerFocus={onRequestScannerFocus}
         onClose={() => {
           setEditingItemId(null);
           onEditClose();
+          if (onRequestScannerFocus) {
+            onRequestScannerFocus();
+          }
         }}
       />
     </>

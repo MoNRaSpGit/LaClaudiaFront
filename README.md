@@ -9,11 +9,14 @@ Frontend del flujo scanner (React + Vite + Redux Toolkit + Bootstrap).
 - `npm run build:gh`
 - `npm run preview`
 - `npm run deploy`
+- `npm run test`
+- `npm run test:watch`
 
 ## Variables de entorno
 
 - `VITE_API_URL=http://localhost:4000`
 - `VITE_BASE_PATH=/`
+- `VITE_BOOT_MIN_DELAY_MS=3000` (si se implementa luego por env, hoy esta fijo en codigo para simular arranque)
 
 ## Deploy GitHub Pages
 
@@ -27,4 +30,22 @@ Variable recomendada en GitHub Actions:
 
 - Arquitectura: `docs/architecture.md`
 - Bitacora: `docs/bitacora.md`
+- Handoff integracion: `docs/handoff-auth-caja-backend.md`
 - Diario: `docs/daily/` (si se usa)
+
+## Para nuevo agente
+
+Leer en orden:
+1. `README.md`
+2. `docs/architecture.md`
+3. `docs/bitacora.md`
+4. `src/features/auth/*`, `src/features/scanner/*`, `src/features/panelControl/*`
+
+## Estado de login actual
+
+- Hay una capa UX de autenticacion en `src/features/auth/*` conectada a backend real.
+- Incluye:
+  - pantalla de boot inicial (disimula arranque de servicio free).
+  - login por `usuario + clave` via `POST /api/auth/login`.
+  - cierre de sesion via `POST /api/auth/logout`.
+  - opcion de recordar usuario/clave en dispositivo local (modo operativo actual).

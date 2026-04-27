@@ -1,34 +1,47 @@
 import { useEffect, useState } from 'react';
 
-function ScannerManualModal({ isOpen, onClose, onConfirm, onValueChange }) {
+function ScannerQuickAddModal({
+  isOpen,
+  barcode,
+  onClose,
+  onConfirm,
+  onDraftChange
+}) {
   const [value, setValue] = useState('');
 
-  function handleConfirm() {
-    const ok = onConfirm(value);
-    if (ok) {
-      setValue('');
-      onClose();
-    }
-  }
-
   useEffect(() => {
-    if (isOpen) {
-      setValue('');
-      if (onValueChange) {
-        onValueChange('');
-      }
+    if (!isOpen) {
+      return;
     }
-  }, [isOpen]);
+
+    setValue('');
+    onDraftChange?.({
+      nombre: 'Producto Manual',
+      precio_venta_raw: '',
+      precio_venta: 0,
+      barcode: String(barcode || '')
+    });
+  }, [barcode, isOpen]);
 
   if (!isOpen) {
     return null;
   }
 
+  function handleConfirm() {
+    const ok = onConfirm({
+      barcode,
+      rawValue: value
+    });
+    if (ok) {
+      onClose();
+    }
+  }
+
   return (
-    <div className="scanner-modal-overlay" role="dialog" aria-modal="true" aria-label="Producto manual">
+    <div className="scanner-modal-overlay" role="dialog" aria-modal="true" aria-label="Ingresa un valor">
       <div className="scanner-modal-card">
         <div className="d-flex justify-content-between align-items-center mb-3">
-          <h2 className="h5 mb-0">Producto manual</h2>
+          <h2 className="h5 mb-0">Ingresa un valor</h2>
           <button type="button" className="btn btn-sm btn-outline-secondary" onClick={onClose}>X</button>
         </div>
 
@@ -39,16 +52,18 @@ function ScannerManualModal({ isOpen, onClose, onConfirm, onValueChange }) {
           }}
         >
           <div className="mb-3">
-            <label className="form-label">Ingresa un valor</label>
+            <label className="form-label">Precio</label>
             <input
               className="form-control"
               value={value}
               onChange={(event) => {
-                const nextValue = event.target.value;
-                setValue(nextValue);
-                if (onValueChange) {
-                  onValueChange(nextValue);
-                }
+                const next = event.target.value;
+                setValue(next);
+                onDraftChange?.({
+                  nombre: 'Producto Manual',
+                  precio_venta_raw: next,
+                  precio_venta: Number(String(next || '').replace(',', '.')) || 0
+                });
               }}
               placeholder="Ej: 150"
               autoFocus
@@ -69,4 +84,4 @@ function ScannerManualModal({ isOpen, onClose, onConfirm, onValueChange }) {
   );
 }
 
-export default ScannerManualModal;
+export default ScannerQuickAddModal;
