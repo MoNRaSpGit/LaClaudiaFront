@@ -2,6 +2,7 @@ function PaymentFormPanel({
   paymentAmount,
   paymentDescription,
   paymentError,
+  isRegisteringPayment,
   onChangeAmount,
   onChangeDescription,
   onSubmit
@@ -18,16 +19,20 @@ function PaymentFormPanel({
             className="form-control"
             placeholder="Monto"
             value={paymentAmount}
+            disabled={isRegisteringPayment}
             onChange={(event) => onChangeAmount(event.target.value)}
           />
           <input
             className="form-control"
             placeholder="Descripcion"
             value={paymentDescription}
+            disabled={isRegisteringPayment}
             onChange={(event) => onChangeDescription(event.target.value)}
           />
           {paymentError ? <p className="app-inline-error mb-0">{paymentError}</p> : null}
-          <button type="submit" className="btn btn-dark">Registrar pago</button>
+          <button type="submit" className="btn btn-dark" disabled={isRegisteringPayment}>
+            {isRegisteringPayment ? 'Registrando...' : 'Registrar pago'}
+          </button>
         </form>
       </div>
     </article>

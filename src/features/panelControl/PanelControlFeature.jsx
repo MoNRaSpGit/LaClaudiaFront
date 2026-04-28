@@ -31,7 +31,23 @@ function PanelControlFeature({ currentUser }) {
   }, []);
 
   async function handlePaymentSubmit(event) {
-    const result = await controller.handleRegisterPayment(event);
+    const result = controller.handleRegisterPayment(event, {
+      onSuccess: ({ elapsedMs, serverElapsedMs }) => {
+        if (elapsedMs > 0) {
+          if (elapsedMs <= 500) {
+            console.info(`[PAYMENT][OK] total=${elapsedMs} ms server=${serverElapsedMs || '-'} ms`);
+          } else {
+            console.warn(`[PAYMENT][LENTO] total=${elapsedMs} ms server=${serverElapsedMs || '-'} ms (> 500 ms)`);
+          }
+        }
+      },
+      onError: () => {
+        toast.error('Hubo un error en el ultimo pago. Revisa conexion y reintenta.', {
+          toastId: `panel-payment-fail-${Date.now()}`,
+          autoClose: 2600
+        });
+      }
+    });
     if (result?.ok) {
       toast.success('Pago registrado correctamente', {
         toastId: `panel-payment-ok-${Date.now()}`,
@@ -107,6 +123,7 @@ function PanelControlFeature({ currentUser }) {
         paymentAmount={controller.paymentAmount}
         paymentDescription={controller.paymentDescription}
         paymentError={controller.paymentError}
+        isRegisteringPayment={controller.isRegisteringPayment}
         onChangeAmount={controller.setPaymentAmount}
         onChangeDescription={controller.setPaymentDescription}
         onSubmit={handlePaymentSubmit}

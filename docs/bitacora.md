@@ -7,6 +7,13 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
 ## Mini Changelog Tecnico (2026-04-27)
 
 - Scanner UX y resiliencia (2026-04-28):
+  - Registro de pagos optimizado para baja latencia percibida:
+    - submit optimista en frontend (toast OK inmediato + sync backend en segundo plano).
+    - estado `Registrando...` para evitar doble submit.
+    - toast de error tardio si falla el guardado real.
+  - Medicion de tiempos agregada en pago:
+    - log en consola: `[PAYMENT][OK|LENTO] total=... ms server=... ms`.
+    - umbral operativo: `<= 500 ms` OK, `> 500 ms` marcar como lento.
   - Navbar mobile ajustado:
     - marca + menu usuario en una sola linea.
     - tabs `Scanner/Panel` movidos al dropdown en mobile.

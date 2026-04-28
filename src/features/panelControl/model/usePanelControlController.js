@@ -32,6 +32,7 @@ export function usePanelControlController({ currentUser }) {
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentDescription, setPaymentDescription] = useState('');
   const [paymentError, setPaymentError] = useState('');
+  const [isRegisteringPayment, setIsRegisteringPayment] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -165,8 +166,12 @@ export function usePanelControlController({ currentUser }) {
     { title: 'Pagos realizados', value: money(panelMetrics.paymentsTotal), hint: 'Suma de pagos registrados' }
   ];
 
-  async function handleRegisterPayment(event) {
+  function handleRegisterPayment(event, options = {}) {
     event.preventDefault();
+
+    if (isRegisteringPayment) {
+      return { ok: false, busy: true };
+    }
 
     const parsedAmount = parsePositiveAmount(paymentAmount);
     const trimmedDescription = String(paymentDescription || '').trim();
@@ -178,26 +183,37 @@ export function usePanelControlController({ currentUser }) {
 
     if (!trimmedDescription) {
       setPaymentError('La descripcion es obligatoria.');
-      return;
-    }
-
-    try {
-      await registerPanelPayment({
-        externalId: `payment-${Date.now()}`,
-        userId: currentUser?.id || null,
-        amount: parsedAmount,
-        description: trimmedDescription
-      }, {
-        token: currentUser?.sessionToken || ''
-      });
-      setPaymentAmount('');
-      setPaymentDescription('');
-      setPaymentError('');
-      return { ok: true };
-    } catch (error) {
-      setPaymentError(error.message || 'No se pudo registrar el pago.');
       return { ok: false };
     }
+
+    setPaymentAmount('');
+    setPaymentDescription('');
+    setPaymentError('');
+    setIsRegisteringPayment(true);
+
+    registerPanelPayment({
+      externalId: `payment-${Date.now()}`,
+      userId: currentUser?.id || null,
+      amount: parsedAmount,
+      description: trimmedDescription
+    }, {
+      token: currentUser?.sessionToken || ''
+    })
+      .then((result) => {
+        const elapsedMs = Number(result?._meta?.elapsedMs || 0);
+        const serverElapsedMs = Number(result?.meta?.elapsedMs || 0);
+        options?.onSuccess?.({ elapsedMs, serverElapsedMs });
+      })
+      .catch((error) => {
+        const message = error?.message || 'No se pudo registrar el pago.';
+        setPaymentError(message);
+        options?.onError?.(new Error(message));
+      })
+      .finally(() => {
+        setIsRegisteringPayment(false);
+      });
+
+    return { ok: true };
   }
 
   function toggleMovementDetail(movementId) {
@@ -249,6 +265,7 @@ export function usePanelControlController({ currentUser }) {
     paymentAmount,
     paymentDescription,
     paymentError,
+    isRegisteringPayment,
     percent,
     handleRegisterPayment,
     toggleMovementDetail,
