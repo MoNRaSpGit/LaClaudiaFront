@@ -14,6 +14,7 @@ import {
 
 function ScannerFeature({ currentUser }) {
   const { scannerState, totals, actions } = useScannerController({ currentUser });
+  const isOperario = String(currentUser?.role || '').trim().toLowerCase() === 'operario';
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
   const [quickAddState, setQuickAddState] = useState({
     isOpen: false,
@@ -68,7 +69,7 @@ function ScannerFeature({ currentUser }) {
   }, [currentUser?.sessionToken]);
 
   useEffect(() => {
-    if (!currentUser?.sessionToken) {
+    if (!currentUser?.sessionToken || !isOperario) {
       return;
     }
 
@@ -90,6 +91,7 @@ function ScannerFeature({ currentUser }) {
     return () => clearTimeout(timeoutId);
   }, [
     currentUser?.sessionToken,
+    isOperario,
     scannerState.cartItems,
     scannerState.lastScannedAt,
     scannerState.liveEditor

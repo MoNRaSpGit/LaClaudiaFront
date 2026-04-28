@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useSelector } from 'react-redux';
 import { parsePositiveAmount } from '../../../shared/lib/number';
 import { registerPanelPayment, subscribePanelDashboard } from '../services/panelControl.api';
 import { money, parseDateInput, percent, STORE_TIME_ZONE, todayLabel } from './panelControl.formatters';
@@ -33,12 +32,6 @@ export function usePanelControlController({ currentUser }) {
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentDescription, setPaymentDescription] = useState('');
   const [paymentError, setPaymentError] = useState('');
-
-  const liveCartItems = useSelector((state) => state.scanner.cartItems);
-  const liveLastScannedAt = useSelector((state) => state.scanner.lastScannedAt);
-  const liveEditorState = useSelector((state) => state.scanner.liveEditor);
-
-  const liveEditor = liveEditorState || null;
 
   useEffect(() => {
     let isMounted = true;
@@ -91,26 +84,24 @@ export function usePanelControlController({ currentUser }) {
   const movementItems = Array.isArray(dashboard.movements) ? dashboard.movements : [];
   const rankingItems = Array.isArray(dashboard.ranking) ? dashboard.ranking : [];
   const remoteItems = Array.isArray(remoteLiveScanner?.items) ? remoteLiveScanner.items : [];
-  const hasRemoteLiveSource = remoteLiveScanner !== null;
+  const hasRemoteLiveSource = true;
 
   const liveItems = useMemo(() => {
-    const sourceItems = hasRemoteLiveSource ? remoteItems : liveCartItems;
+    const sourceItems = remoteItems;
     return sourceItems.map((item) => ({
       id: item.id,
       nombre: item.nombre,
       quantity: Number(item.quantity || 1),
       precio: Number(item.precio_venta || item.precio || 0)
     }));
-  }, [hasRemoteLiveSource, liveCartItems, remoteItems]);
+  }, [remoteItems]);
 
   const liveTotal = useMemo(
     () => liveItems.reduce((acc, item) => acc + item.precio * item.quantity, 0),
     [liveItems]
   );
 
-  const liveTimestamp = hasRemoteLiveSource
-    ? (remoteLiveScanner?.lastScannedAt || remoteLiveScanner?.updatedAt || null)
-    : liveLastScannedAt;
+  const liveTimestamp = remoteLiveScanner?.lastScannedAt || remoteLiveScanner?.updatedAt || null;
 
   const liveTimeLabel = useMemo(() => {
     if (!liveTimestamp) {
@@ -244,7 +235,7 @@ export function usePanelControlController({ currentUser }) {
     rankingDateLabel,
     operatorName,
     todayLabel,
-    liveEditor: hasRemoteLiveSource ? (remoteLiveScanner?.liveEditor || null) : liveEditor,
+    liveEditor: remoteLiveScanner?.liveEditor || null,
     liveItems,
     liveTotal,
     liveTimeLabel,
