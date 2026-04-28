@@ -1,4 +1,5 @@
-import { useState } from 'react';
+﻿import { useEffect, useState } from 'react';
+import { Wallet, Radio, Trophy, ArrowLeftRight, HandCoins } from 'lucide-react';
 import { ToastContainer, toast } from 'react-toastify';
 import MetricCard from './components/MetricCard';
 import PanelModal from './components/PanelModal';
@@ -11,27 +12,23 @@ import { usePanelControlController } from './model/usePanelControlController';
 
 function PanelControlFeature({ currentUser }) {
   const controller = usePanelControlController({ currentUser });
-  const [demoStep, setDemoStep] = useState(0);
+  const [isMobileLayout, setIsMobileLayout] = useState(false);
+  const [activeMobileSection, setActiveMobileSection] = useState('daily');
 
-  const showPart2 = demoStep === 0 || demoStep === 2;
-  const showPart3 = demoStep === 0;
-  const demoLabel = demoStep === 0
-    ? 'Todo visible'
-    : demoStep === 1
-      ? 'Solo Caja diaria'
-      : 'Caja diaria + parte 2';
+  useEffect(() => {
+    function syncMobileLayout() {
+      if (typeof window === 'undefined') {
+        return;
+      }
+      setIsMobileLayout(window.innerWidth < 992);
+    }
 
-  function handleCycleDemoView() {
-    setDemoStep((current) => {
-      if (current === 0) {
-        return 1;
-      }
-      if (current === 1) {
-        return 2;
-      }
-      return 0;
-    });
-  }
+    syncMobileLayout();
+    window.addEventListener('resize', syncMobileLayout);
+    return () => {
+      window.removeEventListener('resize', syncMobileLayout);
+    };
+  }, []);
 
   async function handlePaymentSubmit(event) {
     const result = await controller.handleRegisterPayment(event);
@@ -43,17 +40,91 @@ function PanelControlFeature({ currentUser }) {
     }
   }
 
+  function scrollToSection(sectionKey) {
+    setActiveMobileSection(sectionKey);
+    const sectionIdByKey = {
+      daily: 'panel-section-daily',
+      live: 'panel-section-live',
+      ranking: 'panel-section-ranking',
+      movements: 'panel-section-movements',
+      payments: 'panel-section-payments'
+    };
+    const targetId = sectionIdByKey[sectionKey];
+    const target = typeof document !== 'undefined' ? document.getElementById(targetId) : null;
+    if (!target) {
+      return;
+    }
+
+    target.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    });
+  }
+
+  function renderLivePanel() {
+    return (
+      <LiveCartPanel
+        operatorName={controller.operatorName}
+        liveEditor={controller.liveEditor}
+        hasLiveItems={controller.hasLiveItems}
+        liveTimeLabel={controller.liveTimeLabel}
+        liveTotal={controller.liveTotal}
+        liveItems={controller.liveItems}
+      />
+    );
+  }
+
+  function renderMovementsPanel() {
+    return (
+      <MovementsPanel
+        hasMovementItems={controller.hasMovementItems}
+        visibleMovementItems={controller.visibleMovementItems}
+        canExpandMovements={controller.canExpandMovements}
+        movementExpandLabel={controller.movementExpandLabel}
+        expandedMovementId={controller.expandedMovementId}
+        onToggleMovementDetail={controller.toggleMovementDetail}
+        onExpandMovements={controller.expandMovements}
+      />
+    );
+  }
+
+  function renderRankingPanel() {
+    return (
+      <RankingPanel
+        hasRankingItems={controller.hasRankingItems}
+        visibleRankingItems={controller.visibleRankingItems}
+        rankingDateLabel={controller.rankingDateLabel}
+        canExpandRanking={controller.canExpandRanking}
+        rankingExpandLabel={controller.rankingExpandLabel}
+        onExpandRanking={controller.expandRanking}
+      />
+    );
+  }
+
+  function renderPaymentPanel() {
+    return (
+      <PaymentFormPanel
+        paymentAmount={controller.paymentAmount}
+        paymentDescription={controller.paymentDescription}
+        paymentError={controller.paymentError}
+        onChangeAmount={controller.setPaymentAmount}
+        onChangeDescription={controller.setPaymentDescription}
+        onSubmit={handlePaymentSubmit}
+      />
+    );
+  }
+
   return (
     <>
       <ToastContainer position="top-right" newestOnTop closeOnClick pauseOnFocusLoss={false} theme="light" />
-      <div className="container py-4">
+      <div className={`container py-4 ${isMobileLayout ? 'panel-mobile-page' : ''}`}>
         <div className="row justify-content-center">
           <div className="col-xl-11">
-            <section className="panel-hero mb-4">
+            <section className="panel-hero mb-4" id="panel-section-daily">
               <div>
                 <p className="panel-hero-kicker mb-1">Caja en vivo</p>
                 <h1 className="panel-hero-title mb-1">Panel de control</h1>
-                <p className="panel-hero-subtitle mb-0">{controller.todayLabel}  seguimiento fino de caja, scanner y movimientos.</p>
+                <p className="panel-hero-subtitle mb-0">{controller.todayLabel} seguimiento fino de caja, scanner y movimientos.</p>
               </div>
               <div className="panel-status-stack">
                 <div className="panel-status-open">Abierta</div>
@@ -64,13 +135,6 @@ function PanelControlFeature({ currentUser }) {
               <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
                 <h2 className="h5 mb-0 panel-section-title">Caja diaria</h2>
                 <div className="d-flex align-items-center gap-2">
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-outline-secondary"
-                    onClick={handleCycleDemoView}
-                  >
-                    {demoLabel}
-                  </button>
                   {controller.dashboardError ? <small className="text-danger">{controller.dashboardError}</small> : null}
                 </div>
               </div>
@@ -97,66 +161,61 @@ function PanelControlFeature({ currentUser }) {
               </div>
             </section>
 
-            <div className="panel-layout-grid-v2 panel-sections-grid">
-              <div className="panel-left-stack">
-                {showPart2 ? (
-                  <LiveCartPanel
-                    operatorName={controller.operatorName}
-                    liveEditor={controller.liveEditor}
-                    hasLiveItems={controller.hasLiveItems}
-                    liveTimeLabel={controller.liveTimeLabel}
-                    liveTotal={controller.liveTotal}
-                    liveItems={controller.liveItems}
-                  />
-                ) : null}
-
-                {showPart3 ? (
-                  <MovementsPanel
-                    hasMovementItems={controller.hasMovementItems}
-                    visibleMovementItems={controller.visibleMovementItems}
-                    canExpandMovements={controller.canExpandMovements}
-                    movementExpandLabel={controller.movementExpandLabel}
-                    expandedMovementId={controller.expandedMovementId}
-                    onToggleMovementDetail={controller.toggleMovementDetail}
-                    onExpandMovements={controller.expandMovements}
-                  />
-                ) : null}
+            {isMobileLayout ? (
+              <div className="panel-mobile-stack">
+                <section id="panel-section-live">{renderLivePanel()}</section>
+                <section id="panel-section-ranking">{renderRankingPanel()}</section>
+                <section id="panel-section-movements">{renderMovementsPanel()}</section>
+                <section id="panel-section-payments">{renderPaymentPanel()}</section>
               </div>
+            ) : (
+              <div className="panel-layout-grid-v2 panel-sections-grid">
+                <div className="panel-left-stack">
+                  {renderLivePanel()}
+                  {renderMovementsPanel()}
+                </div>
 
-              <div className="panel-right-stack">
-                {showPart2 ? (
-                  <RankingPanel
-                    hasRankingItems={controller.hasRankingItems}
-                    visibleRankingItems={controller.visibleRankingItems}
-                    rankingDateLabel={controller.rankingDateLabel}
-                    canExpandRanking={controller.canExpandRanking}
-                    rankingExpandLabel={controller.rankingExpandLabel}
-                    onExpandRanking={controller.expandRanking}
-                  />
-                ) : null}
-
-                {showPart3 ? (
-                <PaymentFormPanel
-                  paymentAmount={controller.paymentAmount}
-                  paymentDescription={controller.paymentDescription}
-                  paymentError={controller.paymentError}
-                  onChangeAmount={controller.setPaymentAmount}
-                  onChangeDescription={controller.setPaymentDescription}
-                  onSubmit={handlePaymentSubmit}
-                />
-                ) : null}
+                <div className="panel-right-stack">
+                  {renderRankingPanel()}
+                  {renderPaymentPanel()}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
+
+      {isMobileLayout ? (
+        <nav className="panel-mobile-bottom-nav" aria-label="Navegación de secciones del panel">
+          <button type="button" className={`panel-mobile-bottom-btn ${activeMobileSection === 'daily' ? 'panel-mobile-bottom-btn-active' : ''}`} onClick={() => scrollToSection('daily')}>
+            <Wallet size={16} />
+            <span>Caja</span>
+          </button>
+          <button type="button" className={`panel-mobile-bottom-btn ${activeMobileSection === 'live' ? 'panel-mobile-bottom-btn-active' : ''}`} onClick={() => scrollToSection('live')}>
+            <Radio size={16} />
+            <span>En vivo</span>
+          </button>
+          <button type="button" className={`panel-mobile-bottom-btn ${activeMobileSection === 'ranking' ? 'panel-mobile-bottom-btn-active' : ''}`} onClick={() => scrollToSection('ranking')}>
+            <Trophy size={16} />
+            <span>Ranking</span>
+          </button>
+          <button type="button" className={`panel-mobile-bottom-btn ${activeMobileSection === 'movements' ? 'panel-mobile-bottom-btn-active' : ''}`} onClick={() => scrollToSection('movements')}>
+            <ArrowLeftRight size={16} />
+            <span>Mov.</span>
+          </button>
+          <button type="button" className={`panel-mobile-bottom-btn ${activeMobileSection === 'payments' ? 'panel-mobile-bottom-btn-active' : ''}`} onClick={() => scrollToSection('payments')}>
+            <HandCoins size={16} />
+            <span>Pago</span>
+          </button>
+        </nav>
+      ) : null}
 
       {controller.isComparisonOpen ? (
         <PanelModal
           title="Comparación detallada"
           body={(
             <div className="d-grid gap-2">
-              <div className="panel-detail-row"><span>Máximoo (récord)</span><strong>{money(controller.comparison.record)}</strong></div>
+              <div className="panel-detail-row"><span>Máximo (récord)</span><strong>{money(controller.comparison.record)}</strong></div>
               <div className="panel-detail-row"><span>Hoy</span><strong>{money(controller.comparison.today)}</strong></div>
               <div className="panel-detail-row"><span>Hoy vs récord</span><strong className={controller.comparisonVsRecord >= 0 ? 'panel-comparison-positive' : 'panel-comparison-negative'}>{controller.percent(controller.comparisonVsRecord)}</strong></div>
             </div>

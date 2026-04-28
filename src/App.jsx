@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+ï»¿import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { Menu, UserRound, LogOut, ShieldCheck } from 'lucide-react';
+import { Menu, UserRound, LogOut } from 'lucide-react';
 import AuthGate from './features/auth/AuthGate';
 import ScannerFeature from './features/scanner/ScannerFeature';
 import PanelControlFeature from './features/panelControl/PanelControlFeature';
@@ -13,12 +13,11 @@ function Workspace({ user, onLogout }) {
   const [activeTab, setActiveTab] = useState(canAccessPanel ? 'panel' : 'scanner');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  useEffect(() => {    if (!canAccessPanel && activeTab === 'panel') {
+  useEffect(() => {
+    if (!canAccessPanel && activeTab === 'panel') {
       setActiveTab('scanner');
     }
   }, [activeTab, canAccessPanel]);
-
-  const roleLabel = useMemo(() => (canAccessPanel ? 'Admin' : 'Operario'), [canAccessPanel]);
 
   function handleLogout() {
     setIsMenuOpen(false);
@@ -28,14 +27,14 @@ function Workspace({ user, onLogout }) {
 
   return (
     <div className="landing-bg min-vh-100">
-      <nav className="navbar navbar-expand-lg scanner-navbar scanner-navbar-dark border-bottom">
+      <nav className="navbar scanner-navbar scanner-navbar-dark border-bottom">
         <div className="container">
-          <div className="d-flex align-items-center">
+          <div className="scanner-navbar-brand-wrap d-flex align-items-center">
             <span className="navbar-brand fw-bold mb-0 text-white">S{"\u00FA"}per Nova</span>
           </div>
 
-          <div className="d-flex align-items-center gap-2 flex-wrap ms-auto">
-            <div className="navbar-nav gap-1">
+          <div className="scanner-navbar-main d-flex align-items-center gap-2 flex-wrap ms-auto">
+            <div className="scanner-navbar-tabs navbar-nav gap-1">
               <button
                 type="button"
                 className={`btn nav-tab-btn nav-tab-btn-dark ${activeTab === 'scanner' ? 'nav-tab-btn-active' : ''}`}
@@ -56,13 +55,13 @@ function Workspace({ user, onLogout }) {
               ) : null}
             </div>
 
-            <div className="scanner-user-menu">
+            <div className="scanner-user-menu scanner-navbar-user">
               <button
                 type="button"
                 className="btn scanner-user-menu-btn"
                 onClick={() => setIsMenuOpen((current) => !current)}
                 aria-expanded={isMenuOpen}
-                aria-label="Abrir menú de usuario"
+                aria-label="Abrir menÃº de usuario"
               >
                 <UserRound size={16} />
                 <span className="auth-user-pill auth-user-pill-dark">{user?.name || 'Admin'}</span>
@@ -71,10 +70,29 @@ function Workspace({ user, onLogout }) {
 
               {isMenuOpen ? (
                 <div className="scanner-user-dropdown">
-                  <div className="scanner-user-dropdown-head">
-                    <ShieldCheck size={16} />
-                    <span>Sesión iniciada ({roleLabel})</span>
-                  </div>
+                  <button
+                    type="button"
+                    className={`scanner-user-dropdown-item scanner-user-dropdown-nav-item ${activeTab === 'scanner' ? 'scanner-user-dropdown-nav-item-active' : ''}`}
+                    onClick={() => {
+                      setActiveTab('scanner');
+                      setIsMenuOpen(false);
+                    }}
+                  >
+                    <span>Scanner</span>
+                  </button>
+                  {canAccessPanel ? (
+                    <button
+                      type="button"
+                      className={`scanner-user-dropdown-item scanner-user-dropdown-nav-item ${activeTab === 'panel' ? 'scanner-user-dropdown-nav-item-active' : ''}`}
+                      onClick={() => {
+                        setActiveTab('panel');
+                        setIsMenuOpen(false);
+                      }}
+                    >
+                      <span>Panel de control</span>
+                    </button>
+                  ) : null}
+                  <div className="scanner-user-dropdown-divider" />
                   <button type="button" className="scanner-user-dropdown-item" onClick={handleLogout}>
                     <LogOut size={14} />
                     <span>Salir</span>

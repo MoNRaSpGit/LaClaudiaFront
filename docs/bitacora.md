@@ -7,6 +7,14 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
 ## Mini Changelog Tecnico (2026-04-27)
 
 - Scanner UX y resiliencia (2026-04-28):
+  - Navbar mobile ajustado:
+    - marca + menu usuario en una sola linea.
+    - tabs `Scanner/Panel` movidos al dropdown en mobile.
+  - Panel mobile ajustado:
+    - navegacion inferior por secciones con estado activo visual al presionar.
+    - correccion de scroll con `scroll-margin-top` para evitar que el titulo quede tapado por navbar sticky.
+  - limpieza de ruido CSS:
+    - removidas clases legacy del selector mobile anterior (`panel-mobile-section-selector`, `panel-mobile-tab*`).
   - click en celda de producto suma `+1` unidad (flujo rapido de caja).
   - `admin` entra directo a `Panel de control`.
   - persistencia de sesion (`auth_session`) y estado scanner (`scanner_state`) para soportar `F5` sin perder contexto.
@@ -178,6 +186,22 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
   - actualizar `bitacora`.
   - actualizar `architecture` si cambia estructura o criterio.
   - mantener `README` publico breve y `README.local` para notas internas.
+
+## Alias operativo: Pasos Finales (`PF`)
+
+- Si el usuario dice:
+  - `pasos finales antes del push/deploy`
+  - `pasos finales`
+  - `PF`
+- Significa ejecutar esta secuencia:
+  1. tests (unit + smoke/e2e criticos).
+  2. optimizacion rapida de cambios recientes.
+  3. revision de estructura/capas (MVC y boundaries por feature).
+  4. limpieza de ruido (imports sin uso, estilos/codigo legacy).
+  5. documentacion (bitacora + resumen tecnico).
+- Regla de corte:
+  - solo si 1-5 salen bien, recien pasar al punto 6:
+  6. `push + deploy` y validacion final de publicacion.
 
 ## Archivos clave de frontend
 

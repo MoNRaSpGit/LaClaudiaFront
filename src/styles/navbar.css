@@ -4,6 +4,20 @@
   z-index: 10;
 }
 
+.scanner-navbar .container {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.scanner-navbar-main {
+  margin-left: auto;
+}
+
+.scanner-navbar-tabs {
+  display: flex;
+}
+
 .scanner-navbar-dark {
   background: linear-gradient(120deg, #0f1826 0%, #131f31 100%);
   border-color: #223149 !important;
@@ -128,4 +142,101 @@
 .scanner-user-dropdown-item:hover {
   background: #1a263b;
   border-color: #2f4361;
+}
+
+.scanner-user-dropdown-divider {
+  height: 1px;
+  background: #24334b;
+  margin: 0.35rem 0.25rem;
+}
+
+.scanner-user-dropdown-nav-item {
+  justify-content: center;
+}
+
+.scanner-user-dropdown-nav-item-active {
+  background: #1a263b;
+  border-color: #2f4361;
+  color: #ffffff;
+}
+
+@media (max-width: 991.98px) {
+  .scanner-navbar {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .scanner-navbar .container {
+    flex-wrap: nowrap;
+    justify-content: space-between;
+  }
+
+  .scanner-navbar-brand-wrap {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  .scanner-navbar-main {
+    width: auto;
+    display: flex !important;
+    align-items: center;
+    gap: 0.45rem;
+    margin-left: 0;
+  }
+
+  .scanner-navbar-tabs {
+    display: none;
+  }
+
+  .nav-tab-btn {
+    width: 100%;
+    padding: 0.5rem 0.55rem;
+    font-size: 0.82rem;
+  }
+
+  .scanner-navbar-user {
+    justify-self: auto;
+  }
+}
+
+@media (min-width: 992px) {
+  .scanner-navbar {
+    padding-top: 0.55rem;
+    padding-bottom: 0.55rem;
+  }
+
+  .scanner-navbar .container {
+    flex-wrap: nowrap;
+    justify-content: space-between;
+  }
+
+  .scanner-navbar-main {
+    width: auto;
+    display: flex !important;
+    align-items: center;
+    gap: 0.65rem;
+  }
+
+  .scanner-navbar-tabs {
+    display: flex;
+    flex-direction: row;
+    gap: 0.4rem !important;
+  }
+
+  .scanner-user-dropdown-nav-item {
+    display: none;
+  }
+
+  .scanner-user-dropdown-divider {
+    display: none;
+  }
+
+  .nav-tab-btn {
+    width: auto;
+    font-size: 0.9rem;
+  }
+
+  .scanner-navbar-user {
+    justify-self: auto;
+  }
 }
