@@ -14,6 +14,9 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
   - Medicion de tiempos agregada en pago:
     - log en consola: `[PAYMENT][OK|LENTO] total=... ms server=... ms`.
     - umbral operativo: `<= 500 ms` OK, `> 500 ms` marcar como lento.
+  - Diagnostico de cuello de botella (muestras de produccion):
+    - promedio 10 pagos: `total ~681.6 ms`, `server ~228.8 ms`, `neto red ~452.8 ms`.
+    - conclusion: cuello principal fuera de app (red/infra), backend dentro de margen.
   - Navbar mobile ajustado:
     - marca + menu usuario en una sola linea.
     - tabs `Scanner/Panel` movidos al dropdown en mobile.

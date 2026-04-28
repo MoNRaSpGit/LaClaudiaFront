@@ -202,7 +202,14 @@ export function usePanelControlController({ currentUser }) {
       .then((result) => {
         const elapsedMs = Number(result?._meta?.elapsedMs || 0);
         const serverElapsedMs = Number(result?.meta?.elapsedMs || 0);
-        options?.onSuccess?.({ elapsedMs, serverElapsedMs });
+        const serverDbElapsedMs = Number(result?.meta?.dbElapsedMs || 0);
+        const serverAppElapsedMs = Number(result?.meta?.appElapsedMs || 0);
+        options?.onSuccess?.({
+          elapsedMs,
+          serverElapsedMs,
+          serverDbElapsedMs,
+          serverAppElapsedMs
+        });
       })
       .catch((error) => {
         const message = error?.message || 'No se pudo registrar el pago.';

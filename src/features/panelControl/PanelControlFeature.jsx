@@ -32,12 +32,19 @@ function PanelControlFeature({ currentUser }) {
 
   async function handlePaymentSubmit(event) {
     const result = controller.handleRegisterPayment(event, {
-      onSuccess: ({ elapsedMs, serverElapsedMs }) => {
+      onSuccess: ({ elapsedMs, serverElapsedMs, serverDbElapsedMs, serverAppElapsedMs }) => {
+        const networkApproxMs = elapsedMs > 0 && serverElapsedMs > 0
+          ? Number((elapsedMs - serverElapsedMs).toFixed(1))
+          : null;
+        const serverLabel = serverElapsedMs ?? '-';
+        const dbLabel = serverDbElapsedMs ?? '-';
+        const appLabel = serverAppElapsedMs ?? '-';
+        const netLabel = networkApproxMs ?? '-';
         if (elapsedMs > 0) {
           if (elapsedMs <= 500) {
-            console.info(`[PAYMENT][OK] total=${elapsedMs} ms server=${serverElapsedMs || '-'} ms`);
+            console.info(`[PAYMENT][OK] total=${elapsedMs} ms server=${serverLabel} ms db=${dbLabel} ms app=${appLabel} ms net~=${netLabel} ms`);
           } else {
-            console.warn(`[PAYMENT][LENTO] total=${elapsedMs} ms server=${serverElapsedMs || '-'} ms (> 500 ms)`);
+            console.warn(`[PAYMENT][LENTO] total=${elapsedMs} ms server=${serverLabel} ms db=${dbLabel} ms app=${appLabel} ms net~=${netLabel} ms (> 500 ms)`);
           }
         }
       },
