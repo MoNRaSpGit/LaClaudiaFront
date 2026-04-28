@@ -6,6 +6,26 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
 
 ## Mini Changelog Tecnico (2026-04-27)
 
+- Scanner UX y resiliencia (2026-04-28):
+  - click en celda de producto suma `+1` unidad (flujo rapido de caja).
+  - `admin` entra directo a `Panel de control`.
+  - persistencia de sesion (`auth_session`) y estado scanner (`scanner_state`) para soportar `F5` sin perder contexto.
+  - `logout` ahora limpia todo el estado local:
+    - sesion.
+    - credenciales recordadas.
+    - carrito/estado scanner persistido.
+    - cola de ventas pendientes.
+    - reset inmediato del estado scanner en memoria (sin necesitar `F5`).
+  - carteleria de scanner refinada:
+    - error de validacion visible solo en modal `Producto manual`.
+    - confirmacion de cobro con toast inmediato (`Compra confirmada`) al click en `Confirmar`.
+    - si luego falla sincronizacion backend, se muestra toast de error de reintento en segundo plano.
+  - integracion `react-toastify` con estilo visual discreto (verde suave, barra de progreso activa).
+  - optimizaciones de ruido/rendimiento:
+    - anti-spam de toast de error de sincronizacion (cooldown 30s).
+    - se evita persistir `localStorage` en cada tecla de `scanBarcode`.
+    - limpieza de acciones/props no usadas (`clearScanError`, props vacias redundantes).
+
 - Boundary API por feature aplicado:
   - `auth` deja de depender de `shared/services/backend.api.js`.
   - `panelControl` deja de depender de `shared/services/backend.api.js`.

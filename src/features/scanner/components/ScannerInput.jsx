@@ -1,7 +1,7 @@
 import { forwardRef } from 'react';
 
 const ScannerInput = forwardRef(function ScannerInput(
-  { barcode, onBarcodeChange, onSubmit, scanStatus, scanError },
+  { barcode, onBarcodeChange, onSubmit, scanStatus, scanError = '' },
   inputRef
 ) {
   return (

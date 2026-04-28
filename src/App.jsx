@@ -1,16 +1,24 @@
-ï»¿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useDispatch } from 'react-redux';
 import { Menu, UserRound, LogOut, ShieldCheck } from 'lucide-react';
 import AuthGate from './features/auth/AuthGate';
 import ScannerFeature from './features/scanner/ScannerFeature';
 import PanelControlFeature from './features/panelControl/PanelControlFeature';
+import { resetScannerState } from './features/scanner/scannerSlice';
 
 function Workspace({ user, onLogout }) {
+  const dispatch = useDispatch();
   const userRole = String(user?.role || 'operario').toLowerCase();
   const canAccessPanel = userRole === 'admin';
-  const [activeTab, setActiveTab] = useState('scanner');
+  const [activeTab, setActiveTab] = useState(canAccessPanel ? 'panel' : 'scanner');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
+    if (canAccessPanel && activeTab !== 'panel') {
+      setActiveTab('panel');
+      return;
+    }
+
     if (!canAccessPanel && activeTab === 'panel') {
       setActiveTab('scanner');
     }
@@ -20,6 +28,7 @@ function Workspace({ user, onLogout }) {
 
   function handleLogout() {
     setIsMenuOpen(false);
+    dispatch(resetScannerState());
     onLogout();
   }
 
@@ -59,7 +68,7 @@ function Workspace({ user, onLogout }) {
                 className="btn scanner-user-menu-btn"
                 onClick={() => setIsMenuOpen((current) => !current)}
                 aria-expanded={isMenuOpen}
-                aria-label="Abrir menÃº de usuario"
+                aria-label="Abrir menú de usuario"
               >
                 <UserRound size={16} />
                 <span className="auth-user-pill auth-user-pill-dark">{user?.name || 'Admin'}</span>
@@ -70,7 +79,7 @@ function Workspace({ user, onLogout }) {
                 <div className="scanner-user-dropdown">
                   <div className="scanner-user-dropdown-head">
                     <ShieldCheck size={16} />
-                    <span>SesiÃ³n iniciada ({roleLabel})</span>
+                    <span>Sesión iniciada ({roleLabel})</span>
                   </div>
                   <button type="button" className="scanner-user-dropdown-item" onClick={handleLogout}>
                     <LogOut size={14} />

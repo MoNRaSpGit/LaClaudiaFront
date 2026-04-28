@@ -7,6 +7,7 @@ let queueLoaded = false;
 let queue = [];
 let retryTimer = null;
 const queueListeners = new Set();
+const queueErrorListeners = new Set();
 
 function isBrowser() {
   return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
@@ -47,6 +48,16 @@ function notifyQueueListeners() {
     try {
       listener(pending);
     } catch (_error) {
+      // Ignore listener errors to keep queue flow resilient.
+    }
+  });
+}
+
+function notifyQueueErrorListeners(error) {
+  queueErrorListeners.forEach((listener) => {
+    try {
+      listener(error);
+    } catch (_listenerError) {
       // Ignore listener errors to keep queue flow resilient.
     }
   });
@@ -102,6 +113,7 @@ export async function flushScannerSalesQueue({ token } = {}) {
       }
 
       scheduleRetry(token);
+      notifyQueueErrorListeners(error);
       return { pending: queue.length, error };
     }
   }
@@ -138,5 +150,16 @@ export function subscribeScannerSalesQueue(listener) {
 
   return () => {
     queueListeners.delete(listener);
+  };
+}
+
+export function subscribeScannerSalesQueueErrors(listener) {
+  if (typeof listener !== 'function') {
+    return () => {};
+  }
+
+  queueErrorListeners.add(listener);
+  return () => {
+    queueErrorListeners.delete(listener);
   };
 }

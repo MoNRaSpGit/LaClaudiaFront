@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-function ScannerManualModal({ isOpen, onClose, onConfirm, onValueChange }) {
+function ScannerManualModal({ isOpen, onClose, onConfirm, onValueChange, errorMessage }) {
   const [value, setValue] = useState('');
 
   function handleConfirm() {
@@ -54,6 +54,7 @@ function ScannerManualModal({ isOpen, onClose, onConfirm, onValueChange }) {
               autoFocus
             />
           </div>
+          {errorMessage ? <p className="mb-3 scanner-inline-error">{errorMessage}</p> : null}
 
           <div className="d-flex gap-2">
             <button type="button" className="btn btn-outline-secondary w-50" onClick={onClose}>

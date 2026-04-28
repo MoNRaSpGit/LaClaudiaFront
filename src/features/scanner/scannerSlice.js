@@ -1,5 +1,7 @@
 import { createSelector, createSlice } from '@reduxjs/toolkit';
 
+const STORAGE_KEY = 'scanner_state_v1';
+
 const initialState = {
   scanBarcode: '',
   scanStatus: 'idle',
@@ -10,6 +12,56 @@ const initialState = {
   liveEditor: null,
   productOverrides: {}
 };
+
+function readPersistedScannerState() {
+  if (typeof window === 'undefined' || typeof window.localStorage === 'undefined') {
+    return null;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') {
+      return null;
+    }
+
+    return {
+      ...initialState,
+      ...parsed,
+      scanStatus: 'idle',
+      scanError: '',
+      scanBarcode: ''
+    };
+  } catch (_error) {
+    return null;
+  }
+}
+
+function persistScannerState(state) {
+  if (typeof window === 'undefined' || typeof window.localStorage === 'undefined') {
+    return;
+  }
+
+  const payload = {
+    cartItems: Array.isArray(state.cartItems) ? state.cartItems : [],
+    lastScannedItemId: state.lastScannedItemId || null,
+    lastScannedAt: state.lastScannedAt || null,
+    liveEditor: state.liveEditor || null,
+    productOverrides: state.productOverrides || {}
+  };
+
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  } catch (_error) {
+    // Ignore persistence errors to keep scanner flow uninterrupted.
+  }
+}
+
+const hydratedInitialState = readPersistedScannerState() || initialState;
 
 function calculateTotals(cartItems = []) {
   return cartItems.reduce(
@@ -65,7 +117,7 @@ function applyProductOverride(product, override) {
 
 const scannerSlice = createSlice({
   name: 'scanner',
-  initialState,
+  initialState: hydratedInitialState,
   reducers: {
     setScanBarcode(state, action) {
       state.scanBarcode = action.payload;
@@ -73,6 +125,7 @@ const scannerSlice = createSlice({
     setScanLoading(state) {
       state.scanStatus = 'loading';
       state.scanError = '';
+      persistScannerState(state);
     },
     addScannedProduct(state, action) {
       const sourceProduct = action.payload || {};
@@ -88,6 +141,7 @@ const scannerSlice = createSlice({
         existing.scannedAt = new Date().toISOString();
         state.lastScannedItemId = existing.id;
         state.lastScannedAt = existing.scannedAt;
+        persistScannerState(state);
         return;
       }
 
@@ -99,10 +153,12 @@ const scannerSlice = createSlice({
       });
       state.lastScannedItemId = product.id;
       state.lastScannedAt = scannedAt;
+      persistScannerState(state);
     },
     setScanError(state, action) {
       state.scanStatus = 'error';
       state.scanError = action.payload;
+      persistScannerState(state);
     },
     decrementCartItem(state, action) {
       const itemId = String(action.payload);
@@ -114,6 +170,7 @@ const scannerSlice = createSlice({
       if (item.quantity <= 0) {
         state.cartItems = state.cartItems.filter((entry) => String(entry.id) !== itemId);
       }
+      persistScannerState(state);
     },
     updateCartItem(state, action) {
       const payload = action.payload || {};
@@ -141,6 +198,7 @@ const scannerSlice = createSlice({
           thumbnail_url: item.thumbnail_url || null
         };
       }
+      persistScannerState(state);
     },
     clearCart(state) {
       state.cartItems = [];
@@ -149,6 +207,7 @@ const scannerSlice = createSlice({
       state.scanBarcode = '';
       state.lastScannedItemId = null;
       state.lastScannedAt = null;
+      persistScannerState(state);
     },
     setLiveEditor(state, action) {
       const payload = action.payload || {};
@@ -158,6 +217,7 @@ const scannerSlice = createSlice({
         description: payload.description || '',
         draft: payload.draft || null
       };
+      persistScannerState(state);
     },
     updateLiveEditorDraft(state, action) {
       if (!state.liveEditor) {
@@ -167,9 +227,16 @@ const scannerSlice = createSlice({
         ...(state.liveEditor.draft || {}),
         ...(action.payload || {})
       };
+      persistScannerState(state);
     },
     clearLiveEditor(state) {
       state.liveEditor = null;
+      persistScannerState(state);
+    },
+    resetScannerState() {
+      const nextState = { ...initialState };
+      persistScannerState(nextState);
+      return nextState;
     }
   }
 });
@@ -182,6 +249,7 @@ export const {
   decrementCartItem,
   updateCartItem,
   clearCart,
+  resetScannerState,
   setLiveEditor,
   updateLiveEditorDraft,
   clearLiveEditor

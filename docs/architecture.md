@@ -57,6 +57,19 @@
   - al guardar/cerrar edicion.
   - al quitar unidad.
   - al cobrar.
+- En listado de ticket, click sobre celda de producto suma `+1` unidad (atajo rapido de operacion).
+
+## Persistencia local operativa
+
+- Auth:
+  - sesion activa persistida en local para tolerar `F5` sin cerrar login.
+  - restauracion de sesion al boot del `AuthGate`.
+- Scanner:
+  - carrito y estado de edicion en vivo persistidos en local para tolerar `F5`.
+  - cola de ventas pendientes persistida para reintentos en background.
+- Cierre de sesion:
+  - se limpia toda la persistencia local de auth/scanner/queue.
+  - se resetea el estado scanner en memoria inmediatamente (sin recarga manual).
 
 ## Flujo principal
 
@@ -69,6 +82,16 @@
 7. `Cobrar` confirma la venta en backend.
 8. Panel recibe metricas/movimientos/ranking en tiempo real por SSE.
 9. Registro de pagos en backend.
+
+## Checkout optimista y notificaciones
+
+- `Cobrar` usa fast-path:
+  - al confirmar, la UI cierra venta en el acto y encola sincronizacion.
+  - toast de exito inmediato para no bloquear flujo por red.
+- Si la sincronizacion falla:
+  - se dispara aviso de error de reintento en segundo plano.
+  - reintentos automaticos con cola local.
+  - anti-spam visual con cooldown para no saturar al operario.
 
 ## Integracion backend actual
 

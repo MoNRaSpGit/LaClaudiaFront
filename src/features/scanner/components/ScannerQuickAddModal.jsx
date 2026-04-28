@@ -5,7 +5,8 @@ function ScannerQuickAddModal({
   barcode,
   onClose,
   onConfirm,
-  onDraftChange
+  onDraftChange,
+  errorMessage = ''
 }) {
   const [value, setValue] = useState('');
 
@@ -69,6 +70,7 @@ function ScannerQuickAddModal({
               autoFocus
             />
           </div>
+          {errorMessage ? <p className="mb-3 scanner-inline-error">{errorMessage}</p> : null}
 
           <div className="d-flex gap-2">
             <button type="button" className="btn btn-outline-secondary w-50" onClick={onClose}>

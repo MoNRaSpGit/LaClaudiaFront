@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { ToastContainer, toast } from 'react-toastify';
 import { useScannerController } from './model/useScannerController';
 import ScannerInput from './components/ScannerInput';
 import ScannerCart from './components/ScannerCart';
@@ -9,8 +10,11 @@ import { publishScannerLiveState } from './services/scanner.api';
 import {
   flushScannerSalesQueue,
   getScannerSalesQueuePendingCount,
-  subscribeScannerSalesQueue
+  subscribeScannerSalesQueue,
+  subscribeScannerSalesQueueErrors
 } from './services/scanner.salesQueue';
+
+const SALE_SYNC_ERROR_TOAST_COOLDOWN_MS = 30000;
 
 function ScannerFeature({ currentUser }) {
   const { scannerState, totals, actions } = useScannerController({ currentUser });
@@ -22,6 +26,7 @@ function ScannerFeature({ currentUser }) {
   });
   const [pendingSalesCount, setPendingSalesCount] = useState(getScannerSalesQueuePendingCount());
   const scannerInputRef = useRef(null);
+  const lastSyncErrorToastAtRef = useRef(0);
 
   const focusScannerInput = useCallback(() => {
     setTimeout(() => {
@@ -67,6 +72,24 @@ function ScannerFeature({ currentUser }) {
       window.removeEventListener('online', handleOnline);
     };
   }, [currentUser?.sessionToken]);
+
+  useEffect(() => {
+    const unsubscribeErrors = subscribeScannerSalesQueueErrors(() => {
+      const now = Date.now();
+      if (now - lastSyncErrorToastAtRef.current < SALE_SYNC_ERROR_TOAST_COOLDOWN_MS) {
+        return;
+      }
+      lastSyncErrorToastAtRef.current = now;
+      toast.error('Hubo un error en la ultima compra. Se reintentara en segundo plano.', {
+        toastId: 'scanner-sale-sync-error',
+        autoClose: 3500
+      });
+    });
+
+    return () => {
+      unsubscribeErrors();
+    };
+  }, []);
 
   useEffect(() => {
     if (!currentUser?.sessionToken || !isOperario) {
@@ -139,8 +162,11 @@ function ScannerFeature({ currentUser }) {
     });
   }
 
+  const modalErrorMessage = isManualModalOpen ? scannerState.scanError : '';
+
   return (
     <>
+      <ToastContainer position="top-right" newestOnTop closeOnClick pauseOnFocusLoss={false} theme="light" />
       <div className="container py-4">
         <div className="row justify-content-center">
           <div className="col-xl-9">
@@ -148,7 +174,6 @@ function ScannerFeature({ currentUser }) {
               ref={scannerInputRef}
               barcode={scannerState.scanBarcode}
               scanStatus={scannerState.scanStatus}
-              scanError={scannerState.scanError}
               onBarcodeChange={actions.setScanBarcode}
               onSubmit={handleScanSubmit}
             />
@@ -184,6 +209,12 @@ function ScannerFeature({ currentUser }) {
                 pendingSalesCount={pendingSalesCount}
                 onCharge={async () => {
                   const ok = await actions.chargeCart();
+                  if (ok) {
+                    toast.success('Compra confirmada', {
+                      toastId: `scanner-sale-ok-${Date.now()}`,
+                      autoClose: 1800
+                    });
+                  }
                   focusScannerInput();
                   return ok;
                 }}
@@ -198,6 +229,7 @@ function ScannerFeature({ currentUser }) {
         onClose={closeManualModal}
         onConfirm={actions.addManualProduct}
         onValueChange={handleManualValueChange}
+        errorMessage={modalErrorMessage}
       />
 
       <ScannerQuickAddModal
@@ -212,3 +244,4 @@ function ScannerFeature({ currentUser }) {
 }
 
 export default ScannerFeature;
+

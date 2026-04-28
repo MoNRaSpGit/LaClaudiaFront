@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { bootAuthShell, loginReal, logoutReal } from '../services/authShell.api';
 
 const REMEMBER_KEY = 'laclau_auth_remember_v1';
+const SESSION_KEY = 'laclau_auth_session_v1';
+const SCANNER_STATE_KEY = 'scanner_state_v1';
+const SCANNER_QUEUE_KEY = 'scanner_sales_queue_v1';
 
 function readRememberedCredentials() {
   if (typeof window === 'undefined') {
@@ -44,6 +47,61 @@ function persistCredentials({ rememberCredentials, username, password }) {
   );
 }
 
+function readSavedSession() {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(SESSION_KEY);
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw);
+    const sessionToken = String(parsed?.sessionToken || '').trim();
+    const role = String(parsed?.role || '').trim();
+    if (!sessionToken || !role) {
+      return null;
+    }
+
+    return {
+      id: parsed?.id || null,
+      name: String(parsed?.name || '').trim() || 'Operario',
+      username: String(parsed?.username || '').trim() || 'operario',
+      role,
+      sessionToken
+    };
+  } catch (_error) {
+    return null;
+  }
+}
+
+function persistSession(user) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const token = String(user?.sessionToken || '').trim();
+  if (!token) {
+    window.localStorage.removeItem(SESSION_KEY);
+    return;
+  }
+
+  window.localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+}
+
+function clearLocalSessionData() {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  window.localStorage.removeItem(SESSION_KEY);
+  window.localStorage.removeItem(REMEMBER_KEY);
+  window.localStorage.removeItem(SCANNER_STATE_KEY);
+  window.localStorage.removeItem(SCANNER_QUEUE_KEY);
+}
+
 export function useAuthGateController() {
   const [phase, setPhase] = useState('booting');
   const [username, setUsername] = useState('');
@@ -55,6 +113,13 @@ export function useAuthGateController() {
 
   useEffect(() => {
     const remembered = readRememberedCredentials();
+    const savedSession = readSavedSession();
+
+    if (savedSession) {
+      setUser(savedSession);
+      setPhase('ready');
+    }
+
     if (remembered) {
       setUsername(remembered.username);
       setPassword(remembered.password);
@@ -72,7 +137,7 @@ export function useAuthGateController() {
       }
 
       setBackendReady(Boolean(boot.backendReady));
-      setPhase('login');
+      setPhase((current) => (current === 'ready' ? current : 'login'));
     }
 
     runBoot();
@@ -112,13 +177,15 @@ export function useAuthGateController() {
         password: normalizedPassword
       });
 
-      setUser({
+      const nextUser = {
         id: loginResult?.user?.id || null,
         name: loginResult?.user?.display_name || normalizedUser || 'Admin',
         username: loginResult?.user?.username || normalizedUser,
         role: loginResult?.user?.role || 'operario',
         sessionToken: loginResult?.session?.token || ''
-      });
+      };
+      setUser(nextUser);
+      persistSession(nextUser);
       setPhase('ready');
     } catch (loginError) {
       setError(loginError?.message || 'No se pudo iniciar sesión.');
@@ -152,7 +219,11 @@ export function useAuthGateController() {
     if (token) {
       logoutReal({ token }).catch(() => {});
     }
+    clearLocalSessionData();
     setUser(null);
+    setUsername('');
+    setPassword('');
+    setRememberCredentials(false);
     setPhase('login');
     setError('');
   }
