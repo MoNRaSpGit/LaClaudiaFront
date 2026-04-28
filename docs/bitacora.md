@@ -16,6 +16,14 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
 - Limpieza:
   - eliminado `src/shared/services/backend.api.js` (acople global legacy).
   - eliminado `SIMULATE_EDITING_BANNER` y `src/shared/config/featureFlags.js` (simulacion legacy).
+- Deploy y produccion:
+  - frontend publicado apuntando a backend Render (`https://laclaudiabackend.onrender.com`).
+  - marca UI actualizada a `Super Nova`.
+- Scanner:
+  - fix de loop/render en modal de edicion.
+  - fix de persistencia de edicion (nombre/precio/imagen) contra backend.
+- Auth UX:
+  - boton rapido `Entrar como Admin` (`admin/1234`) agregado en login.
 
 ## Mini Changelog Tecnico (2026-04-26)
 
@@ -63,7 +71,7 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
   1. ranking sin tope fijo de 5 para que el acordeon 5/10/todos funcione.
   2. metricas de caja filtradas por dia actual.
   3. keys estables en ranking (evita choques por nombre repetido).
-  4. editar producto en scanner ahora guarda cambios reales en carrito.
+  4. editar producto en scanner ahora guarda cambios en carrito y persiste catalogo en backend (`PUT /api/scanner/products/:id`).
   5. guard clause para no consultar backend con barcode vacio.
 - Tests y build del frontend pasan despues de estos ajustes.
 - Conclusion: frontend listo para continuidad de hardening y permisos.
@@ -121,6 +129,10 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
    - abrir modal de valor.
    - crear alta real con barcode + precio + nombre default.
 2. Documentar cierre diario de caja y preparar endpoints de reporting.
+
+## En que quedamos
+
+- hacer text manuales   y ver q errores salen
 
 ## Archivos clave de frontend
 

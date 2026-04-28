@@ -15,7 +15,6 @@
 - `src/features/auth`: boot + login conectado a backend.
 - `src/features/scanner`: flujo scanner completo.
 - `src/features/panelControl`: caja, movimientos, ranking y pagos (desde backend).
-- `src/shared/config`: feature flags.
 - `src/shared/lib`: utilidades reutilizables.
 - `src/shared/services`: cliente HTTP base + servicios transversales.
 - `src/app/store.js`: composicion de slices (scanner).
@@ -77,6 +76,7 @@
 - `POST /api/auth/logout` para cierre de sesion.
 - `POST /api/scanner/sales` para confirmar ventas.
 - `POST /api/scanner/payments` para pagos.
+- `PUT /api/scanner/products/:id` para persistir edicion de catalogo desde scanner.
 - `GET /api/scanner/dashboard` para metricas, movimientos y ranking.
 - `GET /api/scanner/dashboard/stream` para updates en tiempo real (SSE).
 
