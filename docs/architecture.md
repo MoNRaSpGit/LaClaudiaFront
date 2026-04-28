@@ -10,6 +10,23 @@
   - `services`: acceso API.
 - Utilidades transversales en `src/shared/*`.
 
+## Modo de trabajo del proyecto
+
+- Organizacion por capas y por dominio (estilo MVC adaptado a frontend/backend moderno):
+  - cada feature contiene su UI (`components`), logica de casos de uso (`model`) y acceso a datos (`services`).
+- Carpetas separadas por contexto funcional:
+  - `auth`, `scanner`, `panelControl`.
+- Boundary por modulo:
+  - cada feature consume su propia capa `services`.
+  - `shared` solo contiene utilidades/comunes, no reglas de negocio acopladas.
+- Escalabilidad operativa:
+  - evitar mega-componentes y mezclar capas en un solo archivo.
+  - todo cambio nuevo entra en su feature correspondiente.
+  - mantener contratos estables entre frontend y backend.
+- Objetivo de mantenibilidad:
+  - codigo legible para onboarding rapido.
+  - cambios incrementales sin sobre-ingenieria.
+
 ## Estructura actual
 
 - `src/features/auth`: boot + login conectado a backend.
@@ -114,3 +131,19 @@
 - Tests unitarios con Vitest:
   - `scannerSlice` (carrito y totales).
   - utilidades compartidas (`shared/lib/number`).
+
+## Regla de documentacion continua
+
+- Regla fija del proyecto: cambio validado => documentacion en el mismo ciclo.
+- Flujo de cierre recomendado:
+  1. implementar cambio.
+  2. ejecutar pruebas relevantes (unit/e2e/smoke segun alcance).
+  3. push/deploy.
+  4. validar estado final OK.
+  5. documentar inmediatamente.
+- Formato de documentacion (a criterio de la IA segun impacto):
+  - `README` publico breve.
+  - `README.local` operativo interno.
+  - `docs/bitacora.md` como historial tecnico vivo.
+  - `docs/architecture.md` si cambia estructura/criterio arquitectonico.
+  - `docs/daily/*` para sesiones largas o handoff detallado.

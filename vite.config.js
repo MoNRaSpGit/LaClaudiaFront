@@ -6,6 +6,9 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
-    base: env.VITE_BASE_PATH || '/'
+    base: env.VITE_BASE_PATH || '/',
+    test: {
+      exclude: ['tests/e2e/**', 'node_modules/**', 'dist/**']
+    }
   };
 });

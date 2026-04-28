@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import scannerReducer, {
   addScannedProduct,
   decrementCartItem,
+  resetScannerState,
   selectScannerTotals,
   updateCartItem
 } from './scannerSlice';
@@ -64,5 +65,18 @@ describe('scannerSlice', () => {
     expect(state.cartItems[0].nombre).toBe('Leche Entera');
     expect(state.cartItems[0].precio_venta).toBe(55.5);
     expect(state.cartItems[0].thumbnail_url).toBe('https://img.local/leche.jpg');
+  });
+
+  it('resetea estado scanner al cerrar sesion', () => {
+    let state = scannerReducer(undefined, { type: 'init' });
+    state = scannerReducer(state, addScannedProduct(createProduct({ id: 99 })));
+    expect(state.cartItems).toHaveLength(1);
+
+    state = scannerReducer(state, resetScannerState());
+    expect(state.cartItems).toHaveLength(0);
+    expect(state.scanBarcode).toBe('');
+    expect(state.scanError).toBe('');
+    expect(state.lastScannedItemId).toBeNull();
+    expect(state.liveEditor).toBeNull();
   });
 });

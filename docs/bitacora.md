@@ -25,6 +25,15 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
     - anti-spam de toast de error de sincronizacion (cooldown 30s).
     - se evita persistir `localStorage` en cada tecla de `scanBarcode`.
     - limpieza de acciones/props no usadas (`clearScanError`, props vacias redundantes).
+  - calidad:
+    - suite E2E inicial con Playwright:
+      - flujo feliz operario (manual + cobrar + carrito vacio).
+      - flujo resiliente (cobro optimista + falla de sync en background).
+    - tests de contrato API en frontend para `auth` y `scanner`.
+    - smoke post-deploy agregado (`npm run test:smoke:web`) para validar:
+      - frontend home.
+      - backend health.
+      - login opcional via variables de entorno.
 
 - Boundary API por feature aplicado:
   - `auth` deja de depender de `shared/services/backend.api.js`.
@@ -153,6 +162,22 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
 ## En que quedamos
 
 - hacer text manuales   y ver q errores salen
+
+## Regla operativa permanente (documentacion)
+
+- Modo de trabajo acordado:
+  - carpetas por feature y capas separadas (`components`, `model`, `services`), orientado a escalabilidad sin sobre-ingenieria.
+  - boundaries claros por modulo para evitar acople global.
+- Regla de cierre por cada entrega:
+  1. implementar.
+  2. correr test relevante.
+  3. push/deploy.
+  4. validar todo OK.
+  5. documentar en el mismo ciclo.
+- La profundidad de la documentacion queda a criterio de la IA segun impacto del cambio:
+  - actualizar `bitacora`.
+  - actualizar `architecture` si cambia estructura o criterio.
+  - mantener `README` publico breve y `README.local` para notas internas.
 
 ## Archivos clave de frontend
 
