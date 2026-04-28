@@ -151,6 +151,7 @@ function ScannerEditModal({ item, isOpen, onClose, onDraftChange, onApply, onReq
 function ScannerCart({
   items,
   lastScannedItemId,
+  onAddOne,
   onRemoveOne,
   onEditStart,
   onEditDraftChange,
@@ -191,7 +192,27 @@ function ScannerCart({
 
                 return (
                   <tr key={item.id} className={isLatest ? 'scanner-row-latest' : 'scanner-row-default'}>
-                    <td>
+                    <td
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => {
+                        onAddOne(item);
+                        if (onRequestScannerFocus) {
+                          onRequestScannerFocus();
+                        }
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key !== 'Enter' && event.key !== ' ') {
+                          return;
+                        }
+                        event.preventDefault();
+                        onAddOne(item);
+                        if (onRequestScannerFocus) {
+                          onRequestScannerFocus();
+                        }
+                      }}
+                      style={{ cursor: 'pointer' }}
+                    >
                       <div className="d-flex align-items-center gap-3">
                         <ProductThumb name={item.nombre} thumbnailUrl={item.thumbnail_url} />
                         <div>

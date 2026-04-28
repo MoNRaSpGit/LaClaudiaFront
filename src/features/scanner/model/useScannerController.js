@@ -176,6 +176,7 @@ export function useScannerController({ currentUser } = {}) {
       addManualProduct,
       addQuickBarcodeProduct,
       chargeCart,
+      addOneToCart: (item) => dispatch(addScannedProduct(item)),
       removeOneFromCart: (id) => dispatch(decrementCartItem(id)),
       applyCartItemEdit,
       setScanBarcode: (value) => dispatch(setScanBarcode(value)),

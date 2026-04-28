@@ -169,6 +169,7 @@ function ScannerFeature({ currentUser }) {
             <ScannerCart
               items={scannerState.cartItems}
               lastScannedItemId={scannerState.lastScannedItemId}
+              onAddOne={actions.addOneToCart}
               onRemoveOne={actions.removeOneFromCart}
               onEditStart={actions.startProductEditLiveEditor}
               onEditDraftChange={actions.updateLiveEditorDraft}
