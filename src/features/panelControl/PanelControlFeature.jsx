@@ -156,7 +156,7 @@ function PanelControlFeature({ currentUser }) {
           title="Comparación detallada"
           body={(
             <div className="d-grid gap-2">
-              <div className="panel-detail-row"><span>Máximo (récord)</span><strong>{money(controller.comparison.record)}</strong></div>
+              <div className="panel-detail-row"><span>Máximoo (récord)</span><strong>{money(controller.comparison.record)}</strong></div>
               <div className="panel-detail-row"><span>Hoy</span><strong>{money(controller.comparison.today)}</strong></div>
               <div className="panel-detail-row"><span>Hoy vs récord</span><strong className={controller.comparisonVsRecord >= 0 ? 'panel-comparison-positive' : 'panel-comparison-negative'}>{controller.percent(controller.comparisonVsRecord)}</strong></div>
             </div>
