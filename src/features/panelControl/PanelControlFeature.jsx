@@ -19,7 +19,7 @@ function PanelControlFeature({ currentUser }) {
               <div>
                 <p className="panel-hero-kicker mb-1">Caja en vivo</p>
                 <h1 className="panel-hero-title mb-1">Panel de control</h1>
-                <p className="panel-hero-subtitle mb-0">{controller.todayLabel}  seguimiento fiino de caja, scanner y movimientos.</p>
+                <p className="panel-hero-subtitle mb-0">{controller.todayLabel}  seguimiento fino de caja, scanner y movimientos.</p>
               </div>
               <div className="panel-status-stack">
                 <div className="panel-status-open">Abierta</div>
