@@ -6,6 +6,41 @@ function RankingPanel({
   rankingExpandLabel,
   onExpandRanking
 }) {
+  function resolveRankingImage(item = {}) {
+    const candidates = [
+      item.thumbnail_url,
+      item.thumbnailUrl,
+      item.image_url,
+      item.imageUrl,
+      item.imagen,
+      item.image,
+      item.foto,
+      item.foto_url
+    ];
+
+    const raw = candidates.find((value) => String(value || '').trim() !== '');
+    if (!raw) {
+      return '';
+    }
+
+    const value = String(raw).trim();
+    if (value.startsWith('data:') || value.startsWith('http://') || value.startsWith('https://') || value.startsWith('/')) {
+      return value;
+    }
+
+    // If backend sends plain base64, normalize it into a data URL.
+    return `data:image/jpeg;base64,${value}`;
+  }
+
+  function renderThumbnail(item) {
+    const imageUrl = resolveRankingImage(item);
+    if (imageUrl) {
+      return <img src={imageUrl} alt={item?.name || 'Producto'} className="panel-ranking-thumb" loading="lazy" />;
+    }
+
+    return <span className="panel-ranking-thumb panel-ranking-thumb-placeholder">IMG</span>;
+  }
+
   return (
     <article className="panel-block-v2 panel-side-block panel-block-accent-violet">
       <div className="panel-block-header panel-block-title-cell">
@@ -30,6 +65,7 @@ function RankingPanel({
               <li key={`${item.key}-${index}`}>
                 <div className="panel-ranking-left">
                   <span className="panel-ranking-position">#{index + 1}</span>
+                  {renderThumbnail(item)}
                   <span>{item.name}</span>
                 </div>
                 <strong className="panel-ranking-qty">{item.qty} u.</strong>

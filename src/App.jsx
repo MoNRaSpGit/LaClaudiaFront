@@ -13,13 +13,7 @@ function Workspace({ user, onLogout }) {
   const [activeTab, setActiveTab] = useState(canAccessPanel ? 'panel' : 'scanner');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  useEffect(() => {
-    if (canAccessPanel && activeTab !== 'panel') {
-      setActiveTab('panel');
-      return;
-    }
-
-    if (!canAccessPanel && activeTab === 'panel') {
+  useEffect(() => {    if (!canAccessPanel && activeTab === 'panel') {
       setActiveTab('scanner');
     }
   }, [activeTab, canAccessPanel]);
@@ -108,3 +102,4 @@ function App() {
 }
 
 export default App;
+

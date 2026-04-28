@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import { ToastContainer, toast } from 'react-toastify';
 import MetricCard from './components/MetricCard';
 import PanelModal from './components/PanelModal';
 import LiveCartPanel from './components/LiveCartPanel';
@@ -9,9 +11,41 @@ import { usePanelControlController } from './model/usePanelControlController';
 
 function PanelControlFeature({ currentUser }) {
   const controller = usePanelControlController({ currentUser });
+  const [demoStep, setDemoStep] = useState(0);
+
+  const showPart2 = demoStep === 0 || demoStep === 2;
+  const showPart3 = demoStep === 0;
+  const demoLabel = demoStep === 0
+    ? 'Todo visible'
+    : demoStep === 1
+      ? 'Solo Caja diaria'
+      : 'Caja diaria + parte 2';
+
+  function handleCycleDemoView() {
+    setDemoStep((current) => {
+      if (current === 0) {
+        return 1;
+      }
+      if (current === 1) {
+        return 2;
+      }
+      return 0;
+    });
+  }
+
+  async function handlePaymentSubmit(event) {
+    const result = await controller.handleRegisterPayment(event);
+    if (result?.ok) {
+      toast.success('Pago registrado correctamente', {
+        toastId: `panel-payment-ok-${Date.now()}`,
+        autoClose: 1800
+      });
+    }
+  }
 
   return (
     <>
+      <ToastContainer position="top-right" newestOnTop closeOnClick pauseOnFocusLoss={false} theme="light" />
       <div className="container py-4">
         <div className="row justify-content-center">
           <div className="col-xl-11">
@@ -23,14 +57,22 @@ function PanelControlFeature({ currentUser }) {
               </div>
               <div className="panel-status-stack">
                 <div className="panel-status-open">Abierta</div>
-                <div className="panel-status-user">{controller.operatorName}</div>
               </div>
             </section>
 
             <section className="panel-section mb-4">
               <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
                 <h2 className="h5 mb-0 panel-section-title">Caja diaria</h2>
-                {controller.dashboardError ? <small className="text-danger">{controller.dashboardError}</small> : null}
+                <div className="d-flex align-items-center gap-2">
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary"
+                    onClick={handleCycleDemoView}
+                  >
+                    {demoLabel}
+                  </button>
+                  {controller.dashboardError ? <small className="text-danger">{controller.dashboardError}</small> : null}
+                </div>
               </div>
 
               <div className="panel-grid-6-v2">
@@ -57,44 +99,52 @@ function PanelControlFeature({ currentUser }) {
 
             <div className="panel-layout-grid-v2 panel-sections-grid">
               <div className="panel-left-stack">
-                <LiveCartPanel
-                  operatorName={controller.operatorName}
-                  liveEditor={controller.liveEditor}
-                  hasLiveItems={controller.hasLiveItems}
-                  liveTimeLabel={controller.liveTimeLabel}
-                  liveTotal={controller.liveTotal}
-                  liveItems={controller.liveItems}
-                />
+                {showPart2 ? (
+                  <LiveCartPanel
+                    operatorName={controller.operatorName}
+                    liveEditor={controller.liveEditor}
+                    hasLiveItems={controller.hasLiveItems}
+                    liveTimeLabel={controller.liveTimeLabel}
+                    liveTotal={controller.liveTotal}
+                    liveItems={controller.liveItems}
+                  />
+                ) : null}
 
-                <MovementsPanel
-                  hasMovementItems={controller.hasMovementItems}
-                  visibleMovementItems={controller.visibleMovementItems}
-                  canExpandMovements={controller.canExpandMovements}
-                  movementExpandLabel={controller.movementExpandLabel}
-                  expandedMovementId={controller.expandedMovementId}
-                  onToggleMovementDetail={controller.toggleMovementDetail}
-                  onExpandMovements={controller.expandMovements}
-                />
+                {showPart3 ? (
+                  <MovementsPanel
+                    hasMovementItems={controller.hasMovementItems}
+                    visibleMovementItems={controller.visibleMovementItems}
+                    canExpandMovements={controller.canExpandMovements}
+                    movementExpandLabel={controller.movementExpandLabel}
+                    expandedMovementId={controller.expandedMovementId}
+                    onToggleMovementDetail={controller.toggleMovementDetail}
+                    onExpandMovements={controller.expandMovements}
+                  />
+                ) : null}
               </div>
 
               <div className="panel-right-stack">
-                <RankingPanel
-                  hasRankingItems={controller.hasRankingItems}
-                  visibleRankingItems={controller.visibleRankingItems}
-                  rankingDateLabel={controller.rankingDateLabel}
-                  canExpandRanking={controller.canExpandRanking}
-                  rankingExpandLabel={controller.rankingExpandLabel}
-                  onExpandRanking={controller.expandRanking}
-                />
+                {showPart2 ? (
+                  <RankingPanel
+                    hasRankingItems={controller.hasRankingItems}
+                    visibleRankingItems={controller.visibleRankingItems}
+                    rankingDateLabel={controller.rankingDateLabel}
+                    canExpandRanking={controller.canExpandRanking}
+                    rankingExpandLabel={controller.rankingExpandLabel}
+                    onExpandRanking={controller.expandRanking}
+                  />
+                ) : null}
 
+                {showPart3 ? (
                 <PaymentFormPanel
                   paymentAmount={controller.paymentAmount}
                   paymentDescription={controller.paymentDescription}
                   paymentError={controller.paymentError}
                   onChangeAmount={controller.setPaymentAmount}
                   onChangeDescription={controller.setPaymentDescription}
-                  onSubmit={controller.handleRegisterPayment}
+                  onSubmit={handlePaymentSubmit}
                 />
+                ) : null}
               </div>
             </div>
           </div>

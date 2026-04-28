@@ -1,6 +1,7 @@
 function MetricCard({ title, value, hint }) {
+  const isSalesToday = String(title || '').trim().toLowerCase() === 'ventas del día';
   return (
-    <article className="panel-metric-card-v2">
+    <article className={`panel-metric-card-v2 ${isSalesToday ? 'panel-metric-card-highlight-sales' : ''}`}>
       <p className="panel-metric-title">{title}</p>
       <p className="panel-metric-value">{value}</p>
       <p className="panel-metric-hint">{hint}</p>
@@ -9,4 +10,3 @@ function MetricCard({ title, value, hint }) {
 }
 
 export default MetricCard;
-

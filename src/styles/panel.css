@@ -144,6 +144,20 @@
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
 }
 
+.panel-metric-card-highlight-sales {
+  border-color: #5f95cf;
+  background: linear-gradient(180deg, #d8ebff 0%, #bfdfff 100%);
+  box-shadow: 0 8px 18px rgba(28, 82, 140, 0.2);
+}
+
+.panel-metric-card-highlight-sales .panel-metric-title {
+  color: #18467d;
+}
+
+.panel-metric-card-highlight-sales .panel-metric-value {
+  color: #0f3b6d;
+}
+
 .panel-metric-title {
   margin: 0 0 0.25rem;
   font-size: 0.76rem;
@@ -475,6 +489,27 @@
   align-items: center;
   gap: 0.45rem;
   min-width: 0;
+}
+
+.panel-ranking-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  object-fit: cover;
+  border: 1px solid #c8d1de;
+  background: #fff;
+  flex: 0 0 24px;
+}
+
+.panel-ranking-thumb-placeholder {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.56rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  color: #5b6878;
+  background: #e7edf5;
 }
 
 .panel-ranking-position {

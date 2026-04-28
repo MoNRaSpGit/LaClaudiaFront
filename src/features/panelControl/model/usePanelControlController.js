@@ -172,7 +172,12 @@ export function usePanelControlController({ currentUser }) {
     const trimmedDescription = String(paymentDescription || '').trim();
 
     if (parsedAmount === null) {
-      setPaymentError('Ingresa un monto válido mayor a 0.');
+      setPaymentError('Ingresa un monto valido mayor a 0.');
+      return;
+    }
+
+    if (!trimmedDescription) {
+      setPaymentError('La descripcion es obligatoria.');
       return;
     }
 
@@ -188,8 +193,10 @@ export function usePanelControlController({ currentUser }) {
       setPaymentAmount('');
       setPaymentDescription('');
       setPaymentError('');
+      return { ok: true };
     } catch (error) {
       setPaymentError(error.message || 'No se pudo registrar el pago.');
+      return { ok: false };
     }
   }
 
@@ -251,3 +258,5 @@ export function usePanelControlController({ currentUser }) {
     setPaymentDescription
   };
 }
+
+

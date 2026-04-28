@@ -21,4 +21,26 @@ body {
   border-top: 6px solid #20c997;
 }
 
+.app-inline-error {
+  margin: 0;
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid #f5c2c7;
+  background: linear-gradient(180deg, #fff2f3 0%, #ffe5e7 100%);
+  color: #842029;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.app-inline-success {
+  margin: 0;
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid #b8dfc1;
+  background: linear-gradient(180deg, #f3fbf5 0%, #e6f6ea 100%);
+  color: #1f5131;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
 

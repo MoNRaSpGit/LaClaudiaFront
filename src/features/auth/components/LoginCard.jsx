@@ -15,7 +15,7 @@ function LoginCard({
   return (
     <div className="auth-shell">
       <section className="auth-login-card">
-        <h1 className="auth-title mb-1">Iniciar sesión</h1>
+        <h1 className="auth-title mb-1">Iniciar sesi{"\u00F3"}n</h1>
         <p className="auth-subtitle mb-4">
           {backendReady
             ? 'Sistema listo para operar.'
@@ -85,7 +85,7 @@ function LoginCard({
         </form>
 
         <p className="auth-footnote mt-3 mb-0">
-          Acceso rápido disponible para operación de caja (admin y operario).
+          Acceso r{"\u00E1"}pido disponible para operaci{"\u00F3"}n de caja (admin y operario).
         </p>
       </section>
     </div>

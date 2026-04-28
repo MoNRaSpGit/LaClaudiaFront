@@ -22,11 +22,11 @@ function PaymentFormPanel({
           />
           <input
             className="form-control"
-            placeholder="Descripción"
+            placeholder="Descripcion"
             value={paymentDescription}
             onChange={(event) => onChangeDescription(event.target.value)}
           />
-          {paymentError ? <small className="text-danger">{paymentError}</small> : null}
+          {paymentError ? <p className="app-inline-error mb-0">{paymentError}</p> : null}
           <button type="submit" className="btn btn-dark">Registrar pago</button>
         </form>
       </div>
