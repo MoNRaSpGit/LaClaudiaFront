@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+ï»¿import { useEffect, useRef, useState } from 'react';
 import { Wallet, Radio, Trophy, ArrowLeftRight, HandCoins } from 'lucide-react';
 import { ToastContainer, toast } from 'react-toastify';
 import MetricCard from './components/MetricCard';
@@ -7,7 +7,7 @@ import LiveCartPanel from './components/LiveCartPanel';
 import MovementsPanel from './components/MovementsPanel';
 import RankingPanel from './components/RankingPanel';
 import PaymentFormPanel from './components/PaymentFormPanel';
-import { money } from './model/panelControl.formatters';
+import { moneyNoDecimals } from './model/panelControl.formatters';
 import { usePanelControlController } from './model/usePanelControlController';
 
 function PanelControlFeature({ currentUser, onUnauthorized }) {
@@ -185,14 +185,14 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
                 ))}
 
                 <article className="panel-metric-card-v2 panel-comparison-card">
-                  <p className="panel-metric-title">Comparación</p>
+                  <p className="panel-metric-title">Comparaci\u00F3n</p>
                   <div className="panel-comparison-row mb-1">
                     <span>Hoy vs ayer</span>
                     <strong className={controller.comparisonClass}>{controller.percent(controller.comparisonVsYesterday)}</strong>
                   </div>
                   <div className="panel-comparison-values mb-2">
-                    <span>{money(controller.comparison.today)}</span>
-                    <span>{money(controller.comparison.yesterday)}</span>
+                    <span>{moneyNoDecimals(controller.comparison.today)}</span>
+                    <span>{moneyNoDecimals(controller.comparison.yesterday)}</span>
                   </div>
                   <button type="button" className="btn btn-sm btn-outline-secondary panel-comparison-btn" onClick={() => controller.setIsComparisonOpen(true)}>
                     Ver detalle
@@ -226,7 +226,7 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
       </div>
 
       {isMobileLayout ? (
-        <nav className="panel-mobile-bottom-nav" aria-label="Navegación de secciones del panel">
+        <nav className="panel-mobile-bottom-nav" aria-label="NavegaciÃ³n de secciones del panel">
           <button type="button" className={`panel-mobile-bottom-btn ${activeMobileSection === 'daily' ? 'panel-mobile-bottom-btn-active' : ''}`} onClick={() => scrollToSection('daily')}>
             <Wallet size={16} />
             <span>Caja</span>
@@ -252,12 +252,12 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
 
       {controller.isComparisonOpen ? (
         <PanelModal
-          title="Comparación detallada"
+          title="Comparaci\u00F3n detallada"
           body={(
             <div className="d-grid gap-2">
-              <div className="panel-detail-row"><span>Máximo (récord)</span><strong>{money(controller.comparison.record)}</strong></div>
-              <div className="panel-detail-row"><span>Hoy</span><strong>{money(controller.comparison.today)}</strong></div>
-              <div className="panel-detail-row"><span>Hoy vs récord</span><strong className={controller.comparisonVsRecord >= 0 ? 'panel-comparison-positive' : 'panel-comparison-negative'}>{controller.percent(controller.comparisonVsRecord)}</strong></div>
+              <div className="panel-detail-row"><span>M\u00E1ximo (r\u00E9cord)</span><strong>{moneyNoDecimals(controller.comparison.record)}</strong></div>
+              <div className="panel-detail-row"><span>Hoy</span><strong>{moneyNoDecimals(controller.comparison.today)}</strong></div>
+              <div className="panel-detail-row"><span>Hoy vs r\u00E9cord</span><strong className={controller.comparisonVsRecord >= 0 ? 'panel-comparison-positive' : 'panel-comparison-negative'}>{controller.percent(controller.comparisonVsRecord)}</strong></div>
             </div>
           )}
           onClose={() => controller.setIsComparisonOpen(false)}
@@ -268,4 +268,5 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
 }
 
 export default PanelControlFeature;
+
 
