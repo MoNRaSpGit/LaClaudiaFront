@@ -7,6 +7,22 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
 ## Mini Changelog Tecnico (2026-04-27)
 
 - Scanner UX y resiliencia (2026-04-28):
+  - Fix critico login/logout (2026-04-29):
+    - corregido cuelgue intermitente al reloguear despues de logout.
+    - causa principal: requests de `login/logout` sin timeout podian quedar colgadas cuando backend estaba frio/lento.
+    - solucion aplicada:
+      - `fetchWithTimeout` en auth shell.
+      - timeout `login`: 12s.
+      - timeout `logout`: 8s.
+      - mensaje de error controlado al abortar por timeout para volver a estado de login sin bloquear UI.
+    - estabilidad adicional en caja en vivo:
+      - limpieza de `scanner_state_v1` al iniciar sesion.
+      - al desmontar scanner de operario se publica estado vivo vacio (`items: []`) para evitar residuos en panel.
+      - fallback de nombre en panel en vivo ajustado a `Operario` (ya no `Admin` cuando no hay fuente remota real).
+    - validacion tecnica:
+      - `npm run build` OK.
+      - `npm run test -- --run` OK.
+      - `npm run test:smoke:web` OK.
   - Limpieza final de laboratorio (2026-04-29):
     - se removio por completo el flujo experimental de pago app/cliente.
     - eliminado laboratorio en scanner:

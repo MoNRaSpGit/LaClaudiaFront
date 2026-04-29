@@ -125,6 +125,22 @@ function ScannerFeature({ currentUser }) {
     scannerState.liveEditor
   ]);
 
+  useEffect(() => {
+    if (!currentUser?.sessionToken || !isOperario) {
+      return;
+    }
+
+    return () => {
+      publishScannerLiveState({
+        items: [],
+        lastScannedAt: null,
+        liveEditor: null
+      }, {
+        token: currentUser.sessionToken
+      }).catch(() => {});
+    };
+  }, [currentUser?.sessionToken, isOperario]);
+
   const handleManualValueChange = useCallback(
     (rawValue) => {
       actions.updateLiveEditorDraft({

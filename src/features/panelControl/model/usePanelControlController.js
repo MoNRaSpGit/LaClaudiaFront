@@ -147,7 +147,7 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
   const canExpandRanking = rankingItems.length > visibleRankingCount;
   const movementExpandLabel = visibleMovementsCount <= 3 ? 'Ver 3 más' : 'Ver todos';
   const rankingExpandLabel = visibleRankingCount <= 5 ? 'Ver 5 más' : 'Ver todos';
-  const operatorName = String(remoteLiveScanner?.operator?.display_name || '').trim() || currentUser?.name || 'Admin';
+  const operatorName = String(remoteLiveScanner?.operator?.display_name || '').trim() || 'Operario';
   const rankingDateLabel = useMemo(() => {
     const rawDate = String(dashboard?.date || '').trim();
     if (/^\d{4}-\d{2}-\d{2}$/.test(rawDate)) {

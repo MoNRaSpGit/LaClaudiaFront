@@ -185,6 +185,9 @@ export function useAuthGateController() {
         username: normalizedUser,
         password: normalizedPassword
       });
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem(SCANNER_STATE_KEY);
+      }
       persistCredentials({
         rememberCredentials,
         username: normalizedUser,
