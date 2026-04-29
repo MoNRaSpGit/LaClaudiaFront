@@ -1,4 +1,4 @@
-const CACHE_NAME = 'super-nova-app-v1';
+const CACHE_NAME = 'super-nova-app-v2';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -25,22 +25,33 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
+  const isNavigation = event.request.mode === 'navigate';
 
-      return fetch(event.request)
-        .then((networkResponse) => {
-          const isHttp = event.request.url.startsWith('http');
-          if (isHttp && networkResponse && networkResponse.status === 200) {
-            const copy = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
-          }
-          return networkResponse;
+  if (isNavigation) {
+    // Navigation should prefer fresh HTML to avoid white screen from stale bundles.
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put('./index.html', copy));
+          return response;
         })
-        .catch(() => caches.match('./index.html'));
-    })
+        .catch(() => caches.match('./index.html'))
+    );
+    return;
+  }
+
+  // For static assets, prefer network and keep cache as fallback.
+  event.respondWith(
+    fetch(event.request)
+      .then((response) => {
+        const isHttp = event.request.url.startsWith('http');
+        if (isHttp && response && response.status === 200) {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+        }
+        return response;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
