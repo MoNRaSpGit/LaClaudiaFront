@@ -21,6 +21,8 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
     - nota operativa de permisos QZ:
       - al no usar firma/certificado confiable, QZ puede pedir confirmacion de seguridad.
       - se priorizo no disparar prompts en `F5`; los permisos se solicitan al imprimir.
+    - limpieza de laboratorio:
+      - removidos flujos temporales de laboratorio (barcode cliente y pruebas de corte) para volver a flujo operativo estable.
   - Hardening de sesion en Panel SSE (2026-04-29):
     - manejo explicito de `401 Unauthorized` al abrir `GET /api/scanner/dashboard/stream`.
     - se evita bucle de reconexion cuando el token expiro/revocado.

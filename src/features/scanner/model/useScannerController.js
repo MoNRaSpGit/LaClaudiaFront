@@ -192,6 +192,7 @@ export function useScannerController({ currentUser } = {}) {
       removeOneFromCart: (id) => dispatch(decrementCartItem(id)),
       applyCartItemEdit,
       setScanBarcode: (value) => dispatch(setScanBarcode(value)),
+      clearScanError: () => dispatch(setScanError('')),
       startManualLiveEditor: () => dispatch(
         setLiveEditor({
           type: 'manual',

@@ -135,6 +135,7 @@ function ScannerFeature({ currentUser }) {
 
   function closeManualModal() {
     setIsManualModalOpen(false);
+    actions.clearScanError();
     actions.stopLiveEditor();
     focusScannerInput();
   }
@@ -185,6 +186,7 @@ function ScannerFeature({ currentUser }) {
                 type="button"
                 className="btn scanner-manual-btn"
                 onClick={() => {
+                  actions.clearScanError();
                   actions.startManualLiveEditor();
                   setIsManualModalOpen(true);
                 }}
