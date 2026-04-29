@@ -27,6 +27,9 @@ function ScannerFeature({ currentUser }) {
     barcode: ''
   });
   const [pendingSalesCount, setPendingSalesCount] = useState(getScannerSalesQueuePendingCount());
+  const [isCheckoutConfirmOpen, setIsCheckoutConfirmOpen] = useState(false);
+  const [openConfirmSignal, setOpenConfirmSignal] = useState(0);
+  const [confirmByEnterSignal, setConfirmByEnterSignal] = useState(0);
   const scannerInputRef = useRef(null);
   const lastSyncErrorToastAtRef = useRef(0);
 
@@ -149,7 +152,51 @@ function ScannerFeature({ currentUser }) {
     focusScannerInput();
   }
 
+  const executeCharge = useCallback(async () => {
+    const result = await actions.chargeCart();
+    if (result?.ok) {
+      toast.success('Compra confirmada', {
+        toastId: `scanner-sale-ok-${Date.now()}`,
+        autoClose: 1800
+      });
+
+      const ticketPayload = {
+        ...result.ticket,
+        storeName: 'Super Nova'
+      };
+
+      try {
+        await printSaleTicketByQz(ticketPayload);
+      } catch (error) {
+        try {
+          await printSaleTicket(ticketPayload);
+          toast.warn('QZ fallo, se abrio impresion del navegador como respaldo.', {
+            toastId: `scanner-print-fallback-${Date.now()}`,
+            autoClose: 2600
+          });
+        } catch {
+          toast.error(`No se pudo imprimir: ${error?.message || 'Error de QZ.'}`, {
+            toastId: `scanner-print-fail-${Date.now()}`,
+            autoClose: 3200
+          });
+        }
+      }
+    }
+    focusScannerInput();
+    return Boolean(result?.ok);
+  }, [actions, focusScannerInput]);
+
   async function handleScanSubmit() {
+    const normalizedBarcode = String(scannerState.scanBarcode || '').trim();
+    if (!normalizedBarcode && scannerState.cartItems.length > 0) {
+      if (!isCheckoutConfirmOpen) {
+        setOpenConfirmSignal((value) => value + 1);
+        return;
+      }
+      setConfirmByEnterSignal((value) => value + 1);
+      return;
+    }
+
     const scanResult = await actions.scanCurrentBarcode();
     if (scanResult?.code !== 'NOT_FOUND') {
       return;
@@ -211,39 +258,10 @@ function ScannerFeature({ currentUser }) {
               <ScannerCheckout
                 total={totals.total}
                 pendingSalesCount={pendingSalesCount}
-                onCharge={async () => {
-                  const result = await actions.chargeCart();
-                  if (result?.ok) {
-                    toast.success('Compra confirmada', {
-                      toastId: `scanner-sale-ok-${Date.now()}`,
-                      autoClose: 1800
-                    });
-
-                    const ticketPayload = {
-                      ...result.ticket,
-                      storeName: 'Super Nova'
-                    };
-
-                    try {
-                      await printSaleTicketByQz(ticketPayload);
-                    } catch (error) {
-                      try {
-                        await printSaleTicket(ticketPayload);
-                        toast.warn('QZ fallo, se abrio impresion del navegador como respaldo.', {
-                          toastId: `scanner-print-fallback-${Date.now()}`,
-                          autoClose: 2600
-                        });
-                      } catch {
-                        toast.error(`No se pudo imprimir: ${error?.message || 'Error de QZ.'}`, {
-                          toastId: `scanner-print-fail-${Date.now()}`,
-                          autoClose: 3200
-                        });
-                      }
-                    }
-                  }
-                  focusScannerInput();
-                  return Boolean(result?.ok);
-                }}
+                onCharge={executeCharge}
+                openConfirmSignal={openConfirmSignal}
+                confirmByEnterSignal={confirmByEnterSignal}
+                onConfirmModalOpenChange={setIsCheckoutConfirmOpen}
               />
             ) : null}
           </div>

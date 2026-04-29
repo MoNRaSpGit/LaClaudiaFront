@@ -1,8 +1,48 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
-function ScannerCheckout({ total, pendingSalesCount = 0, onCharge }) {
+function ScannerCheckout({
+  total,
+  pendingSalesCount = 0,
+  onCharge,
+  openConfirmSignal = 0,
+  confirmByEnterSignal = 0,
+  onConfirmModalOpenChange
+}) {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  async function handleConfirm() {
+    if (isSubmitting) {
+      return;
+    }
+    setIsSubmitting(true);
+    const ok = await onCharge();
+    setIsSubmitting(false);
+    if (ok) {
+      setIsConfirmOpen(false);
+    }
+  }
+
+  useEffect(() => {
+    if (openConfirmSignal <= 0) {
+      return;
+    }
+    setIsConfirmOpen(true);
+  }, [openConfirmSignal]);
+
+  useEffect(() => {
+    if (confirmByEnterSignal <= 0) {
+      return;
+    }
+    if (!isConfirmOpen) {
+      return;
+    }
+    handleConfirm();
+  }, [confirmByEnterSignal, isConfirmOpen]);
+
+  useEffect(() => {
+    onConfirmModalOpenChange?.(isConfirmOpen);
+  }, [isConfirmOpen, onConfirmModalOpenChange]);
 
   return (
     <>
@@ -60,14 +100,7 @@ function ScannerCheckout({ total, pendingSalesCount = 0, onCharge }) {
                 type="button"
                 className="btn btn-dark w-50"
                 disabled={isSubmitting}
-                onClick={async () => {
-                  setIsSubmitting(true);
-                  const ok = await onCharge();
-                  setIsSubmitting(false);
-                  if (ok) {
-                    setIsConfirmOpen(false);
-                  }
-                }}
+                onClick={handleConfirm}
               >
                 {isSubmitting ? 'Confirmando...' : 'Confirmar'}
               </button>
