@@ -106,7 +106,7 @@ function Workspace({ user, onLogout }) {
 
       {activeTab === 'scanner' || !canAccessPanel
         ? <ScannerFeature currentUser={user} />
-        : <PanelControlFeature currentUser={user} />}
+        : <PanelControlFeature currentUser={user} onUnauthorized={handleLogout} />}
     </div>
   );
 }

@@ -29,7 +29,7 @@ export function useScannerController({ currentUser } = {}) {
   async function scanCurrentBarcode() {
     const normalizedBarcode = String(scannerState.scanBarcode || '').trim();
     if (!normalizedBarcode) {
-      dispatch(setScanError('Ingresa un barcode válido para escanear.'));
+      dispatch(setScanError('Ingresa un barcode valido para escanear.'));
       return { ok: false, code: 'EMPTY_BARCODE' };
     }
 
@@ -40,7 +40,7 @@ export function useScannerController({ currentUser } = {}) {
       return { ok: true };
     } catch (error) {
       if (isBarcodeNotFoundError(error)) {
-        dispatch(setScanError(`Barcode ${normalizedBarcode} no encontrado. Carga rápida habilitada.`));
+        dispatch(setScanError(`Barcode ${normalizedBarcode} no encontrado. Carga rapida habilitada.`));
         return {
           ok: false,
           code: 'NOT_FOUND',
@@ -56,7 +56,7 @@ export function useScannerController({ currentUser } = {}) {
     const manualPrice = parsePositiveAmount(rawValue);
 
     if (manualPrice === null) {
-      dispatch(setScanError('Ingresa un valor numérico válido mayor a 0.'));
+      dispatch(setScanError('Ingresa un valor numerico valido mayor a 0.'));
       return false;
     }
 
@@ -82,7 +82,7 @@ export function useScannerController({ currentUser } = {}) {
   function addQuickBarcodeProduct({ barcode, rawValue }) {
     const manualPrice = parsePositiveAmount(rawValue);
     if (manualPrice === null) {
-      dispatch(setScanError('Ingresa un valor numérico válido mayor a 0.'));
+      dispatch(setScanError('Ingresa un valor numerico valido mayor a 0.'));
       return false;
     }
 
@@ -121,11 +121,13 @@ export function useScannerController({ currentUser } = {}) {
 
     if (!snapshotItems.length) {
       dispatch(clearCart());
-      return false;
+      return { ok: false, code: 'EMPTY_CART' };
     }
 
+    const chargedAtIso = new Date().toISOString();
+    const externalId = `sale-${Date.now()}`;
     const payload = {
-      externalId: `sale-${Date.now()}`,
+      externalId,
       userId: currentUser?.id || null,
       items: snapshotItems
     };
@@ -136,7 +138,17 @@ export function useScannerController({ currentUser } = {}) {
       payload,
       token: currentUser?.sessionToken || ''
     });
-    return true;
+
+    return {
+      ok: true,
+      ticket: {
+        externalId,
+        chargedAtIso,
+        operatorName: currentUser?.display_name || currentUser?.username || 'Operario',
+        items: snapshotItems,
+        total: snapshotItems.reduce((sum, item) => sum + Number(item.precio_venta || 0) * Number(item.quantity || 1), 0)
+      }
+    };
   }
 
   async function applyCartItemEdit(payload) {
@@ -163,7 +175,7 @@ export function useScannerController({ currentUser } = {}) {
       );
       return true;
     } catch (error) {
-      dispatch(setScanError(error?.message || 'No se pudo guardar el cambio en catálogo.'));
+      dispatch(setScanError(error?.message || 'No se pudo guardar el cambio en catalogo.'));
       return false;
     }
   }
@@ -184,7 +196,7 @@ export function useScannerController({ currentUser } = {}) {
         setLiveEditor({
           type: 'manual',
           title: 'Producto manual',
-          description: 'El operario está cargando un producto manualmente. La caja lo ve en vivo mientras el modal sigue abierto.',
+          description: 'El operario esta cargando un producto manualmente. La caja lo ve en vivo mientras el modal sigue abierto.',
           draft: { nombre: 'Producto Manual', precio_venta_raw: '', precio_venta: 0 }
         })
       ),
@@ -206,7 +218,7 @@ export function useScannerController({ currentUser } = {}) {
         setLiveEditor({
           type: 'quick_add',
           title: 'Barcode no encontrado',
-          description: 'Alta rápida en caja sin cortar flujo.',
+          description: 'Alta rapida en caja sin cortar flujo.',
           draft: {
             barcode: String(barcode || ''),
             nombre: 'Producto Manual',

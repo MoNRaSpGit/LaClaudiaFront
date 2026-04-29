@@ -41,6 +41,8 @@
 - `ScannerFeature.jsx`: compose UI principal.
 - `model/useScannerController.js`: controlador de casos de uso.
 - `services/scanner.api.js`: acceso HTTP al backend.
+- `services/scanner.qzPrint.js`: impresion termica RAW (`ESC/POS`) via QZ Tray.
+- `services/scanner.print.js`: fallback de impresion por navegador (`window.print`).
 - `scannerSlice.js`: estado de scanner y ticket.
 - `components/*`: UI desacoplada.
 
@@ -75,6 +77,9 @@
   - al quitar unidad.
   - al cobrar.
 - En listado de ticket, click sobre celda de producto suma `+1` unidad (atajo rapido de operacion).
+- Al confirmar cobro, se dispara impresion automatica de ticket:
+  - primer canal: QZ Tray + ESC/POS.
+  - fallback: ventana de impresion navegador si falla QZ.
 
 ## Persistencia local operativa
 
@@ -119,6 +124,18 @@
 - `PUT /api/scanner/products/:id` para persistir edicion de catalogo desde scanner.
 - `GET /api/scanner/dashboard` para metricas, movimientos y ranking.
 - `GET /api/scanner/dashboard/stream` para updates en tiempo real (SSE).
+
+## Impresion de tickets (scanner)
+
+- Estrategia primaria:
+  - RAW `ESC/POS` usando `qz-tray`.
+  - Impresora fisica seleccionada con cache local (entorno actual: `ImpRamon`).
+  - Exclusión de impresoras virtuales para evitar `Print to PDF` accidental.
+- Estrategia fallback:
+  - render HTML 80mm e impresion por navegador.
+- Formato operativo:
+  - encabezado/pie centrado.
+  - detalle en 3 columnas fijas: `Produc.` / `Cant.` / `Subtotal`.
 
 ## Fuente de verdad de tiempo
 

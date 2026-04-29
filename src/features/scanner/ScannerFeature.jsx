@@ -7,6 +7,8 @@ import ScannerCheckout from './components/ScannerCheckout';
 import ScannerManualModal from './components/ScannerManualModal';
 import ScannerQuickAddModal from './components/ScannerQuickAddModal';
 import { publishScannerLiveState } from './services/scanner.api';
+import { printSaleTicket } from './services/scanner.print';
+import { printSaleTicketByQz } from './services/scanner.qzPrint';
 import {
   flushScannerSalesQueue,
   getScannerSalesQueuePendingCount,
@@ -208,15 +210,37 @@ function ScannerFeature({ currentUser }) {
                 total={totals.total}
                 pendingSalesCount={pendingSalesCount}
                 onCharge={async () => {
-                  const ok = await actions.chargeCart();
-                  if (ok) {
+                  const result = await actions.chargeCart();
+                  if (result?.ok) {
                     toast.success('Compra confirmada', {
                       toastId: `scanner-sale-ok-${Date.now()}`,
                       autoClose: 1800
                     });
+
+                    const ticketPayload = {
+                      ...result.ticket,
+                      storeName: 'Super Nova'
+                    };
+
+                    try {
+                      await printSaleTicketByQz(ticketPayload);
+                    } catch (error) {
+                      try {
+                        await printSaleTicket(ticketPayload);
+                        toast.warn('QZ fallo, se abrio impresion del navegador como respaldo.', {
+                          toastId: `scanner-print-fallback-${Date.now()}`,
+                          autoClose: 2600
+                        });
+                      } catch {
+                        toast.error(`No se pudo imprimir: ${error?.message || 'Error de QZ.'}`, {
+                          toastId: `scanner-print-fail-${Date.now()}`,
+                          autoClose: 3200
+                        });
+                      }
+                    }
                   }
                   focusScannerInput();
-                  return ok;
+                  return Boolean(result?.ok);
                 }}
               />
             ) : null}
@@ -244,4 +268,3 @@ function ScannerFeature({ currentUser }) {
 }
 
 export default ScannerFeature;
-

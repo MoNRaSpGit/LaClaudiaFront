@@ -21,7 +21,7 @@ const EMPTY_DASHBOARD = {
   ranking: []
 };
 
-export function usePanelControlController({ currentUser }) {
+export function usePanelControlController({ currentUser, onUnauthorized }) {
   const [dashboard, setDashboard] = useState(EMPTY_DASHBOARD);
   const [remoteLiveScanner, setRemoteLiveScanner] = useState(null);
   const [dashboardError, setDashboardError] = useState('');
@@ -64,6 +64,11 @@ export function usePanelControlController({ currentUser }) {
           if (!isMounted) {
             return;
           }
+          if (Number(error?.status) === 401) {
+            setDashboardError('Sesion expirada. Inicia sesion nuevamente.');
+            onUnauthorized?.();
+            return;
+          }
           setDashboardError(error?.message || 'No se pudo cargar dashboard en tiempo real');
           clearTimeout(reconnectTimeout);
           reconnectTimeout = setTimeout(connect, 2500);
@@ -78,7 +83,7 @@ export function usePanelControlController({ currentUser }) {
       clearTimeout(reconnectTimeout);
       unsubscribe();
     };
-  }, [currentUser?.sessionToken]);
+  }, [currentUser?.sessionToken, onUnauthorized]);
 
   const panelMetrics = dashboard.metrics || EMPTY_DASHBOARD.metrics;
   const comparison = dashboard.comparison || EMPTY_DASHBOARD.comparison;

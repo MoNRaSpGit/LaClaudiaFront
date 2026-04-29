@@ -88,7 +88,9 @@ export function subscribePanelDashboard(params) {
       });
 
       if (!response.ok) {
-        throw new Error(`No se pudo abrir stream dashboard (HTTP ${response.status})`);
+        const authError = new Error(`No se pudo abrir stream dashboard (HTTP ${response.status})`);
+        authError.status = response.status;
+        throw authError;
       }
 
       if (!response.body) {

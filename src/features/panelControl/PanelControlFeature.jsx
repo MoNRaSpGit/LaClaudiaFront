@@ -1,4 +1,4 @@
-ï»¿import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Wallet, Radio, Trophy, ArrowLeftRight, HandCoins } from 'lucide-react';
 import { ToastContainer, toast } from 'react-toastify';
 import MetricCard from './components/MetricCard';
@@ -10,8 +10,24 @@ import PaymentFormPanel from './components/PaymentFormPanel';
 import { money } from './model/panelControl.formatters';
 import { usePanelControlController } from './model/usePanelControlController';
 
-function PanelControlFeature({ currentUser }) {
-  const controller = usePanelControlController({ currentUser });
+function PanelControlFeature({ currentUser, onUnauthorized }) {
+  const unauthorizedHandledRef = useRef(false);
+  const controller = usePanelControlController({
+    currentUser,
+    onUnauthorized: () => {
+      if (unauthorizedHandledRef.current) {
+        return;
+      }
+      unauthorizedHandledRef.current = true;
+      toast.warn('Sesion vencida. Inicia sesion nuevamente.', {
+        toastId: 'panel-session-expired',
+        autoClose: 1700
+      });
+      window.setTimeout(() => {
+        onUnauthorized?.();
+      }, 900);
+    }
+  });
   const [isMobileLayout, setIsMobileLayout] = useState(false);
   const [activeMobileSection, setActiveMobileSection] = useState('daily');
 
@@ -169,7 +185,7 @@ function PanelControlFeature({ currentUser }) {
                 ))}
 
                 <article className="panel-metric-card-v2 panel-comparison-card">
-                  <p className="panel-metric-title">ComparaciÃ³n</p>
+                  <p className="panel-metric-title">Comparación</p>
                   <div className="panel-comparison-row mb-1">
                     <span>Hoy vs ayer</span>
                     <strong className={controller.comparisonClass}>{controller.percent(controller.comparisonVsYesterday)}</strong>
@@ -210,7 +226,7 @@ function PanelControlFeature({ currentUser }) {
       </div>
 
       {isMobileLayout ? (
-        <nav className="panel-mobile-bottom-nav" aria-label="NavegaciÃ³n de secciones del panel">
+        <nav className="panel-mobile-bottom-nav" aria-label="Navegación de secciones del panel">
           <button type="button" className={`panel-mobile-bottom-btn ${activeMobileSection === 'daily' ? 'panel-mobile-bottom-btn-active' : ''}`} onClick={() => scrollToSection('daily')}>
             <Wallet size={16} />
             <span>Caja</span>
@@ -236,12 +252,12 @@ function PanelControlFeature({ currentUser }) {
 
       {controller.isComparisonOpen ? (
         <PanelModal
-          title="ComparaciÃ³n detallada"
+          title="Comparación detallada"
           body={(
             <div className="d-grid gap-2">
-              <div className="panel-detail-row"><span>MÃ¡ximo (rÃ©cord)</span><strong>{money(controller.comparison.record)}</strong></div>
+              <div className="panel-detail-row"><span>Máximo (récord)</span><strong>{money(controller.comparison.record)}</strong></div>
               <div className="panel-detail-row"><span>Hoy</span><strong>{money(controller.comparison.today)}</strong></div>
-              <div className="panel-detail-row"><span>Hoy vs rÃ©cord</span><strong className={controller.comparisonVsRecord >= 0 ? 'panel-comparison-positive' : 'panel-comparison-negative'}>{controller.percent(controller.comparisonVsRecord)}</strong></div>
+              <div className="panel-detail-row"><span>Hoy vs récord</span><strong className={controller.comparisonVsRecord >= 0 ? 'panel-comparison-positive' : 'panel-comparison-negative'}>{controller.percent(controller.comparisonVsRecord)}</strong></div>
             </div>
           )}
           onClose={() => controller.setIsComparisonOpen(false)}
@@ -252,3 +268,4 @@ function PanelControlFeature({ currentUser }) {
 }
 
 export default PanelControlFeature;
+

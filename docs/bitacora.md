@@ -7,6 +7,25 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
 ## Mini Changelog Tecnico (2026-04-27)
 
 - Scanner UX y resiliencia (2026-04-28):
+  - Impresion de ticket por QZ Tray (2026-04-29):
+    - tecnologia activa: `qz-tray` + RAW `ESC/POS` desde frontend.
+    - flujo operativo actual: `Confirmar cobro` => imprimir ticket automatico.
+    - fallback de resiliencia: si QZ falla, abre impresion de navegador (`window.print`) para no cortar caja.
+    - selector de impresora:
+      - preferencia cacheada por nombre (`ImpRamon` en entorno actual).
+      - filtro de impresoras virtuales (`PDF/XPS/Fax/OneNote`) para evitar falsos positivos.
+    - formato ticket termico:
+      - header y footer centrados por comando ESC/POS.
+      - cuerpo tabular en 3 columnas: `Produc.` / `Cant.` / `Subtotal`.
+      - eliminado detalle duplicado `1x + precio unitario` por linea.
+    - nota operativa de permisos QZ:
+      - al no usar firma/certificado confiable, QZ puede pedir confirmacion de seguridad.
+      - se priorizo no disparar prompts en `F5`; los permisos se solicitan al imprimir.
+  - Hardening de sesion en Panel SSE (2026-04-29):
+    - manejo explicito de `401 Unauthorized` al abrir `GET /api/scanner/dashboard/stream`.
+    - se evita bucle de reconexion cuando el token expiro/revocado.
+    - se muestra toast `Sesion vencida. Inicia sesion nuevamente.` y luego logout automatico.
+    - wiring de `onUnauthorized` desde `App` hacia `PanelControlFeature`/controller para cierre de sesion consistente.
   - Registro de pagos optimizado para baja latencia percibida:
     - submit optimista en frontend (toast OK inmediato + sync backend en segundo plano).
     - estado `Registrando...` para evitar doble submit.
