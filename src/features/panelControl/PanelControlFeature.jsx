@@ -185,7 +185,7 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
                 ))}
 
                 <article className="panel-metric-card-v2 panel-comparison-card">
-                  <p className="panel-metric-title">Comparaci\u00F3n</p>
+                  <p className="panel-metric-title">Comparación</p>
                   <div className="panel-comparison-row mb-1">
                     <span>Hoy vs ayer</span>
                     <strong className={controller.comparisonClass}>{controller.percent(controller.comparisonVsYesterday)}</strong>
@@ -252,12 +252,12 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
 
       {controller.isComparisonOpen ? (
         <PanelModal
-          title="Comparaci\u00F3n detallada"
+          title="Comparación detallada"
           body={(
             <div className="d-grid gap-2">
-              <div className="panel-detail-row"><span>M\u00E1ximo (r\u00E9cord)</span><strong>{moneyNoDecimals(controller.comparison.record)}</strong></div>
+              <div className="panel-detail-row"><span>Máximo (récord)</span><strong>{moneyNoDecimals(controller.comparison.record)}</strong></div>
               <div className="panel-detail-row"><span>Hoy</span><strong>{moneyNoDecimals(controller.comparison.today)}</strong></div>
-              <div className="panel-detail-row"><span>Hoy vs r\u00E9cord</span><strong className={controller.comparisonVsRecord >= 0 ? 'panel-comparison-positive' : 'panel-comparison-negative'}>{controller.percent(controller.comparisonVsRecord)}</strong></div>
+              <div className="panel-detail-row"><span>Hoy vs récord</span><strong className={controller.comparisonVsRecord >= 0 ? 'panel-comparison-positive' : 'panel-comparison-negative'}>{controller.percent(controller.comparisonVsRecord)}</strong></div>
             </div>
           )}
           onClose={() => controller.setIsComparisonOpen(false)}
@@ -268,5 +268,3 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
 }
 
 export default PanelControlFeature;
-
-

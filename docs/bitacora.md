@@ -7,6 +7,18 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
 ## Mini Changelog Tecnico (2026-04-27)
 
 - Scanner UX y resiliencia (2026-04-28):
+  - Limpieza final de laboratorio (2026-04-29):
+    - se removio por completo el flujo experimental de pago app/cliente.
+    - eliminado laboratorio en scanner:
+      - generacion QR y simulaciones.
+      - estado de cuenta simulado.
+      - boton `Pagar` y confirmaciones de laboratorio.
+    - eliminado laboratorio en panel admin:
+      - popup `quiere pagar`.
+      - sincronizacion local por storage/polling para decisiones de laboratorio.
+    - eliminado archivo de canal temporal:
+      - `src/shared/services/labPaymentChannel.js`.
+    - resultado: queda solo flujo operativo productivo (scanner + cobro + ticket + panel), sin componentes de prueba activos.
   - Impresion de ticket por QZ Tray (2026-04-29):
     - tecnologia activa: `qz-tray` + RAW `ESC/POS` desde frontend.
     - flujo operativo actual: `Confirmar cobro` => imprimir ticket automatico.

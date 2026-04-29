@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+﻿import { useCallback, useEffect, useRef, useState } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
-import QRCode from 'qrcode';
 import { useScannerController } from './model/useScannerController';
 import ScannerInput from './components/ScannerInput';
 import ScannerCart from './components/ScannerCart';
@@ -18,17 +17,6 @@ import {
 } from './services/scanner.salesQueue';
 
 const SALE_SYNC_ERROR_TOAST_COOLDOWN_MS = 30000;
-const LAB_CUSTOMER = {
-  id: 'juan-01',
-  name: 'Juan'
-};
-
-function normalizeLabCode(value) {
-  return String(value || '')
-    .trim()
-    .toUpperCase()
-    .replace(/[^A-Z0-9]/g, '');
-}
 
 function ScannerFeature({ currentUser }) {
   const { scannerState, totals, actions } = useScannerController({ currentUser });
@@ -42,22 +30,6 @@ function ScannerFeature({ currentUser }) {
   const [isCheckoutConfirmOpen, setIsCheckoutConfirmOpen] = useState(false);
   const [openConfirmSignal, setOpenConfirmSignal] = useState(0);
   const [confirmByEnterSignal, setConfirmByEnterSignal] = useState(0);
-  const [labPaymentCode, setLabPaymentCode] = useState('');
-  const [labPaymentQrDataUrl, setLabPaymentQrDataUrl] = useState('');
-  const [labStatement, setLabStatement] = useState({
-    customerName: LAB_CUSTOMER.name,
-    lastMovementAt: '',
-    total: 0,
-    items: []
-  });
-  const [labCardConfirm, setLabCardConfirm] = useState({
-    isOpen: false,
-    customerName: '',
-    total: 0,
-    itemsCount: 0,
-    code: '',
-    items: []
-  });
   const scannerInputRef = useRef(null);
   const lastSyncErrorToastAtRef = useRef(0);
 
@@ -76,28 +48,6 @@ function ScannerFeature({ currentUser }) {
       unsubscribe();
     };
   }, []);
-
-  useEffect(() => {
-    if (!labPaymentCode) {
-      setLabPaymentQrDataUrl('');
-      return;
-    }
-    QRCode.toDataURL(labPaymentCode, {
-      errorCorrectionLevel: 'M',
-      margin: 3,
-      width: 300,
-      color: {
-        dark: '#000000',
-        light: '#FFFFFF'
-      }
-    })
-      .then((url) => {
-        setLabPaymentQrDataUrl(url);
-      })
-      .catch(() => {
-        setLabPaymentQrDataUrl('');
-      });
-  }, [labPaymentCode]);
 
   useEffect(() => {
     focusScannerInput();
@@ -202,26 +152,6 @@ function ScannerFeature({ currentUser }) {
     focusScannerInput();
   }
 
-  function openLabCardConfirm({ code }) {
-    const itemsCount = scannerState.cartItems.reduce((acc, item) => acc + Number(item.quantity || 1), 0);
-    const total = Number(totals.total || 0);
-    const items = scannerState.cartItems.map((item) => ({
-      id: item.id,
-      nombre: item.nombre,
-      quantity: Number(item.quantity || 1),
-      precio: Number(item.precio_venta || 0),
-      subtotal: Number(item.quantity || 1) * Number(item.precio_venta || 0)
-    }));
-    setLabCardConfirm({
-      isOpen: true,
-      customerName: LAB_CUSTOMER.name,
-      total,
-      itemsCount,
-      code,
-      items
-    });
-  }
-
   const executeCharge = useCallback(async () => {
     const result = await actions.chargeCart();
     if (result?.ok) {
@@ -258,18 +188,6 @@ function ScannerFeature({ currentUser }) {
 
   async function handleScanSubmit() {
     const normalizedBarcode = String(scannerState.scanBarcode || '').trim();
-    if (labPaymentCode && normalizeLabCode(normalizedBarcode) === normalizeLabCode(labPaymentCode)) {
-      actions.setScanBarcode('');
-      if (!scannerState.cartItems.length) {
-        toast.info('No hay productos en carrito para pago móvil.', {
-          toastId: `scanner-lab-mobile-empty-${Date.now()}`,
-          autoClose: 1800
-        });
-        return;
-      }
-      openLabCardConfirm({ code: normalizedBarcode });
-      return;
-    }
 
     if (!normalizedBarcode && scannerState.cartItems.length > 0) {
       if (!isCheckoutConfirmOpen) {
@@ -325,88 +243,6 @@ function ScannerFeature({ currentUser }) {
               </button>
             </div>
 
-            <section className="scanner-checkout mt-3">
-              <p className="mb-2 fw-semibold">Laboratorio pago móvil (cliente app)</p>
-              <div className="d-flex gap-2 flex-wrap">
-                <button
-                  type="button"
-                  className="btn btn-sm btn-outline-dark"
-                  onClick={() => {
-                    const code = `P${Date.now().toString().slice(-6)}`;
-                    setLabPaymentCode(code);
-                    toast.success(`Código generado para ${LAB_CUSTOMER.name}`, {
-                      toastId: `scanner-lab-mobile-generate-${Date.now()}`,
-                      autoClose: 1600
-                    });
-                    focusScannerInput();
-                  }}
-                >
-                  Generar código
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-sm btn-outline-secondary"
-                  disabled={!labPaymentCode}
-                  onClick={() => {
-                    if (!labPaymentCode) {
-                      return;
-                    }
-                    actions.setScanBarcode(labPaymentCode);
-                    handleScanSubmit().catch(() => {});
-                  }}
-                >
-                  Simular escaneo código
-                </button>
-              </div>
-              {labPaymentCode ? (
-                <div className="mt-3 p-2 border rounded bg-white d-flex flex-column align-items-center">
-                  <p className="mb-1 text-muted">QR de pago (cliente app)</p>
-                  {labPaymentQrDataUrl ? (
-                    <>
-                      <img src={labPaymentQrDataUrl} alt="QR laboratorio pago móvil" width={300} height={300} />
-                    </>
-                  ) : null}
-                  <p className="mt-1 mb-0"><strong>{labPaymentCode}</strong></p>
-                </div>
-              ) : null}
-              <p className="mb-1 mt-2 text-muted">
-                Código actual: <strong>{labPaymentCode || '—'}</strong>
-              </p>
-              <div className="mt-2 p-2 border rounded bg-white">
-                <p className="mb-2 fw-semibold">Estado de cuenta (simulado)</p>
-                {labStatement.items.length ? (
-                  <>
-                    <p className="mb-1 text-muted">
-                      Cliente: <strong>{labStatement.customerName}</strong> | Total: <strong>${Number(labStatement.total || 0).toFixed(2)}</strong>
-                    </p>
-                    <p className="mb-2 text-muted">Fecha: {labStatement.lastMovementAt}</p>
-                    <div className="table-responsive">
-                      <table className="table table-sm mb-0">
-                        <thead>
-                          <tr>
-                            <th>Producto</th>
-                            <th>Cant.</th>
-                            <th>Subtotal</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {labStatement.items.map((item) => (
-                            <tr key={String(item.id)}>
-                              <td>{item.nombre}</td>
-                              <td>{item.quantity}</td>
-                              <td>${Number(item.subtotal || 0).toFixed(2)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </>
-                ) : (
-                  <p className="mb-0 text-muted">Sin compras registradas aún.</p>
-                )}
-              </div>
-            </section>
-
             <ScannerCart
               items={scannerState.cartItems}
               lastScannedItemId={scannerState.lastScannedItemId}
@@ -448,73 +284,6 @@ function ScannerFeature({ currentUser }) {
         onConfirm={actions.addQuickBarcodeProduct}
         onDraftChange={actions.updateLiveEditorDraft}
       />
-
-      {labCardConfirm.isOpen ? (
-        <div className="scanner-modal-overlay" role="dialog" aria-modal="true" aria-label="Confirmar pago móvil">
-          <div className="scanner-modal-card">
-            <div className="d-flex justify-content-between align-items-center mb-3">
-              <h2 className="h5 mb-0">Confirmar pago móvil</h2>
-              <button
-                type="button"
-                className="btn btn-sm btn-outline-secondary"
-                onClick={() => {
-                  setLabCardConfirm({ isOpen: false, customerName: '', total: 0, itemsCount: 0, code: '', items: [] });
-                  focusScannerInput();
-                }}
-              >
-                X
-              </button>
-            </div>
-            <p className="mb-1">Usuario: <strong>{labCardConfirm.customerName}</strong></p>
-            <p className="mb-1">Productos: <strong>{labCardConfirm.itemsCount}</strong></p>
-            <p className="mb-3">Total: <strong>${Number(labCardConfirm.total || 0).toFixed(2)}</strong></p>
-            <p className="mb-3 text-muted">Código: {labCardConfirm.code}</p>
-            <div className="d-flex gap-2">
-              <button
-                type="button"
-                className="btn btn-outline-secondary w-50"
-                onClick={() => {
-                  setLabCardConfirm({ isOpen: false, customerName: '', total: 0, itemsCount: 0, code: '', items: [] });
-                  toast.info('Pago móvil cancelado.', {
-                    toastId: `scanner-lab-mobile-cancel-${Date.now()}`,
-                    autoClose: 1600
-                  });
-                  focusScannerInput();
-                }}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                className="btn btn-dark w-50"
-                onClick={() => {
-                  actions.clearCartNow();
-                  const at = new Intl.DateTimeFormat('es-UY', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit',
-                    hour12: false
-                  }).format(new Date());
-                  setLabStatement({
-                    customerName: labCardConfirm.customerName,
-                    lastMovementAt: at,
-                    total: Number(labCardConfirm.total || 0),
-                    items: Array.isArray(labCardConfirm.items) ? labCardConfirm.items : []
-                  });
-                  setLabCardConfirm({ isOpen: false, customerName: '', total: 0, itemsCount: 0, code: '', items: [] });
-                  toast.success(`Compra confirmada. Estado de cuenta enviado a ${LAB_CUSTOMER.name}.`, {
-                    toastId: `scanner-lab-mobile-ok-${Date.now()}`,
-                    autoClose: 1900
-                  });
-                  focusScannerInput();
-                }}
-              >
-                Aceptar
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
     </>
   );
 }
