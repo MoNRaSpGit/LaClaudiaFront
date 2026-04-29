@@ -20,8 +20,7 @@ import {
 const SALE_SYNC_ERROR_TOAST_COOLDOWN_MS = 30000;
 const LAB_CUSTOMER = {
   id: 'juan-01',
-  name: 'Juan',
-  qrCode: 'QR-JUAN-APP'
+  name: 'Juan'
 };
 
 function normalizeLabCode(value) {
@@ -85,8 +84,8 @@ function ScannerFeature({ currentUser }) {
     }
     QRCode.toDataURL(labPaymentCode, {
       errorCorrectionLevel: 'M',
-      margin: 1,
-      width: 170,
+      margin: 3,
+      width: 300,
       color: {
         dark: '#000000',
         light: '#FFFFFF'
@@ -333,7 +332,7 @@ function ScannerFeature({ currentUser }) {
                   type="button"
                   className="btn btn-sm btn-outline-dark"
                   onClick={() => {
-                    const code = LAB_CUSTOMER.qrCode;
+                    const code = `P${Date.now().toString().slice(-6)}`;
                     setLabPaymentCode(code);
                     toast.success(`Código generado para ${LAB_CUSTOMER.name}`, {
                       toastId: `scanner-lab-mobile-generate-${Date.now()}`,
@@ -364,7 +363,7 @@ function ScannerFeature({ currentUser }) {
                   <p className="mb-1 text-muted">QR de pago (cliente app)</p>
                   {labPaymentQrDataUrl ? (
                     <>
-                      <img src={labPaymentQrDataUrl} alt="QR laboratorio pago móvil" width={170} height={170} />
+                      <img src={labPaymentQrDataUrl} alt="QR laboratorio pago móvil" width={300} height={300} />
                     </>
                   ) : null}
                   <p className="mt-1 mb-0"><strong>{labPaymentCode}</strong></p>
