@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { bootAuthShell, loginReal, logoutReal } from '../services/authShell.api';
+import { pingBackend, startBackendHeartbeat } from '../../../shared/services/platform.api';
 
 const REMEMBER_KEY = 'laclau_auth_remember_v1';
 const SESSION_KEY = 'laclau_auth_session_v1';
@@ -147,6 +148,17 @@ export function useAuthGateController() {
     };
   }, []);
 
+  useEffect(() => {
+    const stopHeartbeat = startBackendHeartbeat({
+      intervalMs: Number(import.meta.env.VITE_BACKEND_HEARTBEAT_MS || 240000),
+      timeoutMs: 2500
+    });
+
+    return () => {
+      stopHeartbeat();
+    };
+  }, []);
+
   const bootMessage = useMemo(() => {
     if (phase === 'authenticating') {
       return 'Preparando sesión segura...';
@@ -167,6 +179,8 @@ export function useAuthGateController() {
     setPhase('authenticating');
 
     try {
+      // Pre-warm corto para aprovechar tiempo previo al login.
+      pingBackend({ timeoutMs: 2200 }).catch(() => {});
       const loginResult = await loginReal({
         username: normalizedUser,
         password: normalizedPassword

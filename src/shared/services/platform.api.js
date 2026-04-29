@@ -36,3 +36,32 @@ export async function warmupBackend({ minDelayMs = 1600 } = {}) {
   return health;
 }
 
+export function startBackendHeartbeat({ intervalMs = 240000, timeoutMs = 2500 } = {}) {
+  let stopped = false;
+
+  async function tick() {
+    if (stopped) {
+      return;
+    }
+
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      return;
+    }
+
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+      return;
+    }
+
+    await pingBackend({ timeoutMs });
+  }
+
+  tick().catch(() => {});
+  const intervalId = setInterval(() => {
+    tick().catch(() => {});
+  }, Math.max(60000, Number(intervalMs) || 240000));
+
+  return () => {
+    stopped = true;
+    clearInterval(intervalId);
+  };
+}

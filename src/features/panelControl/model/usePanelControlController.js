@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { parsePositiveAmount } from '../../../shared/lib/number';
 import { registerPanelPayment, subscribePanelDashboard } from '../services/panelControl.api';
-import { money, parseDateInput, percent, STORE_TIME_ZONE, todayLabel } from './panelControl.formatters';
+import { money, moneyNoDecimals, parseDateInput, percent, STORE_TIME_ZONE, todayLabel } from './panelControl.formatters';
 
 const EMPTY_DASHBOARD = {
   metrics: {
@@ -164,11 +164,11 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
   }, [dashboard?.date]);
 
   const metrics = [
-    { title: 'Caja inicial', value: money(panelMetrics.initialCash), hint: 'Monto de apertura del día.' },
-    { title: 'Ventas del día', value: money(panelMetrics.salesToday), hint: 'Confirmadas con el botón Cobrar.' },
-    { title: 'Ganancia diaria', value: money(panelMetrics.profitToday), hint: `${Number(panelMetrics.profitRate || 0) * 100}% de ventas del día` },
-    { title: 'Monto actual', value: money(panelMetrics.currentAmount), hint: 'Caja diaria + ventas - pagos' },
-    { title: 'Pagos realizados', value: money(panelMetrics.paymentsTotal), hint: 'Suma de pagos registrados' }
+    { title: 'Caja inicial', value: moneyNoDecimals(panelMetrics.initialCash), hint: 'Monto de apertura del día.' },
+    { title: 'Ventas del día', value: moneyNoDecimals(panelMetrics.salesToday), hint: 'Confirmadas con el botón Cobrar.' },
+    { title: 'Ganancia diaria', value: moneyNoDecimals(panelMetrics.profitToday), hint: `${Number(panelMetrics.profitRate || 0) * 100}% de ventas del día` },
+    { title: 'Monto actual', value: moneyNoDecimals(panelMetrics.currentAmount), hint: 'Caja diaria + ventas - pagos' },
+    { title: 'Pagos realizados', value: moneyNoDecimals(panelMetrics.paymentsTotal), hint: 'Suma de pagos registrados' }
   ];
 
   function handleRegisterPayment(event, options = {}) {

@@ -14,6 +14,13 @@ export function money(value) {
   })}`;
 }
 
+export function moneyNoDecimals(value) {
+  return `$${Number(value || 0).toLocaleString('es-UY', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  })}`;
+}
+
 export function percent(value) {
   const normalized = Number(value || 0);
   const sign = normalized > 0 ? '+' : '';
