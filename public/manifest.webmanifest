@@ -1,7 +1,7 @@
 {
-  "name": "Super Nova",
-  "short_name": "SN",
-  "description": "Super Nova - Caja y scanner.",
+  "name": "Aplicacion Super Nova",
+  "short_name": "Super Nova App",
+  "description": "Aplicacion Super Nova - Caja y scanner.",
   "start_url": ".",
   "scope": ".",
   "display": "standalone",
