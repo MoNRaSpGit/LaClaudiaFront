@@ -12,6 +12,12 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
   - al hacer doble click se abre modal para ingresar porcentaje (`0` a `100`).
   - el valor guardado se aplica al stream del dashboard para recalcular metricas al instante.
 
+- Reduccion de falsos errores en compra (2026-04-30):
+  - ajuste en scanner para evitar toast de error ante un unico fallo transitorio de sincronizacion.
+  - el aviso de error ahora se muestra recien con fallos repetidos (2 o mas) de la cola.
+  - si el navegador esta offline, se evita mostrar ese toast para no generar ruido operativo.
+  - al quedar la cola en `0` pendientes, se reinicia el contador de errores.
+
 - Pagos para operario (2026-04-30):
   - nuevo tab `Pagos` visible para rol `operario` en navbar.
   - pagina simple con monto + descripcion para registrar egresos manuales.

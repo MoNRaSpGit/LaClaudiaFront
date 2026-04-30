@@ -40,6 +40,7 @@ function ScannerFeature({ currentUser }) {
   const [confirmByEnterSignal, setConfirmByEnterSignal] = useState(0);
   const scannerInputRef = useRef(null);
   const lastSyncErrorToastAtRef = useRef(0);
+  const syncErrorCountRef = useRef(0);
   const lastChargeAtRef = useRef(0);
   const lastLiveStateSignatureRef = useRef('');
 
@@ -77,6 +78,7 @@ function ScannerFeature({ currentUser }) {
 
   useEffect(() => {
     function handleOnline() {
+      syncErrorCountRef.current = 0;
       flushScannerSalesQueue({
         token: currentUser?.sessionToken || ''
       }).catch(() => {});
@@ -89,13 +91,28 @@ function ScannerFeature({ currentUser }) {
   }, [currentUser?.sessionToken]);
 
   useEffect(() => {
+    if (pendingSalesCount === 0) {
+      syncErrorCountRef.current = 0;
+    }
+  }, [pendingSalesCount]);
+
+  useEffect(() => {
     const unsubscribeErrors = subscribeScannerSalesQueueErrors(() => {
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+        return;
+      }
+
+      syncErrorCountRef.current += 1;
+      if (syncErrorCountRef.current < 2) {
+        return;
+      }
+
       const now = Date.now();
       if (now - lastSyncErrorToastAtRef.current < SALE_SYNC_ERROR_TOAST_COOLDOWN_MS) {
         return;
       }
       lastSyncErrorToastAtRef.current = now;
-      toast.error('Hubo un error en la ultima compra. Se reintentara en segundo plano.', {
+      toast.error('No se pudo sincronizar una compra en este momento. Se reintentara en segundo plano.', {
         toastId: 'scanner-sale-sync-error',
         autoClose: 3500
       });
