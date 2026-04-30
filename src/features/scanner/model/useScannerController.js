@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   addScannedProduct,
@@ -182,6 +183,49 @@ export function useScannerController({ currentUser } = {}) {
     }
   }
 
+  const addOneToCart = useCallback((item) => dispatch(addScannedProduct(item)), [dispatch]);
+  const removeOneFromCart = useCallback((id) => dispatch(decrementCartItem(id)), [dispatch]);
+  const setScanBarcodeValue = useCallback((value) => dispatch(setScanBarcode(value)), [dispatch]);
+  const clearScanErrorNow = useCallback(() => dispatch(setScanError('')), [dispatch]);
+  const clearCartNow = useCallback(() => dispatch(clearCart()), [dispatch]);
+  const startManualLiveEditor = useCallback(() => dispatch(
+    setLiveEditor({
+      type: 'manual',
+      title: 'Producto manual',
+      description: 'El operario esta cargando un producto manualmente. La caja lo ve en vivo mientras el modal sigue abierto.',
+      draft: { nombre: 'Producto Manual', precio_venta_raw: '', precio_venta: 0 }
+    })
+  ), [dispatch]);
+  const startProductEditLiveEditor = useCallback((item) => dispatch(
+    setLiveEditor({
+      type: 'edit',
+      title: 'Editando producto',
+      description: 'La caja ve en vivo los cambios del producto mientras el modal sigue abierto.',
+      draft: {
+        id: item?.id,
+        nombre: item?.nombre || '',
+        precio_venta_raw: item?.precio_venta != null ? String(item.precio_venta) : '',
+        precio_venta: Number(item?.precio_venta || 0),
+        thumbnail_url: item?.thumbnail_url || ''
+      }
+    })
+  ), [dispatch]);
+  const startQuickBarcodeLiveEditor = useCallback(({ barcode }) => dispatch(
+    setLiveEditor({
+      type: 'quick_add',
+      title: 'Barcode no encontrado',
+      description: 'Alta rapida en caja sin cortar flujo.',
+      draft: {
+        barcode: String(barcode || ''),
+        nombre: 'Producto Manual',
+        precio_venta_raw: '',
+        precio_venta: 0
+      }
+    })
+  ), [dispatch]);
+  const updateLiveEditorDraftValue = useCallback((draft) => dispatch(updateLiveEditorDraft(draft)), [dispatch]);
+  const stopLiveEditor = useCallback(() => dispatch(clearLiveEditor()), [dispatch]);
+
   return {
     scannerState,
     totals,
@@ -190,49 +234,17 @@ export function useScannerController({ currentUser } = {}) {
       addManualProduct,
       addQuickBarcodeProduct,
       chargeCart,
-      addOneToCart: (item) => dispatch(addScannedProduct(item)),
-      removeOneFromCart: (id) => dispatch(decrementCartItem(id)),
+      addOneToCart,
+      removeOneFromCart,
       applyCartItemEdit,
-      setScanBarcode: (value) => dispatch(setScanBarcode(value)),
-      clearScanError: () => dispatch(setScanError('')),
-      clearCartNow: () => dispatch(clearCart()),
-      startManualLiveEditor: () => dispatch(
-        setLiveEditor({
-          type: 'manual',
-          title: 'Producto manual',
-          description: 'El operario esta cargando un producto manualmente. La caja lo ve en vivo mientras el modal sigue abierto.',
-          draft: { nombre: 'Producto Manual', precio_venta_raw: '', precio_venta: 0 }
-        })
-      ),
-      startProductEditLiveEditor: (item) => dispatch(
-        setLiveEditor({
-          type: 'edit',
-          title: 'Editando producto',
-          description: 'La caja ve en vivo los cambios del producto mientras el modal sigue abierto.',
-          draft: {
-            id: item?.id,
-            nombre: item?.nombre || '',
-            precio_venta_raw: item?.precio_venta != null ? String(item.precio_venta) : '',
-            precio_venta: Number(item?.precio_venta || 0),
-            thumbnail_url: item?.thumbnail_url || ''
-          }
-        })
-      ),
-      startQuickBarcodeLiveEditor: ({ barcode }) => dispatch(
-        setLiveEditor({
-          type: 'quick_add',
-          title: 'Barcode no encontrado',
-          description: 'Alta rapida en caja sin cortar flujo.',
-          draft: {
-            barcode: String(barcode || ''),
-            nombre: 'Producto Manual',
-            precio_venta_raw: '',
-            precio_venta: 0
-          }
-        })
-      ),
-      updateLiveEditorDraft: (draft) => dispatch(updateLiveEditorDraft(draft)),
-      stopLiveEditor: () => dispatch(clearLiveEditor())
+      setScanBarcode: setScanBarcodeValue,
+      clearScanError: clearScanErrorNow,
+      clearCartNow,
+      startManualLiveEditor,
+      startProductEditLiveEditor,
+      startQuickBarcodeLiveEditor,
+      updateLiveEditorDraft: updateLiveEditorDraftValue,
+      stopLiveEditor
     }
   };
 }

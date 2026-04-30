@@ -18,9 +18,15 @@ import {
 
 const SALE_SYNC_ERROR_TOAST_COOLDOWN_MS = 30000;
 const POST_CHARGE_ENTER_GUARD_MS = 1200;
+const LIVE_STATE_PUBLISH_DELAY_MS = 100;
 
 function ScannerFeature({ currentUser }) {
   const { scannerState, totals, actions } = useScannerController({ currentUser });
+  const updateLiveEditorDraft = actions.updateLiveEditorDraft;
+  const clearScanError = actions.clearScanError;
+  const stopLiveEditor = actions.stopLiveEditor;
+  const startManualLiveEditor = actions.startManualLiveEditor;
+  const startQuickBarcodeLiveEditor = actions.startQuickBarcodeLiveEditor;
   const isOperario = String(currentUser?.role || '').trim().toLowerCase() === 'operario';
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
   const [quickAddState, setQuickAddState] = useState({
@@ -34,6 +40,7 @@ function ScannerFeature({ currentUser }) {
   const scannerInputRef = useRef(null);
   const lastSyncErrorToastAtRef = useRef(0);
   const lastChargeAtRef = useRef(0);
+  const lastLiveStateSignatureRef = useRef('');
 
   const focusScannerInput = useCallback(() => {
     setTimeout(() => {
@@ -103,20 +110,27 @@ function ScannerFeature({ currentUser }) {
       return;
     }
 
+    const liveStatePayload = {
+      items: scannerState.cartItems.map((item) => ({
+        id: item.id,
+        nombre: item.nombre,
+        quantity: Number(item.quantity || 1),
+        precio_venta: Number(item.precio_venta || 0)
+      })),
+      lastScannedAt: scannerState.lastScannedAt || null,
+      liveEditor: scannerState.liveEditor || null
+    };
+    const nextSignature = JSON.stringify(liveStatePayload);
+    if (nextSignature === lastLiveStateSignatureRef.current) {
+      return;
+    }
+
     const timeoutId = setTimeout(() => {
-      publishScannerLiveState({
-        items: scannerState.cartItems.map((item) => ({
-          id: item.id,
-          nombre: item.nombre,
-          quantity: Number(item.quantity || 1),
-          precio_venta: Number(item.precio_venta || 0)
-        })),
-        lastScannedAt: scannerState.lastScannedAt || null,
-        liveEditor: scannerState.liveEditor || null
-      }, {
+      lastLiveStateSignatureRef.current = nextSignature;
+      publishScannerLiveState(liveStatePayload, {
         token: currentUser.sessionToken
       }).catch(() => {});
-    }, 180);
+    }, LIVE_STATE_PUBLISH_DELAY_MS);
 
     return () => clearTimeout(timeoutId);
   }, [
@@ -133,6 +147,7 @@ function ScannerFeature({ currentUser }) {
     }
 
     return () => {
+      lastLiveStateSignatureRef.current = '';
       publishScannerLiveState({
         items: [],
         lastScannedAt: null,
@@ -154,19 +169,19 @@ function ScannerFeature({ currentUser }) {
 
   const handleManualValueChange = useCallback(
     (rawValue) => {
-      actions.updateLiveEditorDraft({
+      updateLiveEditorDraft({
         nombre: 'Producto Manual',
         precio_venta_raw: String(rawValue || ''),
         precio_venta: Number(String(rawValue || '').replace(',', '.')) || 0
       });
     },
-    [actions]
+    [updateLiveEditorDraft]
   );
 
   function closeManualModal() {
     setIsManualModalOpen(false);
-    actions.clearScanError();
-    actions.stopLiveEditor();
+    clearScanError();
+    stopLiveEditor();
     focusScannerInput();
   }
 
@@ -175,7 +190,7 @@ function ScannerFeature({ currentUser }) {
       isOpen: false,
       barcode: ''
     });
-    actions.stopLiveEditor();
+    stopLiveEditor();
     focusScannerInput();
   }
 
@@ -240,7 +255,7 @@ function ScannerFeature({ currentUser }) {
     }
 
     const barcode = String(scanResult.barcode || '').trim();
-    actions.startQuickBarcodeLiveEditor({
+    startQuickBarcodeLiveEditor({
       barcode
     });
     setQuickAddState({
@@ -270,8 +285,8 @@ function ScannerFeature({ currentUser }) {
                 type="button"
                 className="btn scanner-manual-btn"
                 onClick={() => {
-                  actions.clearScanError();
-                  actions.startManualLiveEditor();
+                  clearScanError();
+                  startManualLiveEditor();
                   setIsManualModalOpen(true);
                 }}
               >

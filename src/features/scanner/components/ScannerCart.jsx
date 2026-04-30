@@ -23,6 +23,36 @@ function ScannerEditModal({ item, isOpen, onClose, onDraftChange, onApply, onReq
   const [draftImage, setDraftImage] = useState(item?.thumbnail_url || '');
   const [error, setError] = useState('');
 
+  function closeAndRefocus() {
+    onClose();
+    onRequestScannerFocus?.();
+  }
+
+  async function handleSave() {
+    const parsedPrice = parsePositiveAmount(draftPrice);
+    if (parsedPrice === null) {
+      setError('Ingresa un precio valido mayor a 0.');
+      return;
+    }
+
+    const savePromise = onApply({
+      id: item.id,
+      productId: item.productId ?? item.id,
+      isManual: Boolean(item.isManual),
+      nombre: draftName,
+      precio_venta: parsedPrice,
+      thumbnail_url: String(draftImage || '').trim()
+    });
+
+    closeAndRefocus();
+
+    try {
+      await savePromise;
+    } catch {
+      // El controller ya publica el error operativo; no reabrimos el modal.
+    }
+  }
+
   useEffect(() => {
     setDraftName(item?.nombre || '');
     setDraftPrice(item?.precio_venta || '');
@@ -56,93 +86,71 @@ function ScannerEditModal({ item, isOpen, onClose, onDraftChange, onApply, onReq
           <button type="button" className="btn btn-sm btn-outline-secondary" onClick={onClose}>X</button>
         </div>
 
-        <div className="mb-3">
-          <label className="form-label">Nombre</label>
-          <input className="form-control" value={draftName} onChange={(e) => setDraftName(e.target.value)} />
-        </div>
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            handleSave().catch(() => {});
+          }}
+        >
+          <div className="mb-3">
+            <label className="form-label">Nombre</label>
+            <input className="form-control" value={draftName} onChange={(e) => setDraftName(e.target.value)} />
+          </div>
 
-        <div className="mb-3">
-          <label className="form-label">Precio</label>
-          <input className="form-control" value={draftPrice} onChange={(e) => setDraftPrice(e.target.value)} />
-        </div>
+          <div className="mb-3">
+            <label className="form-label">Precio</label>
+            <input className="form-control" value={draftPrice} onChange={(e) => setDraftPrice(e.target.value)} />
+          </div>
 
-        <div className="mb-4">
-          <label className="form-label">Imagen</label>
-          <input
-            type="file"
-            accept="image/*"
-            className="form-control"
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              if (!file) {
-                return;
-              }
+          <div className="mb-4">
+            <label className="form-label">Imagen</label>
+            <input
+              type="file"
+              accept="image/*"
+              className="form-control"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (!file) {
+                  return;
+                }
 
-              const reader = new FileReader();
-              reader.onload = () => {
-                const base64Image = typeof reader.result === 'string' ? reader.result : '';
-                setDraftImage(base64Image);
-              };
-              reader.onerror = () => {
-                setError('No se pudo cargar la imagen seleccionada.');
-              };
-              reader.readAsDataURL(file);
-            }}
-          />
-          {draftImage ? (
-            <div className="mt-2 d-flex align-items-center gap-2">
-              <img
-                src={draftImage}
-                alt="Vista previa"
-                style={{ width: '56px', height: '56px', objectFit: 'cover', borderRadius: '8px' }}
-              />
-              <button
-                type="button"
-                className="btn btn-sm btn-outline-secondary"
-                onClick={() => setDraftImage('')}
-              >
-                Quitar imagen
-              </button>
-            </div>
-          ) : null}
-        </div>
+                const reader = new FileReader();
+                reader.onload = () => {
+                  const base64Image = typeof reader.result === 'string' ? reader.result : '';
+                  setDraftImage(base64Image);
+                };
+                reader.onerror = () => {
+                  setError('No se pudo cargar la imagen seleccionada.');
+                };
+                reader.readAsDataURL(file);
+              }}
+            />
+            {draftImage ? (
+              <div className="mt-2 d-flex align-items-center gap-2">
+                <img
+                  src={draftImage}
+                  alt="Vista previa"
+                  style={{ width: '56px', height: '56px', objectFit: 'cover', borderRadius: '8px' }}
+                />
+                <button
+                  type="button"
+                  className="btn btn-sm btn-outline-secondary"
+                  onClick={() => setDraftImage('')}
+                >
+                  Quitar imagen
+                </button>
+              </div>
+            ) : null}
+          </div>
 
-        {error ? <small className="text-danger d-block mb-2">{error}</small> : null}
-        <div className="d-flex gap-2">
-          <button type="button" className="btn btn-outline-secondary w-50" onClick={onClose}>Cancelar</button>
-          <button
-            type="button"
-            className="btn btn-dark w-50"
-            onClick={async () => {
-              const parsedPrice = parsePositiveAmount(draftPrice);
-              if (parsedPrice === null) {
-                setError('Ingresa un precio valido mayor a 0.');
-                return;
-              }
-
-              const saved = await onApply({
-                id: item.id,
-                productId: item.productId ?? item.id,
-                isManual: Boolean(item.isManual),
-                nombre: draftName,
-                precio_venta: parsedPrice,
-                thumbnail_url: String(draftImage || '').trim()
-              });
-
-              if (!saved) {
-                setError('No se pudo guardar el cambio en la base de datos.');
-                return;
-              }
-
-              onClose();
-              if (onRequestScannerFocus) {
-                onRequestScannerFocus();
-              }
-            }}
-          >
-            Guardar
-          </button>
-        </div>
+          {error ? <small className="text-danger d-block mb-2">{error}</small> : null}
+          <div className="d-flex gap-2">
+            <button type="button" className="btn btn-outline-secondary w-50" onClick={onClose}>Cancelar</button>
+            <button type="submit" className="btn btn-dark w-50">
+              Guardar
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

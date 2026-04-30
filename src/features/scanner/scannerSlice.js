@@ -1,6 +1,9 @@
 import { createSelector, createSlice } from '@reduxjs/toolkit';
 
 const STORAGE_KEY = 'scanner_state_v1';
+let persistTimeoutId = null;
+let persistIdleCallbackId = null;
+let latestPersistPayload = null;
 
 const initialState = {
   scanBarcode: '',
@@ -46,7 +49,7 @@ function persistScannerState(state) {
     return;
   }
 
-  const payload = {
+  latestPersistPayload = {
     cartItems: Array.isArray(state.cartItems) ? state.cartItems : [],
     lastScannedItemId: state.lastScannedItemId || null,
     lastScannedAt: state.lastScannedAt || null,
@@ -54,11 +57,32 @@ function persistScannerState(state) {
     productOverrides: state.productOverrides || {}
   };
 
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-  } catch (_error) {
-    // Ignore persistence errors to keep scanner flow uninterrupted.
+  if (persistTimeoutId) {
+    clearTimeout(persistTimeoutId);
+    persistTimeoutId = null;
   }
+  if (persistIdleCallbackId && typeof window.cancelIdleCallback === 'function') {
+    window.cancelIdleCallback(persistIdleCallbackId);
+    persistIdleCallbackId = null;
+  }
+
+  const flushPersist = () => {
+    persistTimeoutId = null;
+    persistIdleCallbackId = null;
+
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(latestPersistPayload));
+    } catch (_error) {
+      // Ignore persistence errors to keep scanner flow uninterrupted.
+    }
+  };
+
+  if (typeof window.requestIdleCallback === 'function') {
+    persistIdleCallbackId = window.requestIdleCallback(flushPersist, { timeout: 250 });
+    return;
+  }
+
+  persistTimeoutId = setTimeout(flushPersist, 80);
 }
 
 const hydratedInitialState = readPersistedScannerState() || initialState;
