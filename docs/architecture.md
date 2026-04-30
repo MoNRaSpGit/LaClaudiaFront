@@ -148,6 +148,14 @@
 - Tests unitarios con Vitest:
   - `scannerSlice` (carrito y totales).
   - utilidades compartidas (`shared/lib/number`).
+- Smoke operativo recomendado antes de dar por bueno un cambio sensible:
+  1. login rapido como `nova`.
+  2. carga de producto y confirmacion de compra.
+  3. login rapido como `admin`.
+  4. registro de pago desde `Panel Control`.
+  5. verificacion de dashboard y, si la prueba fue contra datos reales, limpieza de movimientos smoke.
+- Nota para automatizacion:
+  - en pruebas UI que recorren cobro, conviene neutralizar la apertura de impresion del navegador/QZ para validar el flujo sin depender del popup fisico de print.
 
 ## Regla de documentacion continua
 

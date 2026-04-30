@@ -16,6 +16,11 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
     - `Entrar como Operario` usa `nova/nova123`.
   - el usuario `nova` se creo como `operario` real en backend para que el acceso rapido no dependa de mocks ni credenciales legacy.
   - se mantiene `operario/operario123` como usuario historico si siguiera existiendo en DB, pero ya no es la credencial operativa principal ni el acceso rapido recomendado.
+  - smoke real validado luego del cambio:
+    - login `nova` + venta real OK.
+    - login `admin` + pago real OK.
+    - smoke UI tipo usuario con clicks reales OK.
+    - movimientos de prueba limpiados despues de validar para no ensuciar caja del dia.
 
 - Scanner UX y resiliencia (2026-04-28):
   - PF de estabilidad scanner y mensajes operativos (2026-04-29):
