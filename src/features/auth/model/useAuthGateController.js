@@ -217,8 +217,8 @@ export function useAuthGateController() {
   }
 
   async function quickLoginOperario() {
-    const quickUsername = 'operario';
-    const quickPassword = 'operario123';
+    const quickUsername = 'nova';
+    const quickPassword = 'nova123';
     setUsername(quickUsername);
     setPassword(quickPassword);
     await runLogin(quickUsername, quickPassword);
