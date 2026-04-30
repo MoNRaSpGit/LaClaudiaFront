@@ -7,6 +7,22 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
 ## Mini Changelog Tecnico (2026-04-27)
 
 - Scanner UX y resiliencia (2026-04-28):
+  - PF de estabilidad scanner y mensajes operativos (2026-04-29):
+    - mejorados mensajes de error para operacion real:
+      - `Failed to fetch` en login ahora se traduce a backend caido/apagado o red inestable.
+      - timeouts y errores de panel/scanner/pagos muestran recomendaciones mas claras.
+      - nuevo helper comun: `src/shared/lib/userErrorMessages.js`.
+    - corregido arrastre de confirmacion por `Enter` entre ciclos de cobro:
+      - la causa estaba en señales de confirmacion que quedaban vivas al vaciar carrito/desmontar checkout.
+      - ahora se resetean al confirmar compra y cuando el carrito queda vacio.
+      - `ScannerCheckout` procesa cada señal de abrir/confirmar una sola vez por id.
+      - se mantuvo flujo por teclado: `Enter` abre cobrar y siguiente `Enter` confirma, sin contaminar el siguiente producto.
+    - limpieza tecnica:
+      - removida variable muerta `hasRemoteLiveSource` en panel controller.
+    - validacion tecnica:
+      - `npm run build` OK.
+      - `npm run test -- --run` OK.
+      - `npm run test:smoke:web` OK.
   - Fix critico login/logout (2026-04-29):
     - corregido cuelgue intermitente al reloguear despues de logout.
     - causa principal: requests de `login/logout` sin timeout podian quedar colgadas cuando backend estaba frio/lento.

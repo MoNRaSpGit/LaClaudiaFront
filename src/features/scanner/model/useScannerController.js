@@ -15,6 +15,7 @@ import {
 import { fetchProductByBarcode, updateScannerProduct } from '../services/scanner.api';
 import { enqueueScannerSale } from '../services/scanner.salesQueue';
 import { parsePositiveAmount } from '../../../shared/lib/number';
+import { toUserErrorMessage } from '../../../shared/lib/userErrorMessages';
 
 export function useScannerController({ currentUser } = {}) {
   const dispatch = useDispatch();
@@ -47,7 +48,7 @@ export function useScannerController({ currentUser } = {}) {
           barcode: normalizedBarcode
         };
       }
-      dispatch(setScanError(error.message || 'No se pudo escanear'));
+      dispatch(setScanError(toUserErrorMessage(error, { context: 'scanner_lookup' })));
       return { ok: false, code: 'UNKNOWN_ERROR' };
     }
   }
@@ -175,8 +176,9 @@ export function useScannerController({ currentUser } = {}) {
       );
       return true;
     } catch (error) {
-      dispatch(setScanError(error?.message || 'No se pudo guardar el cambio en catalogo.'));
-      return false;
+      dispatch(setScanError(toUserErrorMessage(error, { context: 'scanner_edit' })));
+      // El cambio local ya se aplico en carrito; no bloquear el cierre del modal.
+      return true;
     }
   }
 

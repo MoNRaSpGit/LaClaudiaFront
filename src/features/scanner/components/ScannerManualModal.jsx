@@ -18,7 +18,7 @@ function ScannerManualModal({ isOpen, onClose, onConfirm, onValueChange, errorMe
         onValueChange('');
       }
     }
-  }, [isOpen]);
+  }, [isOpen, onValueChange]);
 
   if (!isOpen) {
     return null;

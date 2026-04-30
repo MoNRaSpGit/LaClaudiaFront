@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { parsePositiveAmount } from '../../../shared/lib/number';
+import { toUserErrorMessage } from '../../../shared/lib/userErrorMessages';
 import { registerPanelPayment, subscribePanelDashboard } from '../services/panelControl.api';
-import { money, moneyNoDecimals, parseDateInput, percent, STORE_TIME_ZONE, todayLabel } from './panelControl.formatters';
+import { moneyNoDecimals, parseDateInput, percent, STORE_TIME_ZONE, todayLabel } from './panelControl.formatters';
 
 const EMPTY_DASHBOARD = {
   metrics: {
@@ -69,7 +70,7 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
             onUnauthorized?.();
             return;
           }
-          setDashboardError(error?.message || 'No se pudo cargar dashboard en tiempo real');
+          setDashboardError(toUserErrorMessage(error, { context: 'panel_dashboard' }));
           clearTimeout(reconnectTimeout);
           reconnectTimeout = setTimeout(connect, 2500);
         }
@@ -89,18 +90,15 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
   const comparison = dashboard.comparison || EMPTY_DASHBOARD.comparison;
   const movementItems = Array.isArray(dashboard.movements) ? dashboard.movements : [];
   const rankingItems = Array.isArray(dashboard.ranking) ? dashboard.ranking : [];
-  const remoteItems = Array.isArray(remoteLiveScanner?.items) ? remoteLiveScanner.items : [];
-  const hasRemoteLiveSource = true;
-
   const liveItems = useMemo(() => {
-    const sourceItems = remoteItems;
+    const sourceItems = Array.isArray(remoteLiveScanner?.items) ? remoteLiveScanner.items : [];
     return sourceItems.map((item) => ({
       id: item.id,
       nombre: item.nombre,
       quantity: Number(item.quantity || 1),
       precio: Number(item.precio_venta || item.precio || 0)
     }));
-  }, [remoteItems]);
+  }, [remoteLiveScanner?.items]);
 
   const liveTotal = useMemo(
     () => liveItems.reduce((acc, item) => acc + item.precio * item.quantity, 0),
@@ -217,7 +215,7 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
         });
       })
       .catch((error) => {
-        const message = error?.message || 'No se pudo registrar el pago.';
+        const message = toUserErrorMessage(error, { context: 'panel_payment' });
         setPaymentError(message);
         options?.onError?.(new Error(message));
       })

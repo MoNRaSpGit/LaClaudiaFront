@@ -22,7 +22,7 @@ function ScannerQuickAddModal({
       precio_venta: 0,
       barcode: String(barcode || '')
     });
-  }, [barcode, isOpen]);
+  }, [barcode, isOpen, onDraftChange]);
 
   if (!isOpen) {
     return null;

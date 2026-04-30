@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { bootAuthShell, loginReal, logoutReal } from '../services/authShell.api';
 import { pingBackend, startBackendHeartbeat } from '../../../shared/services/platform.api';
+import { toUserErrorMessage } from '../../../shared/lib/userErrorMessages';
 
 const REMEMBER_KEY = 'laclau_auth_remember_v1';
 const SESSION_KEY = 'laclau_auth_session_v1';
@@ -205,7 +206,7 @@ export function useAuthGateController() {
       persistSession(nextUser);
       setPhase('ready');
     } catch (loginError) {
-      setError(loginError?.message || 'No se pudo iniciar sesión.');
+      setError(toUserErrorMessage(loginError, { context: 'login' }));
       setPhase('login');
     }
   }

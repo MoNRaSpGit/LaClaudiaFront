@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+const ENTER_CONFIRM_GUARD_MS = 350;
 
 function ScannerCheckout({
   total,
@@ -10,8 +11,11 @@ function ScannerCheckout({
 }) {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [confirmOpenedAt, setConfirmOpenedAt] = useState(0);
+  const lastHandledOpenSignalRef = useRef(0);
+  const lastHandledConfirmSignalRef = useRef(0);
 
-  async function handleConfirm() {
+  const handleConfirm = useCallback(async () => {
     if (isSubmitting) {
       return;
     }
@@ -21,12 +25,17 @@ function ScannerCheckout({
     if (ok) {
       setIsConfirmOpen(false);
     }
-  }
+  }, [isSubmitting, onCharge]);
 
   useEffect(() => {
     if (openConfirmSignal <= 0) {
       return;
     }
+    if (openConfirmSignal === lastHandledOpenSignalRef.current) {
+      return;
+    }
+    lastHandledOpenSignalRef.current = openConfirmSignal;
+    setConfirmOpenedAt(Date.now());
     setIsConfirmOpen(true);
   }, [openConfirmSignal]);
 
@@ -34,11 +43,18 @@ function ScannerCheckout({
     if (confirmByEnterSignal <= 0) {
       return;
     }
+    if (confirmByEnterSignal === lastHandledConfirmSignalRef.current) {
+      return;
+    }
+    lastHandledConfirmSignalRef.current = confirmByEnterSignal;
     if (!isConfirmOpen) {
       return;
     }
+    if (Date.now() - confirmOpenedAt < ENTER_CONFIRM_GUARD_MS) {
+      return;
+    }
     handleConfirm();
-  }, [confirmByEnterSignal, isConfirmOpen]);
+  }, [confirmByEnterSignal, handleConfirm, isConfirmOpen, confirmOpenedAt]);
 
   useEffect(() => {
     onConfirmModalOpenChange?.(isConfirmOpen);
@@ -63,7 +79,10 @@ function ScannerCheckout({
         <button
           type="button"
           className="btn scanner-charge-btn w-100"
-          onClick={() => setIsConfirmOpen(true)}
+          onClick={() => {
+            setConfirmOpenedAt(Date.now());
+            setIsConfirmOpen(true);
+          }}
         >
           Cobrar
         </button>

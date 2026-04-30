@@ -17,6 +17,7 @@ import {
 } from './services/scanner.salesQueue';
 
 const SALE_SYNC_ERROR_TOAST_COOLDOWN_MS = 30000;
+const POST_CHARGE_ENTER_GUARD_MS = 1200;
 
 function ScannerFeature({ currentUser }) {
   const { scannerState, totals, actions } = useScannerController({ currentUser });
@@ -32,6 +33,7 @@ function ScannerFeature({ currentUser }) {
   const [confirmByEnterSignal, setConfirmByEnterSignal] = useState(0);
   const scannerInputRef = useRef(null);
   const lastSyncErrorToastAtRef = useRef(0);
+  const lastChargeAtRef = useRef(0);
 
   const focusScannerInput = useCallback(() => {
     setTimeout(() => {
@@ -141,6 +143,15 @@ function ScannerFeature({ currentUser }) {
     };
   }, [currentUser?.sessionToken, isOperario]);
 
+  useEffect(() => {
+    if (scannerState.cartItems.length > 0) {
+      return;
+    }
+    setIsCheckoutConfirmOpen(false);
+    setOpenConfirmSignal(0);
+    setConfirmByEnterSignal(0);
+  }, [scannerState.cartItems.length]);
+
   const handleManualValueChange = useCallback(
     (rawValue) => {
       actions.updateLiveEditorDraft({
@@ -171,6 +182,10 @@ function ScannerFeature({ currentUser }) {
   const executeCharge = useCallback(async () => {
     const result = await actions.chargeCart();
     if (result?.ok) {
+      lastChargeAtRef.current = Date.now();
+      setIsCheckoutConfirmOpen(false);
+      setOpenConfirmSignal(0);
+      setConfirmByEnterSignal(0);
       toast.success('Compra confirmada', {
         toastId: `scanner-sale-ok-${Date.now()}`,
         autoClose: 1800
@@ -204,8 +219,13 @@ function ScannerFeature({ currentUser }) {
 
   async function handleScanSubmit() {
     const normalizedBarcode = String(scannerState.scanBarcode || '').trim();
-
-    if (!normalizedBarcode && scannerState.cartItems.length > 0) {
+    if (!normalizedBarcode) {
+      if (!scannerState.cartItems.length) {
+        return;
+      }
+      if (Date.now() - lastChargeAtRef.current < POST_CHARGE_ENTER_GUARD_MS) {
+        return;
+      }
       if (!isCheckoutConfirmOpen) {
         setOpenConfirmSignal((value) => value + 1);
         return;
