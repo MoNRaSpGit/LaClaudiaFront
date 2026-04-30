@@ -66,7 +66,7 @@
                 <div className="panel-ranking-left">
                   <span className="panel-ranking-position">#{index + 1}</span>
                   {renderThumbnail(item)}
-                  <span>{item.name}</span>
+                  <span className="panel-ranking-name" title={item.name}>{item.name}</span>
                 </div>
                 <strong className="panel-ranking-qty">{item.qty} u.</strong>
               </li>

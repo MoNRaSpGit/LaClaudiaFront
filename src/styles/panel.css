@@ -489,6 +489,14 @@
   align-items: center;
   gap: 0.45rem;
   min-width: 0;
+  flex: 1 1 auto;
+}
+
+.panel-ranking-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .panel-ranking-thumb {
@@ -526,6 +534,7 @@
 .panel-ranking-qty {
   font-size: 0.8rem;
   color: #1e5b3e;
+  flex: 0 0 auto;
 }
 
 @media (min-width: 992px) {
