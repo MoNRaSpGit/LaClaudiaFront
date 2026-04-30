@@ -16,6 +16,7 @@
   - cada feature contiene su UI (`components`), logica de casos de uso (`model`) y acceso a datos (`services`).
 - Carpetas separadas por contexto funcional:
   - `auth`, `scanner`, `panelControl`.
+  - `payments`.
 - Boundary por modulo:
   - cada feature consume su propia capa `services`.
   - `shared` solo contiene utilidades/comunes, no reglas de negocio acopladas.
@@ -32,6 +33,7 @@
 - `src/features/auth`: boot + login conectado a backend.
 - `src/features/scanner`: flujo scanner completo.
 - `src/features/panelControl`: caja, movimientos, ranking y pagos (desde backend).
+- `src/features/payments`: pagina operativa de pagos para rol `operario`.
 - `src/shared/lib`: utilidades reutilizables.
 - `src/shared/services`: cliente HTTP base + servicios transversales.
 - `src/app/store.js`: composicion de slices (scanner).

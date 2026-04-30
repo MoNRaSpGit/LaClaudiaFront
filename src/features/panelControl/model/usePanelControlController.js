@@ -19,7 +19,7 @@ const EMPTY_DASHBOARD = {
     profitToday: 0,
     currentAmount: 0,
     paymentsTotal: 0,
-    profitRate: 0.2
+    profitRate: 0.4
   },
   comparison: {
     today: 0,

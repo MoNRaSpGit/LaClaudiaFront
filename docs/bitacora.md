@@ -6,6 +6,12 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
 
 ## Mini Changelog Tecnico (2026-04-27)
 
+- Pagos para operario (2026-04-30):
+  - nuevo tab `Pagos` visible para rol `operario` en navbar.
+  - pagina simple con monto + descripcion para registrar egresos manuales.
+  - usa el mismo endpoint de pagos del backend, por lo que impacta en movimientos del panel admin.
+  - manejo de sesion vencida alineado con panel: toast + logout consistente ante `401`.
+
 - Alta rapida por barcode no encontrado (2026-04-30):
   - el modal rapido de scanner ahora pide solo `precio`.
   - el nombre persistido queda fijo como `Producto Manual`.

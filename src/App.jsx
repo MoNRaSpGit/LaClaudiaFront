@@ -4,12 +4,14 @@ import { Menu, UserRound, LogOut } from 'lucide-react';
 import AuthGate from './features/auth/AuthGate';
 import ScannerFeature from './features/scanner/ScannerFeature';
 import PanelControlFeature from './features/panelControl/PanelControlFeature';
+import PaymentsFeature from './features/payments/PaymentsFeature';
 import { resetScannerState } from './features/scanner/scannerSlice';
 
 function Workspace({ user, onLogout }) {
   const dispatch = useDispatch();
   const userRole = String(user?.role || 'operario').toLowerCase();
   const canAccessPanel = userRole === 'admin';
+  const canAccessPayments = userRole === 'operario';
   const [activeTab, setActiveTab] = useState(canAccessPanel ? 'panel' : 'scanner');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -17,7 +19,10 @@ function Workspace({ user, onLogout }) {
     if (!canAccessPanel && activeTab === 'panel') {
       setActiveTab('scanner');
     }
-  }, [activeTab, canAccessPanel]);
+    if (!canAccessPayments && activeTab === 'payments') {
+      setActiveTab(canAccessPanel ? 'panel' : 'scanner');
+    }
+  }, [activeTab, canAccessPanel, canAccessPayments]);
 
   function handleLogout() {
     setIsMenuOpen(false);
@@ -51,6 +56,16 @@ function Workspace({ user, onLogout }) {
                   aria-current={activeTab === 'panel' ? 'page' : undefined}
                 >
                   Panel de control
+                </button>
+              ) : null}
+              {canAccessPayments ? (
+                <button
+                  type="button"
+                  className={`btn nav-tab-btn nav-tab-btn-dark ${activeTab === 'payments' ? 'nav-tab-btn-active' : ''}`}
+                  onClick={() => setActiveTab('payments')}
+                  aria-current={activeTab === 'payments' ? 'page' : undefined}
+                >
+                  Pagos
                 </button>
               ) : null}
             </div>
@@ -92,6 +107,18 @@ function Workspace({ user, onLogout }) {
                       <span>Panel de control</span>
                     </button>
                   ) : null}
+                  {canAccessPayments ? (
+                    <button
+                      type="button"
+                      className={`scanner-user-dropdown-item scanner-user-dropdown-nav-item ${activeTab === 'payments' ? 'scanner-user-dropdown-nav-item-active' : ''}`}
+                      onClick={() => {
+                        setActiveTab('payments');
+                        setIsMenuOpen(false);
+                      }}
+                    >
+                      <span>Pagos</span>
+                    </button>
+                  ) : null}
                   <div className="scanner-user-dropdown-divider" />
                   <button type="button" className="scanner-user-dropdown-item" onClick={handleLogout}>
                     <LogOut size={14} />
@@ -104,9 +131,15 @@ function Workspace({ user, onLogout }) {
         </div>
       </nav>
 
-      {activeTab === 'scanner' || !canAccessPanel
-        ? <ScannerFeature currentUser={user} />
-        : <PanelControlFeature currentUser={user} onUnauthorized={handleLogout} />}
+      {activeTab === 'scanner' && (
+        <ScannerFeature currentUser={user} />
+      )}
+      {activeTab === 'panel' && canAccessPanel && (
+        <PanelControlFeature currentUser={user} onUnauthorized={handleLogout} />
+      )}
+      {activeTab === 'payments' && canAccessPayments && (
+        <PaymentsFeature currentUser={user} onUnauthorized={handleLogout} />
+      )}
     </div>
   );
 }
