@@ -67,13 +67,13 @@ function ScannerFeature({ currentUser }) {
   }, [currentUser?.sessionToken, focusScannerInput]);
 
   useEffect(() => {
-    if (isManualModalOpen) {
+    if (isManualModalOpen || quickAddState.isOpen) {
       return;
     }
     if (scannerState.scanStatus !== 'loading') {
       focusScannerInput();
     }
-  }, [focusScannerInput, isManualModalOpen, scannerState.scanStatus]);
+  }, [focusScannerInput, isManualModalOpen, quickAddState.isOpen, scannerState.scanStatus]);
 
   useEffect(() => {
     function handleOnline() {

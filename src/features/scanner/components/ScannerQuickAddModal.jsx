@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 function ScannerQuickAddModal({
   isOpen,
@@ -9,6 +9,7 @@ function ScannerQuickAddModal({
   errorMessage = ''
 }) {
   const [value, setValue] = useState('');
+  const priceInputRef = useRef(null);
 
   useEffect(() => {
     if (!isOpen) {
@@ -23,6 +24,19 @@ function ScannerQuickAddModal({
       barcode: String(barcode || '')
     });
   }, [barcode, isOpen, onDraftChange]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      priceInputRef.current?.focus();
+      priceInputRef.current?.select?.();
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
+  }, [isOpen, barcode]);
 
   if (!isOpen) {
     return null;
@@ -55,6 +69,7 @@ function ScannerQuickAddModal({
           <div className="mb-3">
             <label className="form-label">Precio</label>
             <input
+              ref={priceInputRef}
               className="form-control"
               value={value}
               onChange={(event) => {
