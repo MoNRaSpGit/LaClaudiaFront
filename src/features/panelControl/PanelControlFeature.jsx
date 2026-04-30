@@ -68,27 +68,28 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
     setInitialCashDraft(String(controller.initialCashAmount || 0));
   }
 
-  function saveInitialCash() {
-    const parsed = Number(String(initialCashDraft || '').replace(',', '.'));
-    if (!Number.isFinite(parsed) || parsed < 0) {
-      toast.error('Ingresa una caja inicial valida mayor o igual a 0.', {
+  async function saveInitialCash() {
+    try {
+      const result = await controller.saveInitialCash(initialCashDraft);
+      if (result?.busy) {
+        return;
+      }
+      setIsInitialCashModalOpen(false);
+      toast.success('Caja inicial actualizada.', {
+        toastId: 'panel-initial-cash-ok',
+        autoClose: 1800
+      });
+    } catch (error) {
+      toast.error(error?.message || 'No se pudo guardar la caja inicial.', {
         toastId: 'panel-initial-cash-invalid',
         autoClose: 2200
       });
-      return;
     }
-
-    controller.setInitialCashAmount(Number(parsed.toFixed(2)));
-    setIsInitialCashModalOpen(false);
-    toast.success('Caja inicial actualizada.', {
-      toastId: 'panel-initial-cash-ok',
-      autoClose: 1800
-    });
   }
 
-  function handleInitialCashSubmit(event) {
+  async function handleInitialCashSubmit(event) {
     event.preventDefault();
-    saveInitialCash();
+    await saveInitialCash();
   }
 
   async function handlePaymentSubmit(event) {
@@ -316,7 +317,9 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
                 onChange={(event) => setInitialCashDraft(event.target.value)}
                 autoFocus
               />
-              <button type="submit" className="btn btn-dark w-100">Guardar</button>
+              <button type="submit" className="btn btn-dark w-100" disabled={controller.isSavingInitialCash}>
+                {controller.isSavingInitialCash ? 'Guardando...' : 'Guardar'}
+              </button>
             </form>
           )}
           onClose={closeInitialCashModal}
@@ -341,4 +344,5 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
 }
 
 export default PanelControlFeature;
+
 

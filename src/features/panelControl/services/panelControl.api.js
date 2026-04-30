@@ -17,6 +17,16 @@ export async function registerPanelPayment(payload, options) {
   };
 }
 
+export async function updatePanelInitialCash(payload, options) {
+  const response = await fetch(`${apiUrl}/api/scanner/dashboard/initial-cash`, {
+    method: 'PUT',
+    headers: buildHeaders({ token: options?.token, json: true }),
+    body: JSON.stringify(payload)
+  });
+
+  return readJson(response);
+}
+
 export function subscribePanelDashboard(params) {
   const search = new URLSearchParams();
   if (params?.params?.initialCash != null) {
