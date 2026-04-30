@@ -218,7 +218,7 @@ export function useAuthGateController() {
 
   async function quickLoginOperario() {
     const quickUsername = 'operario';
-    const quickPassword = '1234';
+    const quickPassword = 'operario123';
     setUsername(quickUsername);
     setPassword(quickPassword);
     await runLogin(quickUsername, quickPassword);
@@ -226,7 +226,7 @@ export function useAuthGateController() {
 
   async function quickLoginAdmin() {
     const quickUsername = 'admin';
-    const quickPassword = '1234';
+    const quickPassword = 'admin123';
     setUsername(quickUsername);
     setPassword(quickPassword);
     await runLogin(quickUsername, quickPassword);
