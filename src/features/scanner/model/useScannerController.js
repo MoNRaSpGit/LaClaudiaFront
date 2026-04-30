@@ -54,8 +54,10 @@ export function useScannerController({ currentUser } = {}) {
     }
   }
 
-  function addManualProduct(rawValue) {
+  function addManualProduct(rawValue, options = {}) {
     const manualPrice = parsePositiveAmount(rawValue);
+    const manualName = String(options?.manualName || 'Producto Manual').trim() || 'Producto Manual';
+    const manualCategory = String(options?.manualCategory || 'manual').trim() || 'manual';
 
     if (manualPrice === null) {
       dispatch(setScanError('Ingresa un valor numerico valido mayor a 0.'));
@@ -67,10 +69,10 @@ export function useScannerController({ currentUser } = {}) {
         id: `manual-line-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
         productId: null,
         isManual: true,
-        nombre: 'Producto Manual',
+        nombre: manualName,
         precio_venta: manualPrice,
         stock_actual: 0,
-        categoria: 'manual',
+        categoria: manualCategory,
         barcode: '',
         barcode_normalized: '',
         tiene_imagen: false,
@@ -187,12 +189,16 @@ export function useScannerController({ currentUser } = {}) {
   const setScanBarcodeValue = useCallback((value) => dispatch(setScanBarcode(value)), [dispatch]);
   const clearScanErrorNow = useCallback(() => dispatch(setScanError('')), [dispatch]);
   const clearCartNow = useCallback(() => dispatch(clearCart()), [dispatch]);
-  const startManualLiveEditor = useCallback(() => dispatch(
+  const startManualLiveEditor = useCallback((options = {}) => dispatch(
     setLiveEditor({
       type: 'manual',
-      title: 'Producto manual',
+      title: String(options?.title || options?.manualName || 'Producto manual').trim() || 'Producto manual',
       description: 'El operario esta cargando un producto manualmente. La caja lo ve en vivo mientras el modal sigue abierto.',
-      draft: { nombre: 'Producto Manual', precio_venta_raw: '', precio_venta: 0 }
+      draft: {
+        nombre: String(options?.manualName || 'Producto Manual').trim() || 'Producto Manual',
+        precio_venta_raw: '',
+        precio_venta: 0
+      }
     })
   ), [dispatch]);
   const startProductEditLiveEditor = useCallback((item) => dispatch(

@@ -1,4 +1,5 @@
 ﻿import { useCallback, useEffect, useRef, useState } from 'react';
+import { Apple, Beef, Scale, Wheat } from 'lucide-react';
 import { ToastContainer, toast } from 'react-toastify';
 import { useScannerController } from './model/useScannerController';
 import ScannerInput from './components/ScannerInput';
@@ -20,6 +21,12 @@ const SALE_SYNC_ERROR_TOAST_COOLDOWN_MS = 30000;
 const POST_CHARGE_ENTER_GUARD_MS = 1200;
 const LIVE_STATE_PUBLISH_DELAY_MS = 100;
 const LIVE_STATE_SLOW_MS = 300;
+const MANUAL_PRODUCT_OPTIONS = [
+  { key: 'fruta-verduras', label: 'Fruta/Verduras', icon: Apple, category: 'fruta_verduras' },
+  { key: 'fiambre', label: 'Fiambre', icon: Beef, category: 'fiambre' },
+  { key: 'fideo', label: 'Fideo', icon: Wheat, category: 'fideo' },
+  { key: 'producto-x-kg', label: 'Producto x kg', icon: Scale, category: 'producto_x_kg' }
+];
 
 function ScannerFeature({ currentUser }) {
   const { scannerState, totals, actions } = useScannerController({ currentUser });
@@ -30,6 +37,7 @@ function ScannerFeature({ currentUser }) {
   const startQuickBarcodeLiveEditor = actions.startQuickBarcodeLiveEditor;
   const isOperario = String(currentUser?.role || '').trim().toLowerCase() === 'operario';
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
+  const [selectedManualProduct, setSelectedManualProduct] = useState(null);
   const [quickAddState, setQuickAddState] = useState({
     isOpen: false,
     barcode: ''
@@ -198,17 +206,19 @@ function ScannerFeature({ currentUser }) {
 
   const handleManualValueChange = useCallback(
     (rawValue) => {
+      const manualName = selectedManualProduct?.label || 'Producto Manual';
       updateLiveEditorDraft({
-        nombre: 'Producto Manual',
+        nombre: manualName,
         precio_venta_raw: String(rawValue || ''),
         precio_venta: Number(String(rawValue || '').replace(',', '.')) || 0
       });
     },
-    [updateLiveEditorDraft]
+    [selectedManualProduct?.label, updateLiveEditorDraft]
   );
 
   function closeManualModal() {
     setIsManualModalOpen(false);
+    setSelectedManualProduct(null);
     clearScanError();
     stopLiveEditor();
     focusScannerInput();
@@ -312,17 +322,30 @@ function ScannerFeature({ currentUser }) {
             />
 
             <div className="text-center mt-4">
-              <button
-                type="button"
-                className="btn scanner-manual-btn"
-                onClick={() => {
-                  clearScanError();
-                  startManualLiveEditor();
-                  setIsManualModalOpen(true);
-                }}
-              >
-                Producto manual
-              </button>
+              <div className="scanner-manual-grid" role="group" aria-label="Productos manuales rápidos">
+                {MANUAL_PRODUCT_OPTIONS.map((option) => {
+                  const Icon = option.icon;
+                  return (
+                    <button
+                      key={option.key}
+                      type="button"
+                      className="btn scanner-manual-btn"
+                      onClick={() => {
+                        clearScanError();
+                        setSelectedManualProduct(option);
+                        startManualLiveEditor({
+                          title: option.label,
+                          manualName: option.label
+                        });
+                        setIsManualModalOpen(true);
+                      }}
+                    >
+                      <Icon size={18} />
+                      <span>{option.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <ScannerCart
@@ -354,9 +377,13 @@ function ScannerFeature({ currentUser }) {
       <ScannerManualModal
         isOpen={isManualModalOpen}
         onClose={closeManualModal}
-        onConfirm={actions.addManualProduct}
+        onConfirm={(value) => actions.addManualProduct(value, {
+          manualName: selectedManualProduct?.label || 'Producto Manual',
+          manualCategory: selectedManualProduct?.category || 'manual'
+        })}
         onValueChange={handleManualValueChange}
         errorMessage={modalErrorMessage}
+        productName={selectedManualProduct?.label || 'Producto manual'}
       />
 
       <ScannerQuickAddModal
@@ -372,3 +399,4 @@ function ScannerFeature({ currentUser }) {
 }
 
 export default ScannerFeature;
+

@@ -18,6 +18,26 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
   - si el navegador esta offline, se evita mostrar ese toast para no generar ruido operativo.
   - al quedar la cola en `0` pendientes, se reinicia el contador de errores.
 
+- Scanner manual por categorias (2026-04-30):
+  - se reemplazo el boton unico `Producto manual` por `4` accesos rapidos:
+    - `Fruta/Verduras`
+    - `Fiambre`
+    - `Fideo`
+    - `Producto x kg`
+  - misma logica operativa de siempre:
+    - click en categoria.
+    - modal para ingresar valor.
+    - alta en carrito inmediata.
+  - cambio funcional clave:
+    - la linea ya no entra con nombre generico `Producto Manual`.
+    - ahora entra con el nombre de la categoria seleccionada.
+  - live editor en panel:
+    - mantiene sincronizacion en vivo mostrando el nombre de categoria elegida.
+  - UX visual:
+    - botones compactos para operacion rapida.
+    - estilo sobrio/neutro (sin fondo negro pleno ni colores fuertes).
+    - iconos por categoria para reconocimiento rapido.
+
 - Pagos para operario (2026-04-30):
   - nuevo tab `Pagos` visible para rol `operario` en navbar.
   - pagina simple con monto + descripcion para registrar egresos manuales.

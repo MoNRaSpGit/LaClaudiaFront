@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-function ScannerManualModal({ isOpen, onClose, onConfirm, onValueChange, errorMessage }) {
+function ScannerManualModal({ isOpen, onClose, onConfirm, onValueChange, errorMessage, productName }) {
   const [value, setValue] = useState('');
 
   function handleConfirm() {
@@ -25,10 +25,10 @@ function ScannerManualModal({ isOpen, onClose, onConfirm, onValueChange, errorMe
   }
 
   return (
-    <div className="scanner-modal-overlay" role="dialog" aria-modal="true" aria-label="Producto manual">
+    <div className="scanner-modal-overlay" role="dialog" aria-modal="true" aria-label={productName || 'Producto manual'}>
       <div className="scanner-modal-card">
         <div className="d-flex justify-content-between align-items-center mb-3">
-          <h2 className="h5 mb-0">Producto manual</h2>
+          <h2 className="h5 mb-0">{productName || 'Producto manual'}</h2>
           <button type="button" className="btn btn-sm btn-outline-secondary" onClick={onClose}>X</button>
         </div>
 
