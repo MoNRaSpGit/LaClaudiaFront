@@ -6,6 +6,17 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
 
 ## Mini Changelog Tecnico (2026-04-27)
 
+- Login operativo y credenciales rapidas (2026-04-30):
+  - login real mantenido contra backend con usuarios simples para operacion diaria.
+  - credenciales activas acordadas:
+    - `admin` / `admin123`
+    - `nova` / `nova123`
+  - accesos rapidos del login actualizados:
+    - `Entrar como Admin` usa `admin/admin123`.
+    - `Entrar como Operario` usa `nova/nova123`.
+  - el usuario `nova` se creo como `operario` real en backend para que el acceso rapido no dependa de mocks ni credenciales legacy.
+  - se mantiene `operario/operario123` como usuario historico si siguiera existiendo en DB, pero ya no es la credencial operativa principal ni el acceso rapido recomendado.
+
 - Scanner UX y resiliencia (2026-04-28):
   - PF de estabilidad scanner y mensajes operativos (2026-04-29):
     - mejorados mensajes de error para operacion real:
@@ -135,7 +146,8 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
   - fix de loop/render en modal de edicion.
   - fix de persistencia de edicion (nombre/precio/imagen) contra backend.
 - Auth UX:
-  - boton rapido `Entrar como Admin` (`admin/1234`) agregado en login.
+  - accesos rapidos de login activos para operacion y pruebas manuales.
+  - credenciales historicas iniciales (`admin/1234`) quedaron reemplazadas por las credenciales actuales documentadas arriba.
 
 ## Mini Changelog Tecnico (2026-04-26)
 
