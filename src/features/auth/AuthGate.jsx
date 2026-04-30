@@ -18,6 +18,7 @@ function AuthGate({ children }) {
         error={state.error}
         backendReady={state.backendReady}
         isAuthenticating={state.phase === 'authenticating'}
+        adminFocusPasswordSignal={state.adminFocusPasswordSignal}
         onUsernameChange={actions.setUsername}
         onPasswordChange={actions.setPassword}
           onRememberCredentialsChange={actions.setRememberCredentials}

@@ -1,3 +1,5 @@
+import { useEffect, useRef } from 'react';
+
 function LoginCard({
   username,
   password,
@@ -5,6 +7,7 @@ function LoginCard({
   error,
   backendReady,
   isAuthenticating,
+  adminFocusPasswordSignal,
   onUsernameChange,
   onPasswordChange,
   onRememberCredentialsChange,
@@ -12,6 +15,19 @@ function LoginCard({
   onQuickAdminLogin,
   onQuickOperarioLogin
 }) {
+  const passwordInputRef = useRef(null);
+
+  useEffect(() => {
+    if (!adminFocusPasswordSignal) {
+      return;
+    }
+
+    setTimeout(() => {
+      passwordInputRef.current?.focus();
+      passwordInputRef.current?.select?.();
+    }, 0);
+  }, [adminFocusPasswordSignal]);
+
   return (
     <div className="auth-shell">
       <section className="auth-login-card">
@@ -39,6 +55,7 @@ function LoginCard({
           <div>
             <label className="form-label auth-label">Clave</label>
             <input
+              ref={passwordInputRef}
               type="password"
               className="form-control auth-input"
               value={password}
@@ -85,7 +102,7 @@ function LoginCard({
         </form>
 
         <p className="auth-footnote mt-3 mb-0">
-          Acceso r{"\u00E1"}pido disponible para operaci{"\u00F3"}n de caja (admin y operario).
+          Acceso r{"\u00E1"}pido disponible para operaci{"\u00F3"}n de caja. Admin precarga usuario; operario entra completo.
         </p>
       </section>
     </div>

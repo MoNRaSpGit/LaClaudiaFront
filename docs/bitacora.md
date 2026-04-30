@@ -21,10 +21,10 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
 - Login operativo y credenciales rapidas (2026-04-30):
   - login real mantenido contra backend con usuarios simples para operacion diaria.
   - credenciales activas acordadas:
-    - `admin` / `admin123`
+    - `admin` / `1994`
     - `nova` / `nova123`
   - accesos rapidos del login actualizados:
-    - `Entrar como Admin` usa `admin/admin123`.
+    - `Entrar como Admin` precarga solo `admin` y enfoca la clave.
     - `Entrar como Operario` usa `nova/nova123`.
   - el usuario `nova` se creo como `operario` real en backend para que el acceso rapido no dependa de mocks ni credenciales legacy.
   - se mantiene `operario/operario123` como usuario historico si siguiera existiendo en DB, pero ya no es la credencial operativa principal ni el acceso rapido recomendado.

@@ -112,6 +112,7 @@ export function useAuthGateController() {
   const [error, setError] = useState('');
   const [backendReady, setBackendReady] = useState(false);
   const [user, setUser] = useState(null);
+  const [adminFocusPasswordSignal, setAdminFocusPasswordSignal] = useState(0);
 
   useEffect(() => {
     const remembered = readRememberedCredentials();
@@ -224,12 +225,12 @@ export function useAuthGateController() {
     await runLogin(quickUsername, quickPassword);
   }
 
-  async function quickLoginAdmin() {
+  function quickLoginAdmin() {
     const quickUsername = 'admin';
-    const quickPassword = 'admin123';
     setUsername(quickUsername);
-    setPassword(quickPassword);
-    await runLogin(quickUsername, quickPassword);
+    setPassword('');
+    setError('');
+    setAdminFocusPasswordSignal((value) => value + 1);
   }
 
   function logout() {
@@ -255,7 +256,8 @@ export function useAuthGateController() {
       error,
       backendReady,
       bootMessage,
-      user
+      user,
+      adminFocusPasswordSignal
     },
     actions: {
       setUsername,
