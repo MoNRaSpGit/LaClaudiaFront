@@ -322,7 +322,7 @@ function ScannerFeature({ currentUser }) {
             />
 
             <div className="text-center mt-4">
-              <div className="scanner-manual-grid" role="group" aria-label="Productos manuales rápidos">
+              <div className="scanner-manual-grid scanner-manual-grid--fuerte" role="group" aria-label="Productos manuales rápidos">
                 {MANUAL_PRODUCT_OPTIONS.map((option) => {
                   const Icon = option.icon;
                   return (

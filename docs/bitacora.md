@@ -37,6 +37,9 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
     - botones compactos para operacion rapida.
     - estilo sobrio/neutro (sin fondo negro pleno ni colores fuertes).
     - iconos por categoria para reconocimiento rapido.
+  - decision final de interfaz:
+    - se evaluaron variantes visuales y se fijo `Borde fuerte` como estilo definitivo de los botones.
+    - se removio el selector temporal de estilos de prueba para dejar UI limpia en produccion.
 
 - Pagos para operario (2026-04-30):
   - nuevo tab `Pagos` visible para rol `operario` en navbar.

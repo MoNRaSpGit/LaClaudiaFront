@@ -63,6 +63,19 @@
   border-left: 4px solid #1f2937;
 }
 
+.scanner-manual-grid--fuerte .scanner-manual-btn {
+  border-width: 2px;
+  border-color: #111827;
+  background: linear-gradient(180deg, #ffffff 0%, #f3f4f6 100%);
+  box-shadow: 0 3px 8px rgba(17, 24, 39, 0.12);
+}
+
+.scanner-manual-grid--fuerte .scanner-manual-btn:hover,
+.scanner-manual-grid--fuerte .scanner-manual-btn:focus {
+  background: #ffffff;
+  box-shadow: 0 8px 16px rgba(17, 24, 39, 0.18);
+}
+
 @media (max-width: 640px) {
   .scanner-manual-grid {
     grid-template-columns: 1fr;
