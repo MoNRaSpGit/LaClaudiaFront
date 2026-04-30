@@ -6,6 +6,12 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
 
 ## Mini Changelog Tecnico (2026-04-27)
 
+- Alta rapida por barcode no encontrado (2026-04-30):
+  - el modal rapido de scanner ahora pide solo `precio`.
+  - el nombre persistido queda fijo como `Producto Manual`.
+  - al confirmar, crea el producto real en backend antes de agregarlo al carrito.
+  - resultado: el siguiente escaneo del mismo barcode ya lo encuentra desde catalogo.
+
 - Login operativo y credenciales rapidas (2026-04-30):
   - login real mantenido contra backend con usuarios simples para operacion diaria.
   - credenciales activas acordadas:

@@ -13,7 +13,7 @@ import {
   updateCartItem,
   updateLiveEditorDraft
 } from '../scannerSlice';
-import { fetchProductByBarcode, updateScannerProduct } from '../services/scanner.api';
+import { createScannerProduct, fetchProductByBarcode, updateScannerProduct } from '../services/scanner.api';
 import { enqueueScannerSale } from '../services/scanner.salesQueue';
 import { parsePositiveAmount } from '../../../shared/lib/number';
 import { toUserErrorMessage } from '../../../shared/lib/userErrorMessages';
@@ -81,7 +81,7 @@ export function useScannerController({ currentUser } = {}) {
     return true;
   }
 
-  function addQuickBarcodeProduct({ barcode, rawValue }) {
+  async function addQuickBarcodeProduct({ barcode, rawValue }) {
     const manualPrice = parsePositiveAmount(rawValue);
     if (manualPrice === null) {
       dispatch(setScanError('Ingresa un valor numerico valido mayor a 0.'));
@@ -91,23 +91,22 @@ export function useScannerController({ currentUser } = {}) {
     const normalizedBarcode = String(barcode || '').trim();
     const normalizedName = 'Producto Manual';
 
-    dispatch(
-      addScannedProduct({
-        id: `quick-line-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-        productId: null,
-        isManual: true,
-        nombre: normalizedName,
-        precio_venta: manualPrice,
-        stock_actual: 0,
-        categoria: 'manual',
-        barcode: normalizedBarcode,
-        barcode_normalized: normalizedBarcode,
-        tiene_imagen: false,
-        thumbnail_url: null
-      })
-    );
+    try {
+      const data = await createScannerProduct(
+        {
+          barcode: normalizedBarcode,
+          nombre: normalizedName,
+          precio_venta: manualPrice
+        },
+        { token: currentUser?.sessionToken || '' }
+      );
 
-    return true;
+      dispatch(addScannedProduct(data.item));
+      return true;
+    } catch (error) {
+      dispatch(setScanError(toUserErrorMessage(error, { context: 'scanner_edit' })));
+      return false;
+    }
   }
 
   async function chargeCart() {

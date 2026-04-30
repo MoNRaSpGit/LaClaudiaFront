@@ -267,6 +267,7 @@ function ScannerFeature({ currentUser }) {
     }
 
     const barcode = String(scanResult.barcode || '').trim();
+    clearScanError();
     startQuickBarcodeLiveEditor({
       barcode
     });
@@ -277,6 +278,7 @@ function ScannerFeature({ currentUser }) {
   }
 
   const modalErrorMessage = isManualModalOpen ? scannerState.scanError : '';
+  const quickAddErrorMessage = quickAddState.isOpen ? scannerState.scanError : '';
 
   return (
     <>
@@ -346,6 +348,7 @@ function ScannerFeature({ currentUser }) {
         onClose={closeQuickAddModal}
         onConfirm={actions.addQuickBarcodeProduct}
         onDraftChange={actions.updateLiveEditorDraft}
+        errorMessage={quickAddErrorMessage}
       />
     </>
   );

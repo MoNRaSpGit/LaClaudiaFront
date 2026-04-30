@@ -69,6 +69,22 @@ export async function updateScannerProduct(productId, payload, { token } = {}) {
   return result;
 }
 
+export async function createScannerProduct(payload, { token } = {}) {
+  const response = await fetch(`${apiUrl}/api/scanner/products`, {
+    method: 'POST',
+    headers: buildHeaders({ token, json: true }),
+    body: JSON.stringify(payload || {})
+  });
+  const result = await readJson(response);
+
+  if (result?.item) {
+    const barcode = result.item.barcode_normalized || result.item.barcode;
+    setCachedLookup(barcode, result);
+  }
+
+  return result;
+}
+
 export async function createScannerSale(payload, { token } = {}) {
   const response = await fetch(`${apiUrl}/api/scanner/sales`, {
     method: 'POST',

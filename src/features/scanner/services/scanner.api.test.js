@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  createScannerProduct,
   createScannerSale,
   fetchProductByBarcode,
   publishScannerLiveState,
@@ -50,6 +51,31 @@ describe('scanner.api contracts', () => {
     await expect(updateScannerProduct(0, { nombre: 'x' }, { token: 'tk-1' })).rejects.toThrow(/productId/i);
   });
 
+  it('createScannerProduct hace POST con JSON + Authorization', async () => {
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        item: { id: 22, nombre: 'Coca Cola 600ml', barcode: '779' }
+      })
+    });
+
+    await createScannerProduct(
+      { barcode: '779', nombre: 'Coca Cola 600ml', precio_venta: 150 },
+      { token: 'tk-create' }
+    );
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/api/scanner/products'),
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer tk-create'
+        })
+      })
+    );
+  });
+
   it('createScannerSale y publishScannerLiveState envian payload JSON al backend', async () => {
     global.fetch
       .mockResolvedValueOnce({
@@ -89,4 +115,3 @@ describe('scanner.api contracts', () => {
     );
   });
 });
-

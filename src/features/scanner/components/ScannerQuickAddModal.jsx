@@ -28,8 +28,8 @@ function ScannerQuickAddModal({
     return null;
   }
 
-  function handleConfirm() {
-    const ok = onConfirm({
+  async function handleConfirm() {
+    const ok = await onConfirm({
       barcode,
       rawValue: value
     });
@@ -61,7 +61,6 @@ function ScannerQuickAddModal({
                 const next = event.target.value;
                 setValue(next);
                 onDraftChange?.({
-                  nombre: 'Producto Manual',
                   precio_venta_raw: next,
                   precio_venta: Number(String(next || '').replace(',', '.')) || 0
                 });
