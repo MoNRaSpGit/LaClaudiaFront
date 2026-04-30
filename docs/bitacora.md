@@ -183,7 +183,8 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
 1. `README.md` (estado funcional y scripts).
 2. `docs/architecture.md` (estructura por feature y flujo real).
 3. `docs/bitacora.md` (estado actual + pendientes).
-4. `src/features/auth/*`, `src/features/scanner/*`, `src/features/panelControl/*`.
+4. `docs/saas-rebuild-frontend.md` (captura funcional para reconstruccion futura en SaaS).
+5. `src/features/auth/*`, `src/features/scanner/*`, `src/features/panelControl/*`.
 
 ## Contexto rapido para agente (2026-04-26)
 
