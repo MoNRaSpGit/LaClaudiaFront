@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useRef, useState } from 'react';
 import { parsePositiveAmount } from '../../../shared/lib/number';
 import { toUserErrorMessage } from '../../../shared/lib/userErrorMessages';
 import { registerPanelPayment, subscribePanelDashboard } from '../services/panelControl.api';
@@ -21,6 +21,7 @@ const EMPTY_DASHBOARD = {
   movements: [],
   ranking: []
 };
+const PANEL_LIVE_SLOW_MS = 300;
 
 export function usePanelControlController({ currentUser, onUnauthorized }) {
   const [dashboard, setDashboard] = useState(EMPTY_DASHBOARD);
@@ -34,6 +35,7 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
   const [paymentDescription, setPaymentDescription] = useState('');
   const [paymentError, setPaymentError] = useState('');
   const [isRegisteringPayment, setIsRegisteringPayment] = useState(false);
+  const lastLiveSnapshotKeyRef = useRef('');
 
   useEffect(() => {
     let isMounted = true;
@@ -59,7 +61,32 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
           if (!isMounted) {
             return;
           }
-          setRemoteLiveScanner(response?.liveScanner || null);
+          const nextLiveScanner = response?.liveScanner || null;
+          const snapshotKey = nextLiveScanner
+            ? `${String(nextLiveScanner.updatedAt || '')}::${String(nextLiveScanner.lastScannedAt || '')}`
+            : 'empty';
+
+          if (snapshotKey === lastLiveSnapshotKeyRef.current) {
+            return;
+          }
+          lastLiveSnapshotKeyRef.current = snapshotKey;
+
+          const now = Date.now();
+          const lastScannedAt = nextLiveScanner?.lastScannedAt ? Date.parse(nextLiveScanner.lastScannedAt) : NaN;
+          const updatedAt = nextLiveScanner?.updatedAt ? Date.parse(nextLiveScanner.updatedAt) : NaN;
+          const totalMs = Number.isFinite(lastScannedAt) ? Number((now - lastScannedAt).toFixed(1)) : null;
+          const relayMs = Number.isFinite(updatedAt) ? Number((now - updatedAt).toFixed(1)) : null;
+
+          if (totalMs != null) {
+            const relayLabel = relayMs != null ? `${relayMs} ms` : '-';
+            if (totalMs > PANEL_LIVE_SLOW_MS) {
+              console.warn(`[PANEL_LIVE][LENTO] total=${totalMs} ms relay~=${relayLabel} (> ${PANEL_LIVE_SLOW_MS} ms)`);
+            } else {
+              console.info(`[PANEL_LIVE][OK] total=${totalMs} ms relay~=${relayLabel}`);
+            }
+          }
+
+          setRemoteLiveScanner(nextLiveScanner);
         },
         onError: (error) => {
           if (!isMounted) {
@@ -143,8 +170,8 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
   const visibleRankingItems = rankingItems.slice(0, visibleRankingCount);
   const canExpandMovements = movementItems.length > visibleMovementsCount;
   const canExpandRanking = rankingItems.length > visibleRankingCount;
-  const movementExpandLabel = visibleMovementsCount <= 3 ? 'Ver 3 más' : 'Ver todos';
-  const rankingExpandLabel = visibleRankingCount <= 5 ? 'Ver 5 más' : 'Ver todos';
+  const movementExpandLabel = visibleMovementsCount <= 3 ? 'Ver 3 mas' : 'Ver todos';
+  const rankingExpandLabel = visibleRankingCount <= 5 ? 'Ver 5 mas' : 'Ver todos';
   const operatorName = String(remoteLiveScanner?.operator?.display_name || '').trim() || 'Operario';
   const rankingDateLabel = useMemo(() => {
     const rawDate = String(dashboard?.date || '').trim();
@@ -162,9 +189,9 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
   }, [dashboard?.date]);
 
   const metrics = [
-    { title: 'Caja inicial', value: moneyNoDecimals(panelMetrics.initialCash), hint: 'Monto de apertura del día.' },
-    { title: 'Ventas del día', value: moneyNoDecimals(panelMetrics.salesToday), hint: 'Confirmadas con el botón Cobrar.' },
-    { title: 'Ganancia diaria', value: moneyNoDecimals(panelMetrics.profitToday), hint: `${Number(panelMetrics.profitRate || 0) * 100}% de ventas del día` },
+    { title: 'Caja inicial', value: moneyNoDecimals(panelMetrics.initialCash), hint: 'Monto de apertura del dia.' },
+    { title: 'Ventas del dia', value: moneyNoDecimals(panelMetrics.salesToday), hint: 'Confirmadas con el boton Cobrar.' },
+    { title: 'Ganancia diaria', value: moneyNoDecimals(panelMetrics.profitToday), hint: `${Number(panelMetrics.profitRate || 0) * 100}% de ventas del dia` },
     { title: 'Monto actual', value: moneyNoDecimals(panelMetrics.currentAmount), hint: 'Caja diaria + ventas - pagos' },
     { title: 'Pagos realizados', value: moneyNoDecimals(panelMetrics.paymentsTotal), hint: 'Suma de pagos registrados' }
   ];
@@ -285,5 +312,7 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
     setPaymentDescription
   };
 }
+
+
 
 

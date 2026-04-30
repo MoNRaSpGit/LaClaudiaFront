@@ -11,7 +11,7 @@ function renderMovementDetail(item) {
         <ul className="panel-movement-detail-list mb-0">
           {item.detail.items.map((product, index) => (
             <li key={`${product.id}-${index}`}>
-              <span>{product.name}</span>
+              <span>{product.name} x{Number(product.quantity || product.qty || 1)}</span>
               <strong>{money(product.lineTotal)}</strong>
             </li>
           ))}

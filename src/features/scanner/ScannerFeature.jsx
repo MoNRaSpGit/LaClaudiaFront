@@ -19,6 +19,7 @@ import {
 const SALE_SYNC_ERROR_TOAST_COOLDOWN_MS = 30000;
 const POST_CHARGE_ENTER_GUARD_MS = 1200;
 const LIVE_STATE_PUBLISH_DELAY_MS = 100;
+const LIVE_STATE_SLOW_MS = 300;
 
 function ScannerFeature({ currentUser }) {
   const { scannerState, totals, actions } = useScannerController({ currentUser });
@@ -127,9 +128,20 @@ function ScannerFeature({ currentUser }) {
 
     const timeoutId = setTimeout(() => {
       lastLiveStateSignatureRef.current = nextSignature;
+      const startedAt = typeof performance !== 'undefined' ? performance.now() : Date.now();
       publishScannerLiveState(liveStatePayload, {
         token: currentUser.sessionToken
-      }).catch(() => {});
+      })
+        .then(() => {
+          const elapsedMs = (typeof performance !== 'undefined' ? performance.now() : Date.now()) - startedAt;
+          const rounded = Number(elapsedMs.toFixed(1));
+          if (rounded > LIVE_STATE_SLOW_MS) {
+            console.warn(`[LIVE_STATE][LENTO] publish=${rounded} ms (> ${LIVE_STATE_SLOW_MS} ms)`);
+          } else {
+            console.info(`[LIVE_STATE][OK] publish=${rounded} ms`);
+          }
+        })
+        .catch(() => {});
     }, LIVE_STATE_PUBLISH_DELAY_MS);
 
     return () => clearTimeout(timeoutId);

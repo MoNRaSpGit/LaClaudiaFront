@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from 'react';
+﻿import { useCallback, useEffect, useRef, useState } from 'react';
 import { Wallet, Radio, Trophy, ArrowLeftRight, HandCoins } from 'lucide-react';
 import { ToastContainer, toast } from 'react-toastify';
 import MetricCard from './components/MetricCard';
@@ -12,21 +12,27 @@ import { usePanelControlController } from './model/usePanelControlController';
 
 function PanelControlFeature({ currentUser, onUnauthorized }) {
   const unauthorizedHandledRef = useRef(false);
+  const handleUnauthorized = useCallback(() => {
+    if (unauthorizedHandledRef.current) {
+      return;
+    }
+    unauthorizedHandledRef.current = true;
+    toast.warn('Sesion vencida. Inicia sesion nuevamente.', {
+      toastId: 'panel-session-expired',
+      autoClose: 1700
+    });
+    window.setTimeout(() => {
+      onUnauthorized?.();
+    }, 900);
+  }, [onUnauthorized]);
+
+  useEffect(() => {
+    unauthorizedHandledRef.current = false;
+  }, [currentUser?.sessionToken]);
+
   const controller = usePanelControlController({
     currentUser,
-    onUnauthorized: () => {
-      if (unauthorizedHandledRef.current) {
-        return;
-      }
-      unauthorizedHandledRef.current = true;
-      toast.warn('Sesion vencida. Inicia sesion nuevamente.', {
-        toastId: 'panel-session-expired',
-        autoClose: 1700
-      });
-      window.setTimeout(() => {
-        onUnauthorized?.();
-      }, 900);
-    }
+    onUnauthorized: handleUnauthorized
   });
   const [isMobileLayout, setIsMobileLayout] = useState(false);
   const [activeMobileSection, setActiveMobileSection] = useState('daily');
@@ -268,3 +274,4 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
 }
 
 export default PanelControlFeature;
+

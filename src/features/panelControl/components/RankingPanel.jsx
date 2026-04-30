@@ -1,4 +1,4 @@
-function RankingPanel({
+﻿function RankingPanel({
   hasRankingItems,
   visibleRankingItems,
   rankingDateLabel,
@@ -56,7 +56,7 @@ function RankingPanel({
             </button>
           ) : null}
         </div>
-        <p className="panel-help mb-0">Ranking del día {rankingDateLabel} por cantidad vendida.</p>
+        <p className="panel-help mb-0">Ranking del dia {rankingDateLabel} por cantidad vendida.</p>
       </div>
       <div className="panel-block-content panel-block-data-cell">
         {hasRankingItems ? (
@@ -84,3 +84,4 @@ function RankingPanel({
 }
 
 export default RankingPanel;
+
