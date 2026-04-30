@@ -6,6 +6,12 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
 
 ## Mini Changelog Tecnico (2026-04-27)
 
+- Ganancia diaria editable desde panel (2026-04-30):
+  - porcentaje por defecto actualizado a `30%` para calculo de `Ganancia diaria`.
+  - la tarjeta `Ganancia diaria` ahora permite edicion por doble click.
+  - al hacer doble click se abre modal para ingresar porcentaje (`0` a `100`).
+  - el valor guardado se aplica al stream del dashboard para recalcular metricas al instante.
+
 - Pagos para operario (2026-04-30):
   - nuevo tab `Pagos` visible para rol `operario` en navbar.
   - pagina simple con monto + descripcion para registrar egresos manuales.

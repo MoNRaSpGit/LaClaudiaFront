@@ -38,6 +38,8 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
   const [activeMobileSection, setActiveMobileSection] = useState('daily');
   const [isInitialCashModalOpen, setIsInitialCashModalOpen] = useState(false);
   const [initialCashDraft, setInitialCashDraft] = useState(() => String(controller.initialCashAmount || 0));
+  const [isProfitRateModalOpen, setIsProfitRateModalOpen] = useState(false);
+  const [profitRateDraft, setProfitRateDraft] = useState(() => String(controller.profitRatePercent || 30));
 
   useEffect(() => {
     function syncMobileLayout() {
@@ -58,14 +60,28 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
     setInitialCashDraft(String(controller.initialCashAmount || 0));
   }, [controller.initialCashAmount]);
 
+  useEffect(() => {
+    setProfitRateDraft(String(controller.profitRatePercent || 30));
+  }, [controller.profitRatePercent]);
+
   function openInitialCashModal() {
     setInitialCashDraft(String(controller.initialCashAmount || 0));
     setIsInitialCashModalOpen(true);
   }
 
+  function openProfitRateModal() {
+    setProfitRateDraft(String(controller.profitRatePercent || 30));
+    setIsProfitRateModalOpen(true);
+  }
+
   function closeInitialCashModal() {
     setIsInitialCashModalOpen(false);
     setInitialCashDraft(String(controller.initialCashAmount || 0));
+  }
+
+  function closeProfitRateModal() {
+    setIsProfitRateModalOpen(false);
+    setProfitRateDraft(String(controller.profitRatePercent || 30));
   }
 
   async function saveInitialCash() {
@@ -123,6 +139,27 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
         autoClose: 1800
       });
     }
+  }
+
+  function saveProfitRate() {
+    try {
+      controller.updateProfitRate(profitRateDraft);
+      setIsProfitRateModalOpen(false);
+      toast.success('Porcentaje de ganancia actualizado.', {
+        toastId: 'panel-profit-rate-ok',
+        autoClose: 1800
+      });
+    } catch (error) {
+      toast.error(error?.message || 'No se pudo actualizar el porcentaje.', {
+        toastId: 'panel-profit-rate-invalid',
+        autoClose: 2200
+      });
+    }
+  }
+
+  function handleProfitRateSubmit(event) {
+    event.preventDefault();
+    saveProfitRate();
   }
 
   function scrollToSection(sectionKey) {
@@ -232,7 +269,9 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
                     title={item.title}
                     value={item.value}
                     hint={item.hint}
-                    onDoubleClick={item.title === 'Caja inicial' ? openInitialCashModal : undefined}
+                    onDoubleClick={item.title === 'Caja inicial'
+                      ? openInitialCashModal
+                      : (item.title === 'Ganancia diaria' ? openProfitRateModal : undefined)}
                   />
                 ))}
 
@@ -323,6 +362,31 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
             </form>
           )}
           onClose={closeInitialCashModal}
+        />
+      ) : null}
+
+      {isProfitRateModalOpen ? (
+        <PanelModal
+          title="Editar porcentaje de ganancia"
+          body={(
+            <form className="d-grid gap-3" onSubmit={handleProfitRateSubmit}>
+              <p className="mb-0 small text-muted">Doble click en la tarjeta de Ganancia diaria para editar este porcentaje otra vez.</p>
+              <input
+                type="number"
+                min="0"
+                max="100"
+                step="0.01"
+                className="form-control"
+                value={profitRateDraft}
+                onChange={(event) => setProfitRateDraft(event.target.value)}
+                autoFocus
+              />
+              <button type="submit" className="btn btn-dark w-100">
+                Guardar
+              </button>
+            </form>
+          )}
+          onClose={closeProfitRateModal}
         />
       ) : null}
 

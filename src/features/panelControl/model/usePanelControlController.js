@@ -32,6 +32,7 @@ const EMPTY_DASHBOARD = {
 const PANEL_LIVE_SLOW_MS = 300;
 const PANEL_YESTERDAY_BOOTSTRAP_DATE = '2026-04-30';
 const PANEL_YESTERDAY_BOOTSTRAP_AMOUNT = 5000;
+const DEFAULT_PROFIT_RATE = 0.3;
 
 export function usePanelControlController({ currentUser, onUnauthorized }) {
   const [dashboard, setDashboard] = useState(EMPTY_DASHBOARD);
@@ -47,6 +48,7 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
   const [isRegisteringPayment, setIsRegisteringPayment] = useState(false);
   const [currentStoreDateLabel, setCurrentStoreDateLabel] = useState(() => getStoreDateLabel());
   const [isSavingInitialCash, setIsSavingInitialCash] = useState(false);
+  const [profitRate, setProfitRate] = useState(DEFAULT_PROFIT_RATE);
   const lastLiveSnapshotKeyRef = useRef('');
 
   useEffect(() => {
@@ -72,7 +74,8 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
       unsubscribe = subscribePanelDashboard({
         token: currentUser?.sessionToken || '',
         params: {
-          date: currentStoreDateLabel
+          date: currentStoreDateLabel,
+          profitRate
         },
         onDashboard: (response) => {
           if (!isMounted) {
@@ -135,7 +138,7 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
       clearTimeout(reconnectTimeout);
       unsubscribe();
     };
-  }, [currentUser?.sessionToken, currentStoreDateLabel, onUnauthorized]);
+  }, [currentUser?.sessionToken, currentStoreDateLabel, onUnauthorized, profitRate]);
 
   const panelMetrics = dashboard.metrics || EMPTY_DASHBOARD.metrics;
   const comparison = useMemo(() => {
@@ -231,7 +234,7 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
   const metrics = [
     { title: 'Caja inicial', value: moneyNoDecimals(panelMetrics.initialCash), hint: 'Monto de apertura del dia.' },
     { title: 'Ventas del dia', value: moneyNoDecimals(panelMetrics.salesToday), hint: 'Confirmadas con el boton Cobrar.' },
-    { title: 'Ganancia diaria', value: moneyNoDecimals(panelMetrics.profitToday), hint: `${Number(panelMetrics.profitRate || 0) * 100}% de ventas del dia` },
+    { title: 'Ganancia diaria', value: moneyNoDecimals(panelMetrics.profitToday), hint: `${Number((panelMetrics.profitRate ?? profitRate) || 0) * 100}% de ventas del dia` },
     { title: 'Monto actual', value: moneyNoDecimals(panelMetrics.currentAmount), hint: 'Caja diaria + ventas - pagos' },
     { title: 'Pagos realizados', value: moneyNoDecimals(panelMetrics.paymentsTotal), hint: 'Suma de pagos registrados' }
   ];
@@ -267,6 +270,20 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
     } finally {
       setIsSavingInitialCash(false);
     }
+  }
+
+  function updateProfitRate(rawPercent) {
+    const parsedPercent = Number(String(rawPercent || '').replace(',', '.'));
+    if (!Number.isFinite(parsedPercent) || parsedPercent < 0 || parsedPercent > 100) {
+      const error = new Error('Ingresa un porcentaje valido entre 0 y 100.');
+      error.code = 'INVALID_PROFIT_RATE';
+      throw error;
+    }
+
+    setProfitRate(Number((parsedPercent / 100).toFixed(4)));
+    return {
+      ok: true
+    };
   }
 
   function handleRegisterPayment(event, options = {}) {
@@ -378,9 +395,11 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
     paymentError,
     isRegisteringPayment,
     isSavingInitialCash,
+    profitRatePercent: Number(((panelMetrics.profitRate ?? profitRate) || 0) * 100),
     percent,
     handleRegisterPayment,
     saveInitialCash,
+    updateProfitRate,
     toggleMovementDetail,
     expandMovements,
     expandRanking,
