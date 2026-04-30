@@ -2,14 +2,22 @@
 import { parsePositiveAmount } from '../../../shared/lib/number';
 import { toUserErrorMessage } from '../../../shared/lib/userErrorMessages';
 import { registerPanelPayment, subscribePanelDashboard } from '../services/panelControl.api';
-import { moneyNoDecimals, parseDateInput, percent, STORE_TIME_ZONE, todayLabel } from './panelControl.formatters';
+import {
+  getMsUntilNextStoreMidnight,
+  getStoreDateLabel,
+  getTodayLabel,
+  moneyNoDecimals,
+  parseDateInput,
+  percent,
+  STORE_TIME_ZONE
+} from './panelControl.formatters';
 
 const EMPTY_DASHBOARD = {
   metrics: {
-    initialCash: 1000,
+    initialCash: 0,
     salesToday: 0,
     profitToday: 0,
-    currentAmount: 1000,
+    currentAmount: 0,
     paymentsTotal: 0,
     profitRate: 0.2
   },
@@ -22,6 +30,24 @@ const EMPTY_DASHBOARD = {
   ranking: []
 };
 const PANEL_LIVE_SLOW_MS = 300;
+const PANEL_YESTERDAY_BOOTSTRAP_DATE = '2026-04-30';
+const PANEL_YESTERDAY_BOOTSTRAP_AMOUNT = 5000;
+
+const PANEL_INITIAL_CASH_STORAGE_KEY = 'panel_initial_cash_v1';
+
+function readInitialCashPreference() {
+  if (typeof window === 'undefined') {
+    return 0;
+  }
+
+  const raw = window.localStorage.getItem(PANEL_INITIAL_CASH_STORAGE_KEY);
+  const parsed = Number(String(raw || '').replace(',', '.'));
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    return 0;
+  }
+
+  return Number(parsed.toFixed(2));
+}
 
 export function usePanelControlController({ currentUser, onUnauthorized }) {
   const [dashboard, setDashboard] = useState(EMPTY_DASHBOARD);
@@ -35,7 +61,19 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
   const [paymentDescription, setPaymentDescription] = useState('');
   const [paymentError, setPaymentError] = useState('');
   const [isRegisteringPayment, setIsRegisteringPayment] = useState(false);
+  const [currentStoreDateLabel, setCurrentStoreDateLabel] = useState(() => getStoreDateLabel());
+  const [initialCashAmount, setInitialCashAmount] = useState(() => readInitialCashPreference());
   const lastLiveSnapshotKeyRef = useRef('');
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setCurrentStoreDateLabel(getStoreDateLabel());
+    }, getMsUntilNextStoreMidnight());
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [currentStoreDateLabel]);
 
   useEffect(() => {
     let isMounted = true;
@@ -49,7 +87,10 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
 
       unsubscribe = subscribePanelDashboard({
         token: currentUser?.sessionToken || '',
-        params: {},
+        params: {
+          initialCash: initialCashAmount,
+          date: currentStoreDateLabel
+        },
         onDashboard: (response) => {
           if (!isMounted) {
             return;
@@ -111,10 +152,25 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
       clearTimeout(reconnectTimeout);
       unsubscribe();
     };
-  }, [currentUser?.sessionToken, onUnauthorized]);
+  }, [currentUser?.sessionToken, currentStoreDateLabel, initialCashAmount, onUnauthorized]);
 
   const panelMetrics = dashboard.metrics || EMPTY_DASHBOARD.metrics;
-  const comparison = dashboard.comparison || EMPTY_DASHBOARD.comparison;
+  const comparison = useMemo(() => {
+    const baseComparison = dashboard.comparison || EMPTY_DASHBOARD.comparison;
+    const dashboardDate = String(dashboard?.date || '').trim();
+
+    if (
+      currentStoreDateLabel === PANEL_YESTERDAY_BOOTSTRAP_DATE
+      && dashboardDate === PANEL_YESTERDAY_BOOTSTRAP_DATE
+    ) {
+      return {
+        ...baseComparison,
+        yesterday: PANEL_YESTERDAY_BOOTSTRAP_AMOUNT
+      };
+    }
+
+    return baseComparison;
+  }, [currentStoreDateLabel, dashboard?.comparison, dashboard?.date]);
   const movementItems = Array.isArray(dashboard.movements) ? dashboard.movements : [];
   const rankingItems = Array.isArray(dashboard.ranking) ? dashboard.ranking : [];
   const liveItems = useMemo(() => {
@@ -187,6 +243,14 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
       timeZone: STORE_TIME_ZONE
     }).format(new Date());
   }, [dashboard?.date]);
+  const todayLabel = getTodayLabel();
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    window.localStorage.setItem(PANEL_INITIAL_CASH_STORAGE_KEY, String(initialCashAmount));
+  }, [initialCashAmount]);
 
   const metrics = [
     { title: 'Caja inicial', value: moneyNoDecimals(panelMetrics.initialCash), hint: 'Monto de apertura del dia.' },
@@ -309,9 +373,12 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
     expandMovements,
     expandRanking,
     setPaymentAmount,
-    setPaymentDescription
+    setPaymentDescription,
+    initialCashAmount,
+    setInitialCashAmount
   };
 }
+
 
 
 

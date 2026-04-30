@@ -36,6 +36,8 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
   });
   const [isMobileLayout, setIsMobileLayout] = useState(false);
   const [activeMobileSection, setActiveMobileSection] = useState('daily');
+  const [isInitialCashModalOpen, setIsInitialCashModalOpen] = useState(false);
+  const [initialCashDraft, setInitialCashDraft] = useState(() => String(controller.initialCashAmount || 0));
 
   useEffect(() => {
     function syncMobileLayout() {
@@ -51,6 +53,43 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
       window.removeEventListener('resize', syncMobileLayout);
     };
   }, []);
+
+  useEffect(() => {
+    setInitialCashDraft(String(controller.initialCashAmount || 0));
+  }, [controller.initialCashAmount]);
+
+  function openInitialCashModal() {
+    setInitialCashDraft(String(controller.initialCashAmount || 0));
+    setIsInitialCashModalOpen(true);
+  }
+
+  function closeInitialCashModal() {
+    setIsInitialCashModalOpen(false);
+    setInitialCashDraft(String(controller.initialCashAmount || 0));
+  }
+
+  function saveInitialCash() {
+    const parsed = Number(String(initialCashDraft || '').replace(',', '.'));
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      toast.error('Ingresa una caja inicial valida mayor o igual a 0.', {
+        toastId: 'panel-initial-cash-invalid',
+        autoClose: 2200
+      });
+      return;
+    }
+
+    controller.setInitialCashAmount(Number(parsed.toFixed(2)));
+    setIsInitialCashModalOpen(false);
+    toast.success('Caja inicial actualizada.', {
+      toastId: 'panel-initial-cash-ok',
+      autoClose: 1800
+    });
+  }
+
+  function handleInitialCashSubmit(event) {
+    event.preventDefault();
+    saveInitialCash();
+  }
 
   async function handlePaymentSubmit(event) {
     const result = controller.handleRegisterPayment(event, {
@@ -187,7 +226,13 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
 
               <div className="panel-grid-6-v2">
                 {controller.metrics.map((item) => (
-                  <MetricCard key={item.title} title={item.title} value={item.value} hint={item.hint} />
+                  <MetricCard
+                    key={item.title}
+                    title={item.title}
+                    value={item.value}
+                    hint={item.hint}
+                    onDoubleClick={item.title === 'Caja inicial' ? openInitialCashModal : undefined}
+                  />
                 ))}
 
                 <article className="panel-metric-card-v2 panel-comparison-card">
@@ -254,6 +299,28 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
             <span>Pago</span>
           </button>
         </nav>
+      ) : null}
+
+      {isInitialCashModalOpen ? (
+        <PanelModal
+          title="Editar caja inicial"
+          body={(
+            <form className="d-grid gap-3" onSubmit={handleInitialCashSubmit}>
+              <p className="mb-0 small text-muted">Por defecto arranca en 0. Hace doble click en la tarjeta para editarla otra vez.</p>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                className="form-control"
+                value={initialCashDraft}
+                onChange={(event) => setInitialCashDraft(event.target.value)}
+                autoFocus
+              />
+              <button type="submit" className="btn btn-dark w-100">Guardar</button>
+            </form>
+          )}
+          onClose={closeInitialCashModal}
+        />
       ) : null}
 
       {controller.isComparisonOpen ? (
