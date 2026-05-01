@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { bootAuthShell, loginReal, logoutReal, touchSession } from '../services/authShell.api';
 import { pingBackend, startBackendHeartbeat } from '../../../shared/services/platform.api';
 import { toUserErrorMessage } from '../../../shared/lib/userErrorMessages';
@@ -117,7 +117,7 @@ export function useAuthGateController() {
   const [user, setUser] = useState(null);
   const [adminFocusPasswordSignal, setAdminFocusPasswordSignal] = useState(0);
 
-  function logout() {
+  const logout = useCallback(() => {
     const token = String(user?.sessionToken || '').trim();
     if (token) {
       logoutReal({ token }).catch(() => {});
@@ -129,7 +129,7 @@ export function useAuthGateController() {
     setRememberCredentials(false);
     setPhase('login');
     setError('');
-  }
+  }, [user?.sessionToken]);
 
   useEffect(() => {
     const remembered = readRememberedCredentials();
@@ -236,7 +236,7 @@ export function useAuthGateController() {
         clearTimeout(retryTimeoutId);
       }
     };
-  }, [phase, user?.sessionToken]);
+  }, [logout, phase, user?.sessionToken]);
 
   const bootMessage = useMemo(() => {
     if (phase === 'authenticating') {

@@ -26,11 +26,12 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
   - al quedar la cola en `0` pendientes, se reinicia el contador de errores.
 
 - Scanner manual por categorias (2026-04-30):
-  - se reemplazo el boton unico `Producto manual` por `4` accesos rapidos:
+  - se reemplazo el boton unico `Producto manual` por accesos rapidos por categoria:
     - `Fruta/Verduras`
     - `Fiambre`
     - `Fideo`
     - `Producto x kg`
+    - `Otros`
   - misma logica operativa de siempre:
     - click en categoria.
     - modal para ingresar valor.
@@ -47,6 +48,8 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
   - decision final de interfaz:
     - se evaluaron variantes visuales y se fijo `Borde fuerte` como estilo definitivo de los botones.
     - se removio el selector temporal de estilos de prueba para dejar UI limpia en produccion.
+  - ajuste de layout:
+    - `Otros` queda como quinto acceso rapido, centrado en la fila inferior para no romper la grilla principal de `2` columnas.
 
 - Pagos para operario (2026-04-30):
   - nuevo tab `Pagos` visible para rol `operario` en navbar.

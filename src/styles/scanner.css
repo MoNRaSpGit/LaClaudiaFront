@@ -63,6 +63,12 @@
   border-left: 4px solid #1f2937;
 }
 
+.scanner-manual-btn-centered {
+  grid-column: 1 / -1;
+  justify-self: center;
+  width: calc(50% - 0.375rem);
+}
+
 .scanner-manual-grid--fuerte .scanner-manual-btn {
   border-width: 2px;
   border-color: #111827;
@@ -79,6 +85,10 @@
 @media (max-width: 640px) {
   .scanner-manual-grid {
     grid-template-columns: 1fr;
+  }
+
+  .scanner-manual-btn-centered {
+    width: 100%;
   }
 }
 

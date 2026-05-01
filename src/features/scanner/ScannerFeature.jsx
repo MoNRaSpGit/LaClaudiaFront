@@ -1,5 +1,5 @@
 ﻿import { useCallback, useEffect, useRef, useState } from 'react';
-import { Apple, Beef, Scale, Wheat } from 'lucide-react';
+import { Apple, Beef, CircleEllipsis, Scale, Wheat } from 'lucide-react';
 import { ToastContainer, toast } from 'react-toastify';
 import { useScannerController } from './model/useScannerController';
 import ScannerInput from './components/ScannerInput';
@@ -25,7 +25,8 @@ const MANUAL_PRODUCT_OPTIONS = [
   { key: 'fruta-verduras', label: 'Fruta/Verduras', icon: Apple, category: 'fruta_verduras' },
   { key: 'fiambre', label: 'Fiambre', icon: Beef, category: 'fiambre' },
   { key: 'fideo', label: 'Fideo', icon: Wheat, category: 'fideo' },
-  { key: 'producto-x-kg', label: 'Producto x kg', icon: Scale, category: 'producto_x_kg' }
+  { key: 'producto-x-kg', label: 'Producto x kg', icon: Scale, category: 'producto_x_kg' },
+  { key: 'otros', label: 'Otros', icon: CircleEllipsis, category: 'otros' }
 ];
 
 function ScannerFeature({ currentUser, onUnauthorized }) {
@@ -352,7 +353,7 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
                     <button
                       key={option.key}
                       type="button"
-                      className="btn scanner-manual-btn"
+                      className={`btn scanner-manual-btn ${option.key === 'otros' ? 'scanner-manual-btn-centered' : ''}`}
                       onClick={() => {
                         clearScanError();
                         setSelectedManualProduct(option);
