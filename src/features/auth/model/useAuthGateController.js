@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { bootAuthShell, loginReal, logoutReal, touchSession } from '../services/authShell.api';
+import { bootAuthShell, loginReal, logoutReal, logoutRealBestEffort, touchSession } from '../services/authShell.api';
 import { pingBackend, startBackendHeartbeat } from '../../../shared/services/platform.api';
 import { toUserErrorMessage } from '../../../shared/lib/userErrorMessages';
 
 const REMEMBER_KEY = 'laclau_auth_remember_v1';
 const SESSION_KEY = 'laclau_auth_session_v1';
+const CLOSE_MARKER_KEY = 'laclau_auth_close_marker_v1';
 const SCANNER_STATE_KEY = 'scanner_state_v1';
 const SCANNER_QUEUE_KEY = 'scanner_sales_queue_v1';
 const AUTH_KEEPALIVE_INTERVAL_MS = 3 * 60 * 1000;
@@ -96,15 +97,74 @@ function persistSession(user) {
   window.localStorage.setItem(SESSION_KEY, JSON.stringify(user));
 }
 
-function clearLocalSessionData() {
+function clearRuntimeSessionData() {
   if (typeof window === 'undefined') {
     return;
   }
 
   window.localStorage.removeItem(SESSION_KEY);
-  window.localStorage.removeItem(REMEMBER_KEY);
   window.localStorage.removeItem(SCANNER_STATE_KEY);
   window.localStorage.removeItem(SCANNER_QUEUE_KEY);
+  window.localStorage.removeItem(CLOSE_MARKER_KEY);
+}
+
+function clearLocalSessionData() {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  clearRuntimeSessionData();
+  window.localStorage.removeItem(REMEMBER_KEY);
+}
+
+function getNavigationType() {
+  if (typeof window === 'undefined' || typeof window.performance?.getEntriesByType !== 'function') {
+    return '';
+  }
+
+  const entries = window.performance.getEntriesByType('navigation');
+  const navigationEntry = Array.isArray(entries) ? entries[0] : null;
+  return String(navigationEntry?.type || '').trim().toLowerCase();
+}
+
+function readCloseMarker() {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(CLOSE_MARKER_KEY);
+    if (!raw) {
+      return null;
+    }
+    const parsed = JSON.parse(raw);
+    const token = String(parsed?.sessionToken || '').trim();
+    if (!token) {
+      return null;
+    }
+    return {
+      sessionToken: token,
+      at: String(parsed?.at || '').trim()
+    };
+  } catch (_error) {
+    return null;
+  }
+}
+
+function persistCloseMarker(user) {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  const sessionToken = String(user?.sessionToken || '').trim();
+  if (!sessionToken) {
+    return;
+  }
+
+  window.localStorage.setItem(CLOSE_MARKER_KEY, JSON.stringify({
+    sessionToken,
+    at: new Date().toISOString()
+  }));
 }
 
 export function useAuthGateController() {
@@ -134,10 +194,17 @@ export function useAuthGateController() {
   useEffect(() => {
     const remembered = readRememberedCredentials();
     const savedSession = readSavedSession();
+    const closeMarker = readCloseMarker();
+    const navigationType = getNavigationType();
 
-    if (savedSession) {
+    if (savedSession && closeMarker?.sessionToken === savedSession.sessionToken && navigationType !== 'reload') {
+      clearRuntimeSessionData();
+    } else if (savedSession) {
       setUser(savedSession);
       setPhase('ready');
+      if (closeMarker) {
+        window.localStorage.removeItem(CLOSE_MARKER_KEY);
+      }
     }
 
     if (remembered) {
@@ -146,6 +213,36 @@ export function useAuthGateController() {
       setRememberCredentials(true);
     }
   }, []);
+
+  useEffect(() => {
+    const token = String(user?.sessionToken || '').trim();
+    if (phase !== 'ready' || !token) {
+      return undefined;
+    }
+
+    let handled = false;
+
+    function handleWindowCloseLikeEvent(event) {
+      if (handled) {
+        return;
+      }
+      if (event?.type === 'pagehide' && event.persisted) {
+        return;
+      }
+
+      handled = true;
+      persistCloseMarker(user);
+      logoutRealBestEffort({ token });
+    }
+
+    window.addEventListener('pagehide', handleWindowCloseLikeEvent);
+    window.addEventListener('beforeunload', handleWindowCloseLikeEvent);
+
+    return () => {
+      window.removeEventListener('pagehide', handleWindowCloseLikeEvent);
+      window.removeEventListener('beforeunload', handleWindowCloseLikeEvent);
+    };
+  }, [phase, user]);
 
   useEffect(() => {
     let cancelled = false;
@@ -282,6 +379,9 @@ export function useAuthGateController() {
       };
       setUser(nextUser);
       persistSession(nextUser);
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem(CLOSE_MARKER_KEY);
+      }
       setPhase('ready');
     } catch (loginError) {
       setError(toUserErrorMessage(loginError, { context: 'login' }));

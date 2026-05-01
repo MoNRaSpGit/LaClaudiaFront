@@ -21,6 +21,13 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
   - agregado keepalive autenticado de sesion en frontend (`/api/auth/session`) para mantener renovacion activa durante operacion.
   - intervalo de keepalive: `3 min` con reintentos por fallo transitorio de red.
   - logout automatico solo ante `401` persistente (no por un unico bache).
+  - agregado cierre de sesion `best-effort` al cerrar/ocultar la app:
+    - intenta `logout` con `keepalive` en `beforeunload/pagehide`.
+    - guarda una marca local de cierre para limpiar sesion al reabrir si corresponde.
+    - evita tratar un `reload` simple como cierre real.
+  - objetivo de este cierre:
+    - mejorar higiene operativa en PWA/navegador.
+    - no depende como garantia absoluta de que el navegador siempre entregue el request final.
   - scanner ahora detecta `401` en cola de ventas y muestra mensaje de sesion vencida, evitando que se interprete como simple error de sync.
   - objetivo: reducir casos donde el cobro visual sale OK pero la venta no entra a movimientos por token vencido en entorno real.
   - soporte/diagnostico:

@@ -44,6 +44,23 @@ export async function logoutReal({ token } = {}) {
   return readJson(response);
 }
 
+export function logoutRealBestEffort({ token } = {}) {
+  const normalizedToken = String(token || '').trim();
+  if (!normalizedToken) {
+    return;
+  }
+
+  try {
+    fetch(`${apiUrl}/api/auth/logout`, {
+      method: 'POST',
+      headers: buildHeaders({ token: normalizedToken }),
+      keepalive: true
+    }).catch(() => {});
+  } catch (_error) {
+    // Ignore unload-time failures. Local cleanup path handles the rest.
+  }
+}
+
 export async function touchSession({ token } = {}) {
   const response = await fetchWithTimeout(`${apiUrl}/api/auth/session`, {
     method: 'GET',
