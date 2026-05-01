@@ -298,10 +298,14 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
   const hasRankingItems = rankingItems.length > 0;
   const visibleMovementItems = movementItems.slice(0, visibleMovementsCount);
   const visibleRankingItems = rankingItems.slice(0, visibleRankingCount);
-  const canExpandMovements = movementItems.length > visibleMovementsCount;
-  const canExpandRanking = rankingItems.length > visibleRankingCount;
-  const movementExpandLabel = visibleMovementsCount <= 3 ? 'Ver 3 mas' : 'Ver todos';
-  const rankingExpandLabel = visibleRankingCount <= 5 ? 'Ver 5 mas' : 'Ver todos';
+  const canExpandMovements = movementItems.length > 3;
+  const canExpandRanking = rankingItems.length > 5;
+  const movementExpandLabel = visibleMovementsCount >= movementItems.length
+    ? 'Ver menos'
+    : (visibleMovementsCount <= 3 ? 'Ver 3 mas' : 'Ver todos');
+  const rankingExpandLabel = visibleRankingCount >= rankingItems.length
+    ? 'Ver menos'
+    : (visibleRankingCount <= 5 ? 'Ver 5 mas' : 'Ver todos');
   const operatorName = String(remoteLiveScanner?.operator?.display_name || '').trim() || 'Operario';
   const rankingDateLabel = useMemo(() => {
     const rawDate = String(dashboard?.date || '').trim();
@@ -440,6 +444,11 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
   }
 
   function expandMovements() {
+    if (visibleMovementsCount >= movementItems.length) {
+      setVisibleMovementsCount(3);
+      setExpandedMovementId(null);
+      return;
+    }
     if (visibleMovementsCount <= 3) {
       setVisibleMovementsCount(Math.min(6, movementItems.length));
       return;
@@ -448,6 +457,10 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
   }
 
   function expandRanking() {
+    if (visibleRankingCount >= rankingItems.length) {
+      setVisibleRankingCount(5);
+      return;
+    }
     if (visibleRankingCount <= 5) {
       setVisibleRankingCount(Math.min(10, rankingItems.length));
       return;

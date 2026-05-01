@@ -315,6 +315,15 @@
   gap: 0.4rem;
   font-weight: 700;
   color: #16281f;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.panel-live-list li > div span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .panel-live-list li small {
@@ -336,6 +345,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.8rem;
+  min-width: 0;
 }
 
 .panel-live-banner-title {
@@ -384,10 +394,12 @@
   gap: 0.5rem;
   font-size: 0.78rem;
   color: #7a4605;
+  min-width: 0;
 }
 
 .panel-live-alert-preview strong {
   font-size: 0.8rem;
+  flex: 0 0 auto;
 }
 
 .panel-movements-list {
@@ -404,6 +416,7 @@
   border-radius: 10px;
   background: #e8edf4;
   border: 1px solid #c7d2e0;
+  min-width: 0;
 }
 
 .panel-movement-row-sale {
@@ -432,6 +445,23 @@
   margin-top: 0.1rem;
   font-size: 0.73rem;
   color: #526581;
+}
+
+.panel-movement-row > div:first-child {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.panel-movement-row > div:first-child p {
+  min-width: 0;
+}
+
+.panel-movement-row > div:first-child .panel-movement-row-meta {
+  overflow-wrap: anywhere;
+}
+
+.panel-movement-row > div:last-child {
+  flex: 0 1 auto;
 }
 
 .panel-movement-detail {
@@ -480,6 +510,12 @@
   border-radius: 7px;
   background: #dde6f1;
   border: 1px solid #c2cfdf;
+  min-width: 0;
+}
+
+.panel-movement-detail-list li span {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .panel-movement-detail-list li strong {
@@ -933,6 +969,65 @@
 
   .panel-diagnostics-event-meta {
     text-align: left;
+  }
+
+  .panel-block-v2 {
+    min-width: 0;
+  }
+
+  .panel-block-data-cell {
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  .panel-live-banner {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .panel-live-banner > div {
+    min-width: 0;
+  }
+
+  .panel-live-banner .text-end {
+    width: 100%;
+    text-align: left !important;
+  }
+
+  .panel-live-alert-preview {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .panel-live-list li {
+    align-items: flex-start;
+  }
+
+  .panel-live-list li strong {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  .panel-movement-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .panel-movement-row > div:last-child {
+    width: 100%;
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+
+  .panel-movement-row > div:last-child .btn {
+    flex: 0 0 auto;
+  }
+
+  .panel-movement-detail-list li {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
 

@@ -552,3 +552,23 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
 - `src/features/panelControl/*`
 - `src/shared/services/httpClient.js`
 - `src/styles.css`
+
+## Ajustes UX panel - expandir/colapsar y responsive mobile
+
+- Se ajusto el comportamiento de `Movimientos` y `Ranking` para que el mismo CTA permita:
+  - expandir por tramos.
+  - ver todo.
+  - volver a estado compacto con `Ver menos`.
+- En `Movimientos`, al volver a compacto tambien se resetea el detalle expandido para no dejar una fila abierta fuera de contexto.
+- Se corrigio overflow horizontal en mobile dentro de:
+  - `Caja en vivo`.
+  - `Movimientos`.
+- El ajuste responsive evita depender de zoom manual y mejora:
+  - wrap de textos largos.
+  - celdas flex que antes empujaban el ancho.
+  - detalle de items y bloques laterales en pantallas chicas.
+- Validacion:
+  - `lint`: OK.
+  - `test -- --run`: OK.
+  - `build`: OK.
+  - `test:smoke:web`: OK.
