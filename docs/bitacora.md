@@ -17,6 +17,56 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
 
 ## Mini Changelog Tecnico (2026-04-27)
 
+- Enriquecimiento etapa 1 de reportes remotos scanner (2026-05-01):
+  - primera capa de logs mas finos agregada al monitoreo remoto del scanner.
+  - objetivo:
+    - deducir mejor el origen del error sin depender solo de `message`.
+    - distinguir rapido entre error HTTP, auth, red, timeout o payload.
+  - nuevos campos visibles/transportados en incidentes:
+    - `errorFamily`
+    - `endpoint`
+    - `method`
+    - `status`
+    - `statusText`
+    - `flow`
+    - `trigger`
+  - cobertura inicial aplicada:
+    - sync de ventas via cola:
+      - `endpoint=/api/scanner/sales`
+      - `method=POST`
+      - `flow=scanner_sale_sync`
+      - `trigger=queue_retry`
+    - alta rapida de producto:
+      - `endpoint=/api/scanner/products`
+      - `method=POST`
+      - `flow=scanner_quick_add`
+      - `trigger=quick_add_confirm`
+  - clasificacion base de familia de error:
+    - `payload_too_large`
+    - `auth`
+    - `http`
+    - `timeout`
+    - `network`
+    - `unknown`
+  - mejora visual en panel de diagnostico:
+    - cada card ahora puede mostrar:
+      - familia de error.
+      - metodo + endpoint.
+      - flujo + trigger.
+      - `HTTP status` con `statusText` si existe.
+  - impacto esperado:
+    - leer mas rapido si el fallo vino de:
+      - reintento de cola.
+      - endpoint puntual.
+      - rechazo `4xx/5xx`.
+      - problema de auth.
+      - problema de payload.
+  - validacion tecnica:
+    - `npm run lint` OK.
+    - `npm run test -- --run` OK.
+    - `npm run build` OK.
+    - `npm run test:smoke:web` OK.
+
 - Diagnostico remoto mas legible en panel staff (2026-05-01):
   - el monitoreo remoto del scanner ahora vive en una vista propia `Diagnostico` dentro de `Panel de control`.
   - esta vista solo se muestra en frontend si el usuario cumple:

@@ -27,9 +27,14 @@ export function canViewPanelDiagnostics(currentUser) {
 
 export function normalizeDiagnosticEvent(event, index = 0) {
   const status = Number(event?.context?.status || 0);
+  const statusText = String(event?.context?.statusText || '').trim();
   const pending = Number(event?.context?.pending || 0);
   const productName = String(event?.context?.productName || '').trim();
   const trigger = String(event?.context?.trigger || '').trim();
+  const endpoint = String(event?.context?.endpoint || '').trim();
+  const method = String(event?.context?.method || '').trim().toUpperCase();
+  const flow = String(event?.context?.flow || '').trim();
+  const errorFamily = String(event?.context?.errorFamily || '').trim();
   const sourceLabel = String(event?.sourceLabel || '').trim() || 'scanner';
   const username = String(event?.user?.username || '').trim() || 'sin usuario';
   const terminalId = String(event?.terminalId || '').trim() || 'sin terminal';
@@ -62,15 +67,23 @@ export function normalizeDiagnosticEvent(event, index = 0) {
   if (trigger) {
     contextParts.push(trigger);
   }
+  if (flow) {
+    contextParts.push(flow);
+  }
 
   return {
     ...event,
     id: event?.id || `${event?.eventType || 'diagnostic'}-${createdAtRaw || index}`,
     severity,
     status,
+    statusText,
     pending,
     productName,
     trigger,
+    endpoint,
+    method,
+    flow,
+    errorFamily,
     sourceLabel,
     username,
     terminalId,
@@ -78,7 +91,7 @@ export function normalizeDiagnosticEvent(event, index = 0) {
     createdAtLabel,
     ageLabel: ageMinutes == null ? '-' : formatRelativeMinutes(ageMinutes),
     contextLine: contextParts.join(' | '),
-    httpLabel: status > 0 ? `HTTP ${status}` : '',
+    httpLabel: status > 0 ? `HTTP ${status}${statusText ? ` ${statusText}` : ''}` : '',
     isRecent: ageMinutes != null && ageMinutes <= 10,
     eventTypeLabel: String(event?.eventType || '').trim() || 'diagnostic_event'
   };

@@ -69,6 +69,49 @@ function getSourceLabel(currentUser) {
   return `${role}:${username}@${host}`;
 }
 
+export function classifyDiagnosticError(error) {
+  const status = Number(error?.status || 0);
+  const message = String(error?.message || '').trim().toLowerCase();
+
+  if (status === 413 || message.includes('request entity too large') || message.includes('payload too large')) {
+    return 'payload_too_large';
+  }
+  if (status === 401 || message.includes('unauthorized') || message.includes('sesion expirada')) {
+    return 'auth';
+  }
+  if (status >= 400 && status < 500) {
+    return 'http';
+  }
+  if (status >= 500) {
+    return 'http';
+  }
+  if (message.includes('timeout') || message.includes('timed out') || message.includes('abort')) {
+    return 'timeout';
+  }
+  if (message.includes('failed to fetch') || message.includes('network') || message.includes('fetch')) {
+    return 'network';
+  }
+
+  return 'unknown';
+}
+
+function normalizeDiagnosticContext(context, error) {
+  const nextContext = context && typeof context === 'object' ? { ...context } : {};
+  if (!nextContext.errorFamily) {
+    nextContext.errorFamily = classifyDiagnosticError(error);
+  }
+  if (!nextContext.status && Number(error?.status || 0) > 0) {
+    nextContext.status = Number(error.status);
+  }
+  if (!nextContext.statusText) {
+    nextContext.statusText = String(error?.statusText || '').trim();
+  }
+  if (!nextContext.rawErrorMessage) {
+    nextContext.rawErrorMessage = String(error?.message || '').trim();
+  }
+  return nextContext;
+}
+
 function shouldSkipByCooldown(payload) {
   const eventType = String(payload?.eventType || '').trim() || 'scanner.unknown';
   const message = String(payload?.message || '').trim() || 'sin-mensaje';
@@ -122,7 +165,7 @@ export async function reportScannerDiagnosticEvent(payload, { token, currentUser
     sourceApp: 'frontend',
     sourceLabel: String(payload?.sourceLabel || '').trim() || getSourceLabel(currentUser),
     terminalId: String(payload?.terminalId || '').trim() || getScannerTerminalId(),
-    context: payload?.context && typeof payload.context === 'object' ? payload.context : null
+    context: normalizeDiagnosticContext(payload?.context, payload?.error)
   };
 
   if (!skipCooldown && shouldSkipByCooldown(normalizedPayload)) {

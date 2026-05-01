@@ -92,6 +92,12 @@ function notifyQueueErrorListeners(error) {
     ? {
         message: String(error?.message || '').trim() || 'Error de sincronizacion',
         status: Number(error?.status || 0),
+        statusText: String(error?.statusText || '').trim(),
+        endpoint: String(error?.endpoint || '').trim(),
+        method: String(error?.method || '').trim(),
+        flow: String(error?.flow || '').trim(),
+        trigger: String(error?.trigger || '').trim(),
+        errorFamily: String(error?.errorFamily || '').trim(),
         at: new Date().toISOString()
       }
     : null;
@@ -158,6 +164,12 @@ export async function flushScannerSalesQueue({ token } = {}) {
         lastQueueError = null;
       }
     } catch (error) {
+      const enrichedError = error;
+      enrichedError.endpoint = '/api/scanner/sales';
+      enrichedError.method = 'POST';
+      enrichedError.flow = 'scanner_sale_sync';
+      enrichedError.trigger = 'queue_retry';
+
       if (isDuplicateSaleError(error)) {
         queue.shift();
         persistQueue();
@@ -169,13 +181,13 @@ export async function flushScannerSalesQueue({ token } = {}) {
       }
 
       if (isUnauthorizedError(error)) {
-        notifyQueueErrorListeners(error);
-        return { pending: queue.length, error };
+        notifyQueueErrorListeners(enrichedError);
+        return { pending: queue.length, error: enrichedError };
       }
 
       scheduleRetry(token);
-      notifyQueueErrorListeners(error);
-      return { pending: queue.length, error };
+      notifyQueueErrorListeners(enrichedError);
+      return { pending: queue.length, error: enrichedError };
     }
   }
 

@@ -8,7 +8,11 @@ import ScannerCheckout from './components/ScannerCheckout';
 import ScannerManualModal from './components/ScannerManualModal';
 import ScannerQuickAddModal from './components/ScannerQuickAddModal';
 import { publishScannerLiveState } from './services/scanner.api';
-import { flushScannerDiagnosticQueue, reportScannerDiagnosticEvent } from './services/scanner.diagnostics';
+import {
+  classifyDiagnosticError,
+  flushScannerDiagnosticQueue,
+  reportScannerDiagnosticEvent
+} from './services/scanner.diagnostics';
 import { printSaleTicket } from './services/scanner.print';
 import { printSaleTicketByQz } from './services/scanner.qzPrint';
 import {
@@ -213,8 +217,15 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
         eventType: isUnauthorized ? 'scanner.session_unauthorized' : 'scanner.sale_sync_error',
         severity: isUnauthorized ? 'warning' : 'error',
         message: String(error?.message || '').trim() || 'Error de sincronizacion en scanner',
+        error,
         context: {
           status,
+          statusText: String(error?.statusText || '').trim(),
+          endpoint: String(error?.endpoint || '').trim() || '/api/scanner/sales',
+          method: String(error?.method || '').trim() || 'POST',
+          flow: String(error?.flow || '').trim() || 'scanner_sale_sync',
+          trigger: String(error?.trigger || '').trim() || 'queue_retry',
+          errorFamily: String(error?.errorFamily || '').trim() || classifyDiagnosticError(error),
           pending: getScannerSalesQueuePendingCount(),
           online: typeof navigator !== 'undefined' ? navigator.onLine !== false : true
         }
@@ -610,9 +621,16 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
               eventType: 'scanner.quick_add_sync_error',
               severity: 'error',
               message: String(error?.message || '').trim() || 'Error en alta rapida de producto',
+              error,
               context: {
                 productName: nombre || 'Producto Manual',
-                status: Number(error?.status || 0)
+                status: Number(error?.status || 0),
+                statusText: String(error?.statusText || '').trim(),
+                endpoint: '/api/scanner/products',
+                method: 'POST',
+                flow: 'scanner_quick_add',
+                trigger: 'quick_add_confirm',
+                errorFamily: classifyDiagnosticError(error)
               }
             }, {
               token: currentUser?.sessionToken || '',

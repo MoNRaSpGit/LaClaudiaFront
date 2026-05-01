@@ -112,6 +112,11 @@ function DiagnosticEventsPanel({
                   {event.contextLine ? (
                     <small className="text-muted">{event.contextLine}</small>
                   ) : null}
+                  {event.errorFamily || event.endpoint || event.method ? (
+                    <small className="text-muted">
+                      {[event.errorFamily, event.method, event.endpoint].filter(Boolean).join(' | ')}
+                    </small>
+                  ) : null}
                 </div>
 
                 <div className="panel-diagnostics-event-meta">
@@ -152,6 +157,16 @@ function DiagnosticEventsPanel({
                     <strong>{event.eventTypeLabel}</strong>
                   </div>
                 </div>
+
+                {event.flow || event.trigger ? (
+                  <div className="panel-diagnostics-highlight-card">
+                    <span className="panel-diagnostics-highlight-icon"><RefreshCcw size={16} /></span>
+                    <div>
+                      <small className="panel-diagnostics-highlight-label">Flujo</small>
+                      <strong>{[event.flow, event.trigger].filter(Boolean).join(' | ')}</strong>
+                    </div>
+                  </div>
+                ) : null}
               </div>
             </article>
           ))}
