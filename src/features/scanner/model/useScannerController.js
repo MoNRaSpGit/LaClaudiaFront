@@ -165,7 +165,14 @@ export function useScannerController({ currentUser } = {}) {
     const payload = {
       externalId,
       userId: currentUser?.id || null,
-      items: snapshotItems
+      items: snapshotItems.map((item) => ({
+        id: item.id,
+        productId: item.productId,
+        isManual: item.isManual,
+        nombre: item.nombre,
+        precio_venta: item.precio_venta,
+        quantity: item.quantity
+      }))
     };
 
     // Fast path: caja no espera red para cerrar el cobro.
@@ -204,8 +211,7 @@ export function useScannerController({ currentUser } = {}) {
         candidateProductId,
         {
           nombre: normalizedPayload.nombre,
-          precio_venta: Number(normalizedPayload.precio_venta || 0),
-          thumbnail_url: normalizedPayload.thumbnail_url ?? null
+          precio_venta: Number(normalizedPayload.precio_venta || 0)
         },
         { token: currentUser?.sessionToken || '' }
       );
@@ -243,8 +249,7 @@ export function useScannerController({ currentUser } = {}) {
         id: item?.id,
         nombre: item?.nombre || '',
         precio_venta_raw: item?.precio_venta != null ? String(item.precio_venta) : '',
-        precio_venta: Number(item?.precio_venta || 0),
-        thumbnail_url: item?.thumbnail_url || ''
+        precio_venta: Number(item?.precio_venta || 0)
       }
     })
   ), [dispatch]);

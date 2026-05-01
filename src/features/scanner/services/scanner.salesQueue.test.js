@@ -89,5 +89,64 @@ describe('scanner.salesQueue', () => {
     expect(api.createScannerSale).toHaveBeenCalledTimes(1);
     expect(queueModule.getScannerSalesQueuePendingCount()).toBe(0);
   });
-});
 
+  it('sanea payloads viejos y nuevos para no mandar thumbnail_url pesado en ventas', async () => {
+    globalThis.window = {
+      localStorage: createMemoryStorage(),
+      addEventListener: () => {},
+      removeEventListener: () => {}
+    };
+    globalThis.window.localStorage.setItem('scanner_sales_queue_v1', JSON.stringify([
+      {
+        payload: {
+          externalId: 'sale-old',
+          userId: 7,
+          items: [
+            {
+              id: 'old-1',
+              productId: 10,
+              isManual: false,
+              nombre: 'Queso',
+              precio_venta: 150,
+              quantity: 1,
+              thumbnail_url: 'data:image/png;base64,muy-pesada'
+            }
+          ]
+        },
+        queuedAt: '2026-05-01T12:00:00.000Z'
+      }
+    ]));
+
+    const { api, queueModule } = await loadQueueModule();
+    api.createScannerSale
+      .mockResolvedValueOnce({ ok: true })
+      .mockResolvedValueOnce({ ok: true });
+
+    await queueModule.flushScannerSalesQueue({ token: 'token-old' });
+
+    queueModule.enqueueScannerSale({
+      payload: {
+        externalId: 'sale-new',
+        userId: 8,
+        items: [
+          {
+            id: 'new-1',
+            productId: 20,
+            isManual: false,
+            nombre: 'Yerba',
+            precio_venta: 90,
+            quantity: 2,
+            thumbnail_url: 'data:image/png;base64,muy-pesada'
+          }
+        ]
+      },
+      token: 'token-new'
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(api.createScannerSale).toHaveBeenCalledTimes(2);
+    expect(api.createScannerSale.mock.calls[0][0].items[0]).not.toHaveProperty('thumbnail_url');
+    expect(api.createScannerSale.mock.calls[1][0].items[0]).not.toHaveProperty('thumbnail_url');
+  });
+});

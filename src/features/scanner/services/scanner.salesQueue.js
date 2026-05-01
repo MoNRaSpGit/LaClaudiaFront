@@ -10,6 +10,38 @@ let lastQueueError = null;
 const queueListeners = new Set();
 const queueErrorListeners = new Set();
 
+function sanitizeSaleItemForTransport(item = {}) {
+  const quantity = Number(item.quantity || 1);
+  const unitPrice = Number(item.precio_venta || 0);
+
+  return {
+    id: item.id,
+    productId: item.productId ?? null,
+    isManual: Boolean(item.isManual),
+    nombre: String(item.nombre || '').trim(),
+    precio_venta: Number.isFinite(unitPrice) ? unitPrice : 0,
+    quantity: Number.isFinite(quantity) && quantity > 0 ? quantity : 1
+  };
+}
+
+function sanitizeSalePayload(payload = {}) {
+  const rawItems = Array.isArray(payload.items) ? payload.items : [];
+
+  return {
+    externalId: String(payload.externalId || payload.id || '').trim(),
+    userId: payload.userId ?? null,
+    notes: payload.notes ?? null,
+    items: rawItems.map(sanitizeSaleItemForTransport)
+  };
+}
+
+function sanitizeQueueEntry(entry = {}) {
+  return {
+    payload: sanitizeSalePayload(entry.payload || {}),
+    queuedAt: String(entry.queuedAt || '').trim() || new Date().toISOString()
+  };
+}
+
 function isBrowser() {
   return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
 }
@@ -26,7 +58,8 @@ function loadQueueOnce() {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     const parsed = raw ? JSON.parse(raw) : [];
-    queue = Array.isArray(parsed) ? parsed : [];
+    queue = Array.isArray(parsed) ? parsed.map(sanitizeQueueEntry) : [];
+    persistQueue();
   } catch (_error) {
     queue = [];
   }
@@ -74,7 +107,7 @@ function notifyQueueErrorListeners(error) {
 
 function enqueue(payload) {
   queue.push({
-    payload,
+    payload: sanitizeSalePayload(payload),
     queuedAt: new Date().toISOString()
   });
   persistQueue();

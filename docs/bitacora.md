@@ -399,6 +399,19 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
   - el monitoreo visible en panel queda reservado para `staff`.
   - el boton rapido `staff // staff` es solo local para soporte y no se debe subir.
 
+## Ajuste defensivo scanner - payload liviano y sin carga de imagen por caja
+
+- Se detecto en produccion `scanner.sale_sync_error` con `HTTP 413 request entity too large`.
+- Causa mas probable confirmada por flujo:
+  - venta enviando payload demasiado pesado desde scanner.
+- Blindaje aplicado en frontend:
+  - la cola `scanner_sales_queue_v1` sanea ventas nuevas y viejas antes de reintentar.
+  - el payload de venta deja de incluir `thumbnail_url`.
+  - desde el scanner el usuario ya no puede cargar nuevas imagenes al editar un producto.
+  - las imagenes existentes/autorizadas se siguen mostrando en la lista.
+- Objetivo operativo:
+  - mantener caja rapida sin volver a disparar rechazos `413` por imagen/base64 en ventas.
+
 ## Regla operativa permanente (documentacion)
 
 - Modo de trabajo acordado:

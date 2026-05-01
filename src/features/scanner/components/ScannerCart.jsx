@@ -20,7 +20,6 @@ function ProductThumb({ name, thumbnailUrl }) {
 function ScannerEditModal({ item, isOpen, onClose, onDraftChange, onApply, onRequestScannerFocus }) {
   const [draftName, setDraftName] = useState(item?.nombre || '');
   const [draftPrice, setDraftPrice] = useState(item?.precio_venta || '');
-  const [draftImage, setDraftImage] = useState(item?.thumbnail_url || '');
   const [error, setError] = useState('');
 
   function closeAndRefocus() {
@@ -40,8 +39,7 @@ function ScannerEditModal({ item, isOpen, onClose, onDraftChange, onApply, onReq
       productId: item.productId ?? item.id,
       isManual: Boolean(item.isManual),
       nombre: draftName,
-      precio_venta: parsedPrice,
-      thumbnail_url: String(draftImage || '').trim()
+      precio_venta: parsedPrice
     });
 
     closeAndRefocus();
@@ -56,7 +54,6 @@ function ScannerEditModal({ item, isOpen, onClose, onDraftChange, onApply, onReq
   useEffect(() => {
     setDraftName(item?.nombre || '');
     setDraftPrice(item?.precio_venta || '');
-    setDraftImage(item?.thumbnail_url || '');
     setError('');
   }, [item]);
 
@@ -69,10 +66,9 @@ function ScannerEditModal({ item, isOpen, onClose, onDraftChange, onApply, onReq
       id: item.id,
       nombre: draftName,
       precio_venta_raw: String(draftPrice || ''),
-      precio_venta: Number(String(draftPrice || '').replace(',', '.')) || 0,
-      thumbnail_url: draftImage
+      precio_venta: Number(String(draftPrice || '').replace(',', '.')) || 0
     });
-  }, [draftImage, draftName, draftPrice, isOpen, item, onDraftChange]);
+  }, [draftName, draftPrice, isOpen, item, onDraftChange]);
 
   if (!isOpen || !item) {
     return null;
@@ -100,47 +96,6 @@ function ScannerEditModal({ item, isOpen, onClose, onDraftChange, onApply, onReq
           <div className="mb-3">
             <label className="form-label">Precio</label>
             <input className="form-control" value={draftPrice} onChange={(e) => setDraftPrice(e.target.value)} />
-          </div>
-
-          <div className="mb-4">
-            <label className="form-label">Imagen</label>
-            <input
-              type="file"
-              accept="image/*"
-              className="form-control"
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                if (!file) {
-                  return;
-                }
-
-                const reader = new FileReader();
-                reader.onload = () => {
-                  const base64Image = typeof reader.result === 'string' ? reader.result : '';
-                  setDraftImage(base64Image);
-                };
-                reader.onerror = () => {
-                  setError('No se pudo cargar la imagen seleccionada.');
-                };
-                reader.readAsDataURL(file);
-              }}
-            />
-            {draftImage ? (
-              <div className="mt-2 d-flex align-items-center gap-2">
-                <img
-                  src={draftImage}
-                  alt="Vista previa"
-                  style={{ width: '56px', height: '56px', objectFit: 'cover', borderRadius: '8px' }}
-                />
-                <button
-                  type="button"
-                  className="btn btn-sm btn-outline-secondary"
-                  onClick={() => setDraftImage('')}
-                >
-                  Quitar imagen
-                </button>
-              </div>
-            ) : null}
           </div>
 
           {error ? <small className="text-danger d-block mb-2">{error}</small> : null}
