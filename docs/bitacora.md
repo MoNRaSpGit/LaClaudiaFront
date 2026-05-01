@@ -50,6 +50,8 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
     - se removio el selector temporal de estilos de prueba para dejar UI limpia en produccion.
   - ajuste de layout:
     - `Otros` queda como quinto acceso rapido, centrado en la fila inferior para no romper la grilla principal de `2` columnas.
+  - feedback visual:
+    - el ultimo producto ingresado queda resaltado en verde oscuro suave para lectura rapida en caja.
 
 - Pagos para operario (2026-04-30):
   - nuevo tab `Pagos` visible para rol `operario` en navbar.
@@ -58,10 +60,18 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
   - manejo de sesion vencida alineado con panel: toast + logout consistente ante `401`.
 
 - Alta rapida por barcode no encontrado (2026-04-30):
-  - el modal rapido de scanner ahora pide solo `precio`.
-  - el nombre persistido queda fijo como `Producto Manual`.
-  - al confirmar, crea el producto real en backend antes de agregarlo al carrito.
-  - resultado: el siguiente escaneo del mismo barcode ya lo encuentra desde catalogo.
+  - el modal rapido de scanner ahora permite:
+    - `precio` obligatorio.
+    - `nombre` opcional.
+  - si no se completa nombre, se usa fallback `Producto Manual`.
+  - el cierre del modal y alta en carrito son optimistas:
+    - la UI agrega el item al instante.
+    - el backend crea el producto por detras.
+  - blindaje agregado para evitar falso positivo peligroso:
+    - mientras el alta real del producto sigue pendiente, `Cobrar` queda bloqueado.
+    - si el backend falla, el item queda marcado con error visible en carrito.
+    - si el backend responde OK, el item optimista se reconcilia con el producto real.
+  - resultado: el siguiente escaneo del mismo barcode ya lo encuentra desde catalogo cuando el alta completa correctamente.
 
 - Login operativo y credenciales rapidas (2026-04-30):
   - login real mantenido contra backend con usuarios simples para operacion diaria.

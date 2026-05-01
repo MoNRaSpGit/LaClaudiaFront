@@ -5,9 +5,11 @@ import {
   clearLiveEditor,
   clearCart,
   decrementCartItem,
+  reconcileQuickAddProduct,
   selectScannerTotals,
   setScanBarcode,
   setScanError,
+  setQuickAddSyncState,
   setLiveEditor,
   setScanLoading,
   updateCartItem,
@@ -83,7 +85,7 @@ export function useScannerController({ currentUser } = {}) {
     return true;
   }
 
-  async function addQuickBarcodeProduct({ barcode, rawValue }) {
+  function addQuickBarcodeProduct({ barcode, rawName, rawValue }, options = {}) {
     const manualPrice = parsePositiveAmount(rawValue);
     if (manualPrice === null) {
       dispatch(setScanError('Ingresa un valor numerico valido mayor a 0.'));
@@ -91,24 +93,55 @@ export function useScannerController({ currentUser } = {}) {
     }
 
     const normalizedBarcode = String(barcode || '').trim();
-    const normalizedName = 'Producto Manual';
+    const normalizedName = String(rawName || '').trim() || 'Producto Manual';
+    const tempId = `quick-add-${normalizedBarcode || Date.now()}`;
+    const optimisticItem = {
+      id: tempId,
+      productId: null,
+      isManual: true,
+      nombre: normalizedName,
+      precio_venta: manualPrice,
+      stock_actual: 0,
+      categoria: 'quick_add',
+      barcode: normalizedBarcode,
+      barcode_normalized: normalizedBarcode,
+      tiene_imagen: false,
+      thumbnail_url: null,
+      isQuickAddPending: true,
+      quickAddSyncError: ''
+    };
 
-    try {
-      const data = await createScannerProduct(
-        {
+    dispatch(addScannedProduct(optimisticItem));
+
+    createScannerProduct(
+      {
+        barcode: normalizedBarcode,
+        nombre: normalizedName,
+        precio_venta: manualPrice
+      },
+      { token: currentUser?.sessionToken || '' }
+    )
+      .then((data) => {
+        dispatch(reconcileQuickAddProduct({
+          tempId,
+          item: data?.item || null
+        }));
+        options?.onBackgroundSuccess?.(data);
+      })
+      .catch((error) => {
+        dispatch(setQuickAddSyncState({
+          id: tempId,
+          isQuickAddPending: false,
+          quickAddSyncError: toUserErrorMessage(error, { context: 'scanner_edit' })
+        }));
+        options?.onBackgroundError?.({
+          error,
           barcode: normalizedBarcode,
-          nombre: normalizedName,
-          precio_venta: manualPrice
-        },
-        { token: currentUser?.sessionToken || '' }
-      );
+          nombre: normalizedName
+        });
+      });
 
-      dispatch(addScannedProduct(data.item));
-      return true;
-    } catch (error) {
-      dispatch(setScanError(toUserErrorMessage(error, { context: 'scanner_edit' })));
-      return false;
-    }
+    return true;
   }
 
   async function chargeCart() {

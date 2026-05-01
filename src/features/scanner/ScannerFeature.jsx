@@ -330,6 +330,12 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
 
   const modalErrorMessage = isManualModalOpen ? scannerState.scanError : '';
   const quickAddErrorMessage = quickAddState.isOpen ? scannerState.scanError : '';
+  const pendingQuickAddItems = scannerState.cartItems.filter((item) => item.isQuickAddPending);
+  const failedQuickAddItems = scannerState.cartItems.filter((item) => !item.isQuickAddPending && item.quickAddSyncError);
+  const isChargeBlocked = pendingQuickAddItems.length > 0 || failedQuickAddItems.length > 0;
+  const chargeBlockMessage = pendingQuickAddItems.length > 0
+    ? 'Esperando guardar producto nuevo en backend antes de cobrar.'
+    : (failedQuickAddItems.length > 0 ? 'Hay un producto nuevo con error de alta. Revisalo antes de cobrar.' : '');
 
   return (
     <>
@@ -375,6 +381,7 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
             <ScannerCart
               items={scannerState.cartItems}
               lastScannedItemId={scannerState.lastScannedItemId}
+              latestRowTone="green-c"
               onAddOne={actions.addOneToCart}
               onRemoveOne={actions.removeOneFromCart}
               onEditStart={actions.startProductEditLiveEditor}
@@ -388,6 +395,8 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
               <ScannerCheckout
                 total={totals.total}
                 pendingSalesCount={pendingSalesCount}
+                isChargeBlocked={isChargeBlocked}
+                chargeBlockMessage={chargeBlockMessage}
                 onCharge={executeCharge}
                 openConfirmSignal={openConfirmSignal}
                 confirmByEnterSignal={confirmByEnterSignal}
@@ -414,7 +423,15 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
         isOpen={quickAddState.isOpen}
         barcode={quickAddState.barcode}
         onClose={closeQuickAddModal}
-        onConfirm={actions.addQuickBarcodeProduct}
+        onConfirm={(payload) => actions.addQuickBarcodeProduct(payload, {
+          onBackgroundError: ({ error, nombre }) => {
+            toast.error(`${nombre || 'Producto Manual'} dio error al guardar en backend.`, {
+              toastId: `scanner-quick-add-fail-${Date.now()}`,
+              autoClose: 3200
+            });
+            console.error('[SCANNER][QUICK_ADD][ERROR]', error);
+          }
+        })}
         onDraftChange={actions.updateLiveEditorDraft}
         errorMessage={quickAddErrorMessage}
       />

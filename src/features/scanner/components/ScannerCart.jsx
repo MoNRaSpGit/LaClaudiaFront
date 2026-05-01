@@ -159,6 +159,7 @@ function ScannerEditModal({ item, isOpen, onClose, onDraftChange, onApply, onReq
 function ScannerCart({
   items,
   lastScannedItemId,
+  latestRowTone = 'green-b',
   onAddOne,
   onRemoveOne,
   onEditStart,
@@ -199,7 +200,7 @@ function ScannerCart({
                 const lineTotal = unitPrice * Number(item.quantity || 1);
 
                 return (
-                  <tr key={item.id} className={isLatest ? 'scanner-row-latest' : 'scanner-row-default'}>
+                  <tr key={item.id} className={isLatest ? `scanner-row-latest scanner-row-latest-${latestRowTone}` : 'scanner-row-default'}>
                     <td
                       role="button"
                       tabIndex={0}
@@ -226,6 +227,12 @@ function ScannerCart({
                         <div>
                           <div className="fw-semibold scanner-product-name">{item.nombre}</div>
                           <div className="scanner-price-badge">${unitPrice.toFixed(2)}</div>
+                          {item.isQuickAddPending ? (
+                            <div className="scanner-quick-add-status">Guardando producto nuevo...</div>
+                          ) : null}
+                          {!item.isQuickAddPending && item.quickAddSyncError ? (
+                            <div className="scanner-quick-add-status scanner-quick-add-status-error">Error al guardar producto nuevo</div>
+                          ) : null}
                         </div>
                       </div>
                     </td>

@@ -8,6 +8,7 @@ function ScannerQuickAddModal({
   onDraftChange,
   errorMessage = ''
 }) {
+  const [name, setName] = useState('');
   const [value, setValue] = useState('');
   const priceInputRef = useRef(null);
 
@@ -16,6 +17,7 @@ function ScannerQuickAddModal({
       return;
     }
 
+    setName('');
     setValue('');
     onDraftChange?.({
       nombre: 'Producto Manual',
@@ -45,6 +47,7 @@ function ScannerQuickAddModal({
   async function handleConfirm() {
     const ok = await onConfirm({
       barcode,
+      rawName: name,
       rawValue: value
     });
     if (ok) {
@@ -53,10 +56,10 @@ function ScannerQuickAddModal({
   }
 
   return (
-    <div className="scanner-modal-overlay" role="dialog" aria-modal="true" aria-label="Ingresa un valor">
+    <div className="scanner-modal-overlay" role="dialog" aria-modal="true" aria-label="Producto no encontrado">
       <div className="scanner-modal-card">
         <div className="d-flex justify-content-between align-items-center mb-3">
-          <h2 className="h5 mb-0">Ingresa un valor</h2>
+          <h2 className="h5 mb-0">Producto no encontrado</h2>
           <button type="button" className="btn btn-sm btn-outline-secondary" onClick={onClose}>X</button>
         </div>
 
@@ -66,6 +69,22 @@ function ScannerQuickAddModal({
             handleConfirm();
           }}
         >
+          <div className="mb-3">
+            <label className="form-label">Nombre</label>
+            <input
+              className="form-control"
+              value={name}
+              onChange={(event) => {
+                const nextName = event.target.value;
+                setName(nextName);
+                onDraftChange?.({
+                  nombre: String(nextName || '').trim() || 'Producto Manual'
+                });
+              }}
+              placeholder="Opcional"
+            />
+          </div>
+
           <div className="mb-3">
             <label className="form-label">Precio</label>
             <input

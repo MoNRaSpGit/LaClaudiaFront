@@ -224,6 +224,58 @@ const scannerSlice = createSlice({
       }
       persistScannerState(state);
     },
+    setQuickAddSyncState(state, action) {
+      const payload = action.payload || {};
+      const itemId = String(payload.id || '');
+      const item = state.cartItems.find((entry) => String(entry.id) === itemId);
+      if (!item) {
+        return;
+      }
+
+      item.isQuickAddPending = Boolean(payload.isQuickAddPending);
+      item.quickAddSyncError = String(payload.quickAddSyncError || '').trim();
+      persistScannerState(state);
+    },
+    reconcileQuickAddProduct(state, action) {
+      const payload = action.payload || {};
+      const tempId = String(payload.tempId || '');
+      const serverItem = payload.item || null;
+      if (!tempId || !serverItem?.id) {
+        return;
+      }
+
+      const optimisticIndex = state.cartItems.findIndex((entry) => String(entry.id) === tempId);
+      if (optimisticIndex === -1) {
+        return;
+      }
+
+      const optimisticItem = state.cartItems[optimisticIndex];
+      const existingServerIndex = state.cartItems.findIndex(
+        (entry) => String(entry.id) === String(serverItem.id) && String(entry.id) !== tempId
+      );
+
+      if (existingServerIndex !== -1) {
+        const existingServerItem = state.cartItems[existingServerIndex];
+        existingServerItem.quantity += Number(optimisticItem.quantity || 1);
+        existingServerItem.scannedAt = optimisticItem.scannedAt || existingServerItem.scannedAt;
+        state.cartItems.splice(optimisticIndex, 1);
+        state.lastScannedItemId = existingServerItem.id;
+        state.lastScannedAt = existingServerItem.scannedAt || state.lastScannedAt;
+        persistScannerState(state);
+        return;
+      }
+
+      state.cartItems[optimisticIndex] = {
+        ...serverItem,
+        quantity: Number(optimisticItem.quantity || 1),
+        scannedAt: optimisticItem.scannedAt,
+        isQuickAddPending: false,
+        quickAddSyncError: ''
+      };
+      state.lastScannedItemId = serverItem.id;
+      state.lastScannedAt = optimisticItem.scannedAt || state.lastScannedAt;
+      persistScannerState(state);
+    },
     clearCart(state) {
       state.cartItems = [];
       state.scanStatus = 'idle';
@@ -272,6 +324,8 @@ export const {
   setScanError,
   decrementCartItem,
   updateCartItem,
+  setQuickAddSyncState,
+  reconcileQuickAddProduct,
   clearCart,
   resetScannerState,
   setLiveEditor,

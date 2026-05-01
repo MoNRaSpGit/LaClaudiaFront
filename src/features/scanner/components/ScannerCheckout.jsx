@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+
 const ENTER_CONFIRM_GUARD_MS = 350;
 
 function ScannerCheckout({
   total,
   pendingSalesCount = 0,
+  isChargeBlocked = false,
+  chargeBlockMessage = '',
   onCharge,
   openConfirmSignal = 0,
   confirmByEnterSignal = 0,
@@ -16,7 +19,7 @@ function ScannerCheckout({
   const lastHandledConfirmSignalRef = useRef(0);
 
   const handleConfirm = useCallback(async () => {
-    if (isSubmitting) {
+    if (isSubmitting || isChargeBlocked) {
       return;
     }
     setIsSubmitting(true);
@@ -25,7 +28,7 @@ function ScannerCheckout({
     if (ok) {
       setIsConfirmOpen(false);
     }
-  }, [isSubmitting, onCharge]);
+  }, [isChargeBlocked, isSubmitting, onCharge]);
 
   useEffect(() => {
     if (openConfirmSignal <= 0) {
@@ -34,10 +37,13 @@ function ScannerCheckout({
     if (openConfirmSignal === lastHandledOpenSignalRef.current) {
       return;
     }
+    if (isChargeBlocked) {
+      return;
+    }
     lastHandledOpenSignalRef.current = openConfirmSignal;
     setConfirmOpenedAt(Date.now());
     setIsConfirmOpen(true);
-  }, [openConfirmSignal]);
+  }, [isChargeBlocked, openConfirmSignal]);
 
   useEffect(() => {
     if (confirmByEnterSignal <= 0) {
@@ -73,13 +79,21 @@ function ScannerCheckout({
             Pendientes de sincronizar: <strong>{pendingSalesCount}</strong>
           </p>
         ) : (
-          <p className="scanner-sync-hint scanner-sync-hint-ok mb-2">Sincronización al día</p>
+          <p className="scanner-sync-hint scanner-sync-hint-ok mb-2">Sincronizacion al dia</p>
         )}
+
+        {isChargeBlocked && chargeBlockMessage ? (
+          <p className="scanner-sync-hint mb-2">{chargeBlockMessage}</p>
+        ) : null}
 
         <button
           type="button"
           className="btn scanner-charge-btn w-100"
+          disabled={isChargeBlocked}
           onClick={() => {
+            if (isChargeBlocked) {
+              return;
+            }
             setConfirmOpenedAt(Date.now());
             setIsConfirmOpen(true);
           }}
@@ -118,7 +132,7 @@ function ScannerCheckout({
               <button
                 type="button"
                 className="btn btn-dark w-50"
-                disabled={isSubmitting}
+                disabled={isSubmitting || isChargeBlocked}
                 onClick={handleConfirm}
               >
                 {isSubmitting ? 'Confirmando...' : 'Confirmar'}
