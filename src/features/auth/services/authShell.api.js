@@ -43,3 +43,11 @@ export async function logoutReal({ token } = {}) {
   }, 8000);
   return readJson(response);
 }
+
+export async function touchSession({ token } = {}) {
+  const response = await fetchWithTimeout(`${apiUrl}/api/auth/session`, {
+    method: 'GET',
+    headers: buildHeaders({ token })
+  }, 8000);
+  return readJson(response);
+}

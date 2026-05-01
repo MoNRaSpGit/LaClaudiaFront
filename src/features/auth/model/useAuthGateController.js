@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { bootAuthShell, loginReal, logoutReal } from '../services/authShell.api';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { bootAuthShell, loginReal, logoutReal, touchSession } from '../services/authShell.api';
 import { pingBackend, startBackendHeartbeat } from '../../../shared/services/platform.api';
 import { toUserErrorMessage } from '../../../shared/lib/userErrorMessages';
 
@@ -7,6 +7,9 @@ const REMEMBER_KEY = 'laclau_auth_remember_v1';
 const SESSION_KEY = 'laclau_auth_session_v1';
 const SCANNER_STATE_KEY = 'scanner_state_v1';
 const SCANNER_QUEUE_KEY = 'scanner_sales_queue_v1';
+const AUTH_KEEPALIVE_INTERVAL_MS = 3 * 60 * 1000;
+const AUTH_KEEPALIVE_RETRY_DELAY_MS = 15000;
+const AUTH_KEEPALIVE_MAX_UNAUTHORIZED = 2;
 
 function readRememberedCredentials() {
   if (typeof window === 'undefined') {
@@ -161,6 +164,66 @@ export function useAuthGateController() {
     };
   }, []);
 
+  useEffect(() => {
+    let stopped = false;
+    let intervalId = null;
+    let retryTimeoutId = null;
+    let unauthorizedCount = 0;
+
+    async function keepaliveTick() {
+      if (stopped) {
+        return;
+      }
+      if (phase !== 'ready') {
+        return;
+      }
+      const token = String(user?.sessionToken || '').trim();
+      if (!token) {
+        return;
+      }
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+        return;
+      }
+
+      try {
+        await touchSession({ token });
+        unauthorizedCount = 0;
+      } catch (error) {
+        const status = Number(error?.status || 0);
+        if (status === 401) {
+          unauthorizedCount += 1;
+          if (unauthorizedCount >= AUTH_KEEPALIVE_MAX_UNAUTHORIZED) {
+            logout();
+            return;
+          }
+          retryTimeoutId = setTimeout(() => {
+            keepaliveTick().catch(() => {});
+          }, AUTH_KEEPALIVE_RETRY_DELAY_MS);
+          return;
+        }
+
+        retryTimeoutId = setTimeout(() => {
+          keepaliveTick().catch(() => {});
+        }, AUTH_KEEPALIVE_RETRY_DELAY_MS);
+      }
+    }
+
+    intervalId = setInterval(() => {
+      keepaliveTick().catch(() => {});
+    }, AUTH_KEEPALIVE_INTERVAL_MS);
+    keepaliveTick().catch(() => {});
+
+    return () => {
+      stopped = true;
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+      if (retryTimeoutId) {
+        clearTimeout(retryTimeoutId);
+      }
+    };
+  }, [logout, phase, user?.sessionToken]);
+
   const bootMessage = useMemo(() => {
     if (phase === 'authenticating') {
       return 'Preparando sesión segura...';
@@ -233,7 +296,7 @@ export function useAuthGateController() {
     setAdminFocusPasswordSignal((value) => value + 1);
   }
 
-  function logout() {
+  const logout = useCallback(() => {
     const token = String(user?.sessionToken || '').trim();
     if (token) {
       logoutReal({ token }).catch(() => {});
@@ -245,7 +308,7 @@ export function useAuthGateController() {
     setRememberCredentials(false);
     setPhase('login');
     setError('');
-  }
+  }, [user?.sessionToken]);
 
   return {
     state: {

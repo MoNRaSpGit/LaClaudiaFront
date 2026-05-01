@@ -132,7 +132,7 @@ function Workspace({ user, onLogout }) {
       </nav>
 
       {activeTab === 'scanner' && (
-        <ScannerFeature currentUser={user} />
+        <ScannerFeature currentUser={user} onUnauthorized={handleLogout} />
       )}
       {activeTab === 'panel' && canAccessPanel && (
         <PanelControlFeature currentUser={user} onUnauthorized={handleLogout} />

@@ -15,8 +15,9 @@ export async function readJson(response) {
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
     const message = data?.message || `HTTP ${response.status}`;
-    throw new Error(message);
+    const error = new Error(message);
+    error.status = Number(response.status || 0);
+    throw error;
   }
   return data;
 }
-

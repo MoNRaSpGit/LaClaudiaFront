@@ -6,6 +6,13 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
 
 ## Mini Changelog Tecnico (2026-04-27)
 
+- Hardening de sesion operativa en caja (2026-05-01):
+  - agregado keepalive autenticado de sesion en frontend (`/api/auth/session`) para mantener renovacion activa durante operacion.
+  - intervalo de keepalive: `3 min` con reintentos por fallo transitorio de red.
+  - logout automatico solo ante `401` persistente (no por un unico bache).
+  - scanner ahora detecta `401` en cola de ventas y muestra mensaje de sesion vencida, evitando que se interprete como simple error de sync.
+  - objetivo: reducir casos donde el cobro visual sale OK pero la venta no entra a movimientos por token vencido en entorno real.
+
 - Ganancia diaria editable desde panel (2026-04-30):
   - porcentaje por defecto actualizado a `30%` para calculo de `Ganancia diaria`.
   - la tarjeta `Ganancia diaria` ahora permite edicion por doble click.

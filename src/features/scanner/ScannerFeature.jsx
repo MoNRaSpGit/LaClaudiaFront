@@ -28,7 +28,7 @@ const MANUAL_PRODUCT_OPTIONS = [
   { key: 'producto-x-kg', label: 'Producto x kg', icon: Scale, category: 'producto_x_kg' }
 ];
 
-function ScannerFeature({ currentUser }) {
+function ScannerFeature({ currentUser, onUnauthorized }) {
   const { scannerState, totals, actions } = useScannerController({ currentUser });
   const updateLiveEditorDraft = actions.updateLiveEditorDraft;
   const clearScanError = actions.clearScanError;
@@ -49,6 +49,7 @@ function ScannerFeature({ currentUser }) {
   const scannerInputRef = useRef(null);
   const lastSyncErrorToastAtRef = useRef(0);
   const syncErrorCountRef = useRef(0);
+  const unauthorizedHandledRef = useRef(false);
   const lastChargeAtRef = useRef(0);
   const lastLiveStateSignatureRef = useRef('');
 
@@ -105,7 +106,29 @@ function ScannerFeature({ currentUser }) {
   }, [pendingSalesCount]);
 
   useEffect(() => {
-    const unsubscribeErrors = subscribeScannerSalesQueueErrors(() => {
+    unauthorizedHandledRef.current = false;
+  }, [currentUser?.sessionToken]);
+
+  useEffect(() => {
+    const unsubscribeErrors = subscribeScannerSalesQueueErrors((error) => {
+      const status = Number(error?.status || 0);
+      const errorMessage = String(error?.message || '').toLowerCase();
+      const isUnauthorized = status === 401 || errorMessage.includes('unauthorized') || errorMessage.includes('sesion expirada');
+      if (isUnauthorized) {
+        if (unauthorizedHandledRef.current) {
+          return;
+        }
+        unauthorizedHandledRef.current = true;
+        toast.warn('Sesion vencida. Inicia sesion nuevamente para sincronizar ventas pendientes.', {
+          toastId: 'scanner-session-expired',
+          autoClose: 2200
+        });
+        window.setTimeout(() => {
+          onUnauthorized?.();
+        }, 900);
+        return;
+      }
+
       if (typeof navigator !== 'undefined' && navigator.onLine === false) {
         return;
       }
@@ -129,7 +152,7 @@ function ScannerFeature({ currentUser }) {
     return () => {
       unsubscribeErrors();
     };
-  }, []);
+  }, [onUnauthorized]);
 
   useEffect(() => {
     if (!currentUser?.sessionToken || !isOperario) {

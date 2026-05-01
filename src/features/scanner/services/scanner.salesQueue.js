@@ -81,6 +81,14 @@ function isDuplicateSaleError(error) {
   return message.includes('duplicado') || message.includes('ya fue registrada') || message.includes('409');
 }
 
+function isUnauthorizedError(error) {
+  if (Number(error?.status) === 401) {
+    return true;
+  }
+  const message = normalizeErrorMessage(error);
+  return message.includes('401') || message.includes('unauthorized') || message.includes('sesion expirada');
+}
+
 function scheduleRetry(token) {
   if (retryTimer) {
     clearTimeout(retryTimer);
@@ -110,6 +118,11 @@ export async function flushScannerSalesQueue({ token } = {}) {
         persistQueue();
         notifyQueueListeners();
         continue;
+      }
+
+      if (isUnauthorizedError(error)) {
+        notifyQueueErrorListeners(error);
+        return { pending: queue.length, error };
       }
 
       scheduleRetry(token);
