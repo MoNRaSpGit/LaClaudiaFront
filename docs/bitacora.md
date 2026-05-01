@@ -1,5 +1,16 @@
 # Bitacora Frontend
 
+## Referencia operativa: version estable
+
+- Si el usuario dice `volvemos a estable`, la referencia base actual es:
+  - `frontend origin/main`
+  - commit: `652bf09`
+  - mensaje: `scanner: optimiza alta rapida y feedback visual`
+- Esta referencia representa la ultima version subida y tomada como estable antes de cambios locales no publicados.
+- Regla de trabajo:
+  - cualquier experimento/local grande se compara primero contra esta base.
+  - antes de subir cambios sensibles, conviene validar diferencia contra esta referencia.
+
 ## Estado actual (2026-04-26)
 
 Frontend conectado a backend real para auth + ventas + pagos + dashboard, con foco en UX operativa de caja.
@@ -12,6 +23,21 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
   - logout automatico solo ante `401` persistente (no por un unico bache).
   - scanner ahora detecta `401` en cola de ventas y muestra mensaje de sesion vencida, evitando que se interprete como simple error de sync.
   - objetivo: reducir casos donde el cobro visual sale OK pero la venta no entra a movimientos por token vencido en entorno real.
+  - soporte/diagnostico:
+    - agregado panel oculto de diagnostico en scanner, activable con `Ctrl+Shift+D`.
+    - muestra:
+      - token activo/ausente.
+      - cola pendiente.
+      - quick-add pendientes/error.
+      - ultimo error de sincronizacion.
+    - objetivo: acelerar soporte en locales donde el error aparece solo en entorno real.
+  - smoke tecnico ampliado:
+    - `scripts/smoke-web.mjs` ahora soporta validacion autenticada opcional de:
+      - operario (`auth/login` + `auth/session`)
+      - admin (`auth/login` + `auth/session` + `dashboard`)
+    - se habilita con:
+      - `SMOKE_LOGIN_USER` / `SMOKE_LOGIN_PASS`
+      - `SMOKE_ADMIN_USER` / `SMOKE_ADMIN_PASS`
 
 - Ganancia diaria editable desde panel (2026-04-30):
   - porcentaje por defecto actualizado a `30%` para calculo de `Ganancia diaria`.
@@ -359,6 +385,13 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
   3. revision de estructura/capas (MVC y boundaries por feature).
   4. limpieza de ruido (imports sin uso, estilos/codigo legacy).
   5. documentacion (bitacora + resumen tecnico).
+- Regla adicional de cierre en `PF`:
+  - ademas del checklist tecnico, la IA debe dar su opinion profesional final sobre el estado del cambio.
+  - esa opinion debe incluir, si aplica, sugerencias concretas tipo:
+    - `estaria bueno agregar ...`
+    - `el siguiente paso logico seria ...`
+    - `hay este riesgo residual y conviene ...`
+  - objetivo: no cerrar solo con "paso todo", sino tambien aportar criterio tecnico y proximo valor posible.
 - Regla de corte:
   - solo si 1-5 salen bien, recien pasar al punto 6:
   6. `push + deploy` y validacion final de publicacion.

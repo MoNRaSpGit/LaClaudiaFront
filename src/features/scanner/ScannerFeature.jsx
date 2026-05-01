@@ -12,6 +12,7 @@ import { printSaleTicket } from './services/scanner.print';
 import { printSaleTicketByQz } from './services/scanner.qzPrint';
 import {
   flushScannerSalesQueue,
+  getScannerSalesQueueDebugSnapshot,
   getScannerSalesQueuePendingCount,
   subscribeScannerSalesQueue,
   subscribeScannerSalesQueueErrors
@@ -21,6 +22,7 @@ const SALE_SYNC_ERROR_TOAST_COOLDOWN_MS = 30000;
 const POST_CHARGE_ENTER_GUARD_MS = 1200;
 const LIVE_STATE_PUBLISH_DELAY_MS = 100;
 const LIVE_STATE_SLOW_MS = 300;
+const SCANNER_DIAG_KEY = 'scanner_diag_enabled_v1';
 const MANUAL_PRODUCT_OPTIONS = [
   { key: 'fruta-verduras', label: 'Fruta/Verduras', icon: Apple, category: 'fruta_verduras' },
   { key: 'fiambre', label: 'Fiambre', icon: Beef, category: 'fiambre' },
@@ -44,6 +46,15 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
     barcode: ''
   });
   const [pendingSalesCount, setPendingSalesCount] = useState(getScannerSalesQueuePendingCount());
+  const [isDiagnosticsOpen, setIsDiagnosticsOpen] = useState(() => {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+    const fromStorage = String(window.localStorage.getItem(SCANNER_DIAG_KEY) || '').trim();
+    const fromQuery = new URLSearchParams(window.location.search).get('diag');
+    return fromStorage === '1' || fromQuery === 'scanner';
+  });
+  const [queueDebugSnapshot, setQueueDebugSnapshot] = useState(() => getScannerSalesQueueDebugSnapshot());
   const [isCheckoutConfirmOpen, setIsCheckoutConfirmOpen] = useState(false);
   const [openConfirmSignal, setOpenConfirmSignal] = useState(0);
   const [confirmByEnterSignal, setConfirmByEnterSignal] = useState(0);
@@ -63,10 +74,36 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
   useEffect(() => {
     const unsubscribe = subscribeScannerSalesQueue((pending) => {
       setPendingSalesCount(pending);
+      setQueueDebugSnapshot(getScannerSalesQueueDebugSnapshot());
     });
 
     return () => {
       unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    function handleKeydown(event) {
+      if (!event.ctrlKey || !event.shiftKey || event.key.toLowerCase() !== 'd') {
+        return;
+      }
+      event.preventDefault();
+      setIsDiagnosticsOpen((current) => {
+        const next = !current;
+        if (typeof window !== 'undefined') {
+          if (next) {
+            window.localStorage.setItem(SCANNER_DIAG_KEY, '1');
+          } else {
+            window.localStorage.removeItem(SCANNER_DIAG_KEY);
+          }
+        }
+        return next;
+      });
+    }
+
+    window.addEventListener('keydown', handleKeydown);
+    return () => {
+      window.removeEventListener('keydown', handleKeydown);
     };
   }, []);
 
@@ -112,6 +149,7 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
 
   useEffect(() => {
     const unsubscribeErrors = subscribeScannerSalesQueueErrors((error) => {
+      setQueueDebugSnapshot(getScannerSalesQueueDebugSnapshot());
       const status = Number(error?.status || 0);
       const errorMessage = String(error?.message || '').toLowerCase();
       const isUnauthorized = status === 401 || errorMessage.includes('unauthorized') || errorMessage.includes('sesion expirada');
@@ -402,6 +440,54 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
                 confirmByEnterSignal={confirmByEnterSignal}
                 onConfirmModalOpenChange={setIsCheckoutConfirmOpen}
               />
+            ) : null}
+
+            {isDiagnosticsOpen ? (
+              <section className="scanner-diagnostics mt-4" aria-label="Diagnostico scanner">
+                <div className="scanner-diagnostics-header">
+                  <h2 className="scanner-diagnostics-title mb-0">Diagnostico scanner</h2>
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-secondary"
+                    onClick={() => {
+                      setIsDiagnosticsOpen(false);
+                      if (typeof window !== 'undefined') {
+                        window.localStorage.removeItem(SCANNER_DIAG_KEY);
+                      }
+                    }}
+                  >
+                    Ocultar
+                  </button>
+                </div>
+                <div className="scanner-diagnostics-grid">
+                  <div className="scanner-diagnostics-card">
+                    <span className="scanner-diagnostics-label">Token</span>
+                    <strong>{currentUser?.sessionToken ? 'Activo' : 'Ausente'}</strong>
+                  </div>
+                  <div className="scanner-diagnostics-card">
+                    <span className="scanner-diagnostics-label">Cola pendientes</span>
+                    <strong>{queueDebugSnapshot.pending}</strong>
+                  </div>
+                  <div className="scanner-diagnostics-card">
+                    <span className="scanner-diagnostics-label">Quick add pendientes</span>
+                    <strong>{pendingQuickAddItems.length}</strong>
+                  </div>
+                  <div className="scanner-diagnostics-card">
+                    <span className="scanner-diagnostics-label">Quick add con error</span>
+                    <strong>{failedQuickAddItems.length}</strong>
+                  </div>
+                </div>
+                <div className="scanner-diagnostics-log">
+                  <span className="scanner-diagnostics-label">Ultimo error sync</span>
+                  <strong>{queueDebugSnapshot.lastError?.message || 'Sin errores registrados'}</strong>
+                  {queueDebugSnapshot.lastError?.status ? (
+                    <span className="scanner-diagnostics-meta">HTTP {queueDebugSnapshot.lastError.status}</span>
+                  ) : null}
+                  {queueDebugSnapshot.lastError?.at ? (
+                    <span className="scanner-diagnostics-meta">{queueDebugSnapshot.lastError.at}</span>
+                  ) : null}
+                </div>
+              </section>
             ) : null}
           </div>
         </div>

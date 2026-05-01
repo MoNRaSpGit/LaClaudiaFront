@@ -6,6 +6,7 @@ const RETRY_DELAY_MS = 2000;
 let queueLoaded = false;
 let queue = [];
 let retryTimer = null;
+let lastQueueError = null;
 const queueListeners = new Set();
 const queueErrorListeners = new Set();
 
@@ -54,6 +55,14 @@ function notifyQueueListeners() {
 }
 
 function notifyQueueErrorListeners(error) {
+  lastQueueError = error
+    ? {
+        message: String(error?.message || '').trim() || 'Error de sincronizacion',
+        status: Number(error?.status || 0),
+        at: new Date().toISOString()
+      }
+    : null;
+
   queueErrorListeners.forEach((listener) => {
     try {
       listener(error);
@@ -112,11 +121,17 @@ export async function flushScannerSalesQueue({ token } = {}) {
       queue.shift();
       persistQueue();
       notifyQueueListeners();
+      if (!queue.length) {
+        lastQueueError = null;
+      }
     } catch (error) {
       if (isDuplicateSaleError(error)) {
         queue.shift();
         persistQueue();
         notifyQueueListeners();
+        if (!queue.length) {
+          lastQueueError = null;
+        }
         continue;
       }
 
@@ -135,6 +150,8 @@ export async function flushScannerSalesQueue({ token } = {}) {
     clearTimeout(retryTimer);
     retryTimer = null;
   }
+
+  lastQueueError = null;
 
   return { pending: 0 };
 }
@@ -174,5 +191,14 @@ export function subscribeScannerSalesQueueErrors(listener) {
   queueErrorListeners.add(listener);
   return () => {
     queueErrorListeners.delete(listener);
+  };
+}
+
+export function getScannerSalesQueueDebugSnapshot() {
+  loadQueueOnce();
+  return {
+    pending: queue.length,
+    retryScheduled: Boolean(retryTimer),
+    lastError: lastQueueError
   };
 }

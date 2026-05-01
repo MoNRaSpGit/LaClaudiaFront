@@ -227,6 +227,60 @@
   background-color: #fff;
 }
 
+.scanner-diagnostics {
+  border: 1px dashed #cbd5e1;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  padding: 1rem;
+}
+
+.scanner-diagnostics-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.scanner-diagnostics-title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.scanner-diagnostics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.scanner-diagnostics-card,
+.scanner-diagnostics-log {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.scanner-diagnostics-log {
+  margin-top: 0.75rem;
+}
+
+.scanner-diagnostics-label {
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.scanner-diagnostics-meta {
+  font-size: 0.8rem;
+  color: #475569;
+}
+
 .scanner-total-row {
   display: flex;
   align-items: center;
@@ -310,5 +364,11 @@
 
 .Toastify__progress-bar--success {
   background: #66a97a;
+}
+
+@media (max-width: 640px) {
+  .scanner-diagnostics-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
