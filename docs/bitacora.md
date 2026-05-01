@@ -76,6 +76,22 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
     - mantiene sincronizacion en vivo mostrando el nombre de categoria elegida.
   - UX visual:
     - botones compactos para operacion rapida.
+  - ajustes posteriores de UX:
+    - el ultimo producto escaneado ahora destaca en gris suave en lugar de verde.
+    - los productos nuevos entran arriba de la lista para priorizar el ultimo movimiento.
+    - el bloque de carga manual queda fijo visible (sin trigger colapsable) para no agregar ruido extra de controles secundarios.
+
+- Saludo temporal Dia del Trabajador (2026-05-01):
+  - agregado banner minimalista arriba del scanner.
+  - estilo final:
+    - fondo rosa suave.
+    - texto `Feliz Dia del Trabajador`.
+    - detalle visual de engranajes animados (`Fluido`).
+    - cierre manual con `X`.
+  - comportamiento:
+    - si el usuario lo cierra, se oculta solo en esa sesion.
+    - si refresca durante el mismo dia, vuelve a mostrarse.
+    - desaparece automaticamente cuando cambia la fecha operativa.
     - estilo sobrio/neutro (sin fondo negro pleno ni colores fuertes).
     - iconos por categoria para reconocimiento rapido.
   - decision final de interfaz:

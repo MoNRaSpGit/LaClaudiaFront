@@ -2,6 +2,192 @@
   margin-top: 8px;
 }
 
+.scanner-worker-day-banner {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.55rem;
+  padding: 0.58rem 0.72rem;
+  border: 1px solid #e7e7ea;
+  border-radius: 11px;
+  background: linear-gradient(180deg, #fcfcfb 0%, #f7f8f6 100%);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.035);
+}
+
+.scanner-worker-day-banner-sage {
+  background: linear-gradient(180deg, #fcfcfb 0%, #f1f6ef 100%);
+}
+
+.scanner-worker-day-banner-blush {
+  background: linear-gradient(180deg, #fffafb 0%, #f8e7ed 100%);
+}
+
+.scanner-worker-day-banner-stone {
+  background: linear-gradient(180deg, #fcfcfc 0%, #f1f2f4 100%);
+}
+
+.scanner-worker-day-banner-copy {
+  min-width: 0;
+}
+
+.scanner-worker-day-banner-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
+.scanner-worker-day-banner-kicker-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scanner-worker-day-banner-kicker-gear {
+  position: relative;
+  display: inline-block;
+  width: 18px;
+  height: 13px;
+  color: #b76e79;
+}
+
+.scanner-worker-day-banner-gear {
+  position: absolute;
+  display: block;
+}
+
+.scanner-worker-day-banner-gear-main {
+  left: 0;
+  top: 1px;
+  animation: scanner-gear-spin 5s linear infinite;
+}
+
+.scanner-worker-day-banner-gear-secondary {
+  right: 0;
+  bottom: 0;
+  animation: scanner-gear-spin-reverse 4.2s linear infinite;
+}
+
+.scanner-worker-day-banner-gear-tertiary {
+  display: none;
+  animation: scanner-gear-spin 4.8s linear infinite;
+}
+
+.scanner-worker-day-banner-kicker-gear-single .scanner-worker-day-banner-gear-secondary,
+.scanner-worker-day-banner-kicker-gear-single .scanner-worker-day-banner-gear-tertiary {
+  display: none;
+}
+
+.scanner-worker-day-banner-kicker-gear-dual-inline .scanner-worker-day-banner-gear-main {
+  left: 0;
+  top: 1px;
+}
+
+.scanner-worker-day-banner-kicker-gear-dual-inline .scanner-worker-day-banner-gear-secondary {
+  right: 0;
+  top: 3px;
+}
+
+.scanner-worker-day-banner-kicker-gear-dual-diagonal .scanner-worker-day-banner-gear-main {
+  left: 1px;
+  top: 0;
+}
+
+.scanner-worker-day-banner-kicker-gear-dual-diagonal .scanner-worker-day-banner-gear-secondary {
+  right: 0;
+  bottom: -1px;
+}
+
+.scanner-worker-day-banner-kicker-gear-triple {
+  width: 26px;
+  height: 18px;
+}
+
+.scanner-worker-day-banner-kicker-gear-triple .scanner-worker-day-banner-gear-main {
+  left: 0;
+  top: 2px;
+}
+
+.scanner-worker-day-banner-kicker-gear-triple .scanner-worker-day-banner-gear-secondary {
+  left: 9px;
+  top: -1px;
+}
+
+.scanner-worker-day-banner-kicker-gear-triple .scanner-worker-day-banner-gear-tertiary {
+  display: block;
+  right: 0;
+  bottom: 0;
+  animation: scanner-gear-spin 3.8s linear infinite;
+}
+
+.scanner-worker-day-banner-kicker-gear-micro-link .scanner-worker-day-banner-gear-main {
+  left: 1px;
+  top: 0;
+}
+
+.scanner-worker-day-banner-kicker-gear-micro-link .scanner-worker-day-banner-gear-secondary {
+  right: 0;
+  top: 6px;
+  animation: scanner-gear-spin-reverse 3.2s linear infinite;
+}
+
+.scanner-worker-day-banner-quote {
+  font-size: 0.76rem;
+  line-height: 1.24;
+  color: #4b5563;
+  font-weight: 500;
+}
+
+.scanner-worker-day-banner-author {
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.scanner-worker-day-banner-close {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border: 1px solid #dde2de;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #4b5563;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.scanner-worker-day-banner-close:hover,
+.scanner-worker-day-banner-close:focus {
+  background: #ffffff;
+  border-color: #9ca3af;
+  color: #111827;
+}
+
+@keyframes scanner-gear-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes scanner-gear-spin-reverse {
+  from {
+    transform: rotate(360deg);
+  }
+
+  to {
+    transform: rotate(0deg);
+  }
+}
+
 .scanner-input-control {
   min-height: 64px;
   font-size: 1.2rem;
@@ -83,6 +269,14 @@
 }
 
 @media (max-width: 640px) {
+  .scanner-worker-day-banner {
+    padding: 0.56rem 0.66rem;
+  }
+
+  .scanner-worker-day-banner-quote {
+    font-size: 0.8rem;
+  }
+
   .scanner-manual-grid {
     grid-template-columns: 1fr;
   }
@@ -175,6 +369,18 @@
 
 .scanner-row-latest-green-c td {
   background-color: rgba(20, 83, 45, 0.28);
+}
+
+.scanner-row-latest-gray-a td {
+  background-color: rgba(107, 114, 128, 0.12);
+}
+
+.scanner-row-latest-gray-b td {
+  background-color: rgba(107, 114, 128, 0.18);
+}
+
+.scanner-row-latest-gray-c td {
+  background-color: rgba(75, 85, 99, 0.22);
 }
 
 .scanner-product-name {

@@ -163,6 +163,10 @@ const scannerSlice = createSlice({
       if (existing) {
         existing.quantity += 1;
         existing.scannedAt = new Date().toISOString();
+        state.cartItems = [
+          existing,
+          ...state.cartItems.filter((entry) => String(entry.id) !== String(existing.id))
+        ];
         state.lastScannedItemId = existing.id;
         state.lastScannedAt = existing.scannedAt;
         persistScannerState(state);
@@ -170,7 +174,7 @@ const scannerSlice = createSlice({
       }
 
       const scannedAt = new Date().toISOString();
-      state.cartItems.push({
+      state.cartItems.unshift({
         ...product,
         quantity: 1,
         scannedAt

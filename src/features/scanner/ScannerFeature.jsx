@@ -1,5 +1,5 @@
 ﻿import { useCallback, useEffect, useRef, useState } from 'react';
-import { Apple, Beef, CircleEllipsis, Scale, Wheat } from 'lucide-react';
+import { Apple, Beef, CircleEllipsis, Cog, Scale, Wheat, X } from 'lucide-react';
 import { ToastContainer, toast } from 'react-toastify';
 import { useScannerController } from './model/useScannerController';
 import ScannerInput from './components/ScannerInput';
@@ -17,12 +17,30 @@ import {
   subscribeScannerSalesQueue,
   subscribeScannerSalesQueueErrors
 } from './services/scanner.salesQueue';
+import { getMsUntilNextStoreMidnight, getStoreDateLabel } from '../panelControl/model/panelControl.formatters';
 
 const SALE_SYNC_ERROR_TOAST_COOLDOWN_MS = 30000;
 const POST_CHARGE_ENTER_GUARD_MS = 1200;
 const LIVE_STATE_PUBLISH_DELAY_MS = 100;
 const LIVE_STATE_SLOW_MS = 300;
 const SCANNER_DIAG_KEY = 'scanner_diag_enabled_v1';
+const WORKER_DAY_BANNER_DATE = '2026-05-01';
+const WORKER_DAY_BANNER_COPY = {
+  quote: 'El placer en el trabajo pone perfeccion en la obra.',
+  author: 'Aristoteles'
+};
+const WORKER_DAY_BANNER_TONES = [
+  { key: 'sage', label: 'Verde suave' },
+  { key: 'blush', label: 'Rosa suave' },
+  { key: 'stone', label: 'Piedra' }
+];
+const WORKER_DAY_BANNER_GEARS = [
+  { key: 'single', label: 'Simple' },
+  { key: 'dual-inline', label: 'Doble' },
+  { key: 'dual-diagonal', label: 'Diagonal' },
+  { key: 'triple', label: 'Triple' },
+  { key: 'micro-link', label: 'Fluido' }
+];
 const MANUAL_PRODUCT_OPTIONS = [
   { key: 'fruta-verduras', label: 'Fruta/Verduras', icon: Apple, category: 'fruta_verduras' },
   { key: 'fiambre', label: 'Fiambre', icon: Beef, category: 'fiambre' },
@@ -46,6 +64,10 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
     barcode: ''
   });
   const [pendingSalesCount, setPendingSalesCount] = useState(getScannerSalesQueuePendingCount());
+  const [currentStoreDateLabel, setCurrentStoreDateLabel] = useState(() => getStoreDateLabel());
+  const [isWorkerDayBannerDismissed, setIsWorkerDayBannerDismissed] = useState(false);
+  const [workerDayBannerTone] = useState(WORKER_DAY_BANNER_TONES[1].key);
+  const [workerDayBannerGearKey] = useState(WORKER_DAY_BANNER_GEARS[4].key);
   const [isDiagnosticsOpen, setIsDiagnosticsOpen] = useState(() => {
     if (typeof window === 'undefined') {
       return false;
@@ -64,12 +86,23 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
   const unauthorizedHandledRef = useRef(false);
   const lastChargeAtRef = useRef(0);
   const lastLiveStateSignatureRef = useRef('');
+  const isWorkerDayBannerVisible = currentStoreDateLabel === WORKER_DAY_BANNER_DATE && !isWorkerDayBannerDismissed;
 
   const focusScannerInput = useCallback(() => {
     setTimeout(() => {
       scannerInputRef.current?.focus();
     }, 0);
   }, []);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setCurrentStoreDateLabel(getStoreDateLabel());
+    }, getMsUntilNextStoreMidnight());
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [currentStoreDateLabel]);
 
   useEffect(() => {
     const unsubscribe = subscribeScannerSalesQueue((pending) => {
@@ -381,6 +414,32 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
       <div className="container py-4">
         <div className="row justify-content-center">
           <div className="col-xl-9">
+            {isWorkerDayBannerVisible ? (
+              <section className={`scanner-worker-day-banner scanner-worker-day-banner-${workerDayBannerTone} mb-3`} aria-label="Saludo dia del trabajador">
+                <div className="scanner-worker-day-banner-copy">
+                  <p className="scanner-worker-day-banner-kicker mb-1">
+                    <span>Feliz Dia del Trabajador</span>
+                    <span className={`scanner-worker-day-banner-kicker-gear scanner-worker-day-banner-kicker-gear-${workerDayBannerGearKey}`} aria-hidden="true">
+                      <Cog className="scanner-worker-day-banner-gear scanner-worker-day-banner-gear-main" size={12} />
+                      <Cog className="scanner-worker-day-banner-gear scanner-worker-day-banner-gear-secondary" size={9} />
+                      <Cog className="scanner-worker-day-banner-gear scanner-worker-day-banner-gear-tertiary" size={8} />
+                    </span>
+                  </p>
+                  <p className="scanner-worker-day-banner-quote mb-0">
+                    "{WORKER_DAY_BANNER_COPY.quote}" <span className="scanner-worker-day-banner-author">By {WORKER_DAY_BANNER_COPY.author}</span>
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="scanner-worker-day-banner-close"
+                  aria-label="Cerrar saludo"
+                  onClick={() => setIsWorkerDayBannerDismissed(true)}
+                >
+                  <X size={16} />
+                </button>
+              </section>
+            ) : null}
+
             <ScannerInput
               ref={scannerInputRef}
               barcode={scannerState.scanBarcode}
@@ -419,7 +478,7 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
             <ScannerCart
               items={scannerState.cartItems}
               lastScannedItemId={scannerState.lastScannedItemId}
-              latestRowTone="green-c"
+              latestRowTone="gray-b"
               onAddOne={actions.addOneToCart}
               onRemoveOne={actions.removeOneFromCart}
               onEditStart={actions.startProductEditLiveEditor}
