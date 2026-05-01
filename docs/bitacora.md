@@ -4,8 +4,8 @@
 
 - Si el usuario dice `volvemos a estable`, la referencia base actual es:
   - `frontend origin/main`
-  - commit: `652bf09`
-  - mensaje: `scanner: optimiza alta rapida y feedback visual`
+  - commit: `7478a2e`
+  - mensaje: `scanner: enriquece reportes remotos etapa 1`
 - Esta referencia representa la ultima version subida y tomada como estable antes de cambios locales no publicados.
 - Regla de trabajo:
   - cualquier experimento/local grande se compara primero contra esta base.
