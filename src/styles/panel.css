@@ -127,6 +127,38 @@
   padding: 1rem 1rem 1.15rem;
 }
 
+.panel-page-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem;
+  border: 1px solid #d6dde7;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+}
+
+.panel-page-switch-btn {
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: #334155;
+  padding: 0.55rem 0.8rem;
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.panel-page-switch-btn-active {
+  border-color: #c5d5e8;
+  background: linear-gradient(180deg, #f9fbff 0%, #eaf2fd 100%);
+  color: #0f3356;
+  box-shadow: inset 0 0 0 1px rgba(95, 136, 186, 0.08);
+}
+
 .panel-grid-6-v2 {
   display: grid;
   gap: 0.75rem;
@@ -679,6 +711,188 @@
   font-size: 0.72rem;
 }
 
+.panel-diagnostics-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.panel-diagnostics-hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.15rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.panel-diagnostics-hero-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.panel-diagnostics-summary-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+.panel-diagnostics-summary-card {
+  border: 1px solid #dbe2eb;
+  border-radius: 12px;
+  background: #fff;
+  padding: 0.8rem 0.9rem;
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.03);
+}
+
+.panel-diagnostics-summary-label {
+  display: block;
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.panel-diagnostics-summary-value {
+  display: block;
+  margin-top: 0.2rem;
+  font-size: 1.35rem;
+  color: #0f172a;
+}
+
+.panel-diagnostics-summary-help {
+  display: block;
+  margin-top: 0.15rem;
+  color: #64748b;
+}
+
+.panel-diagnostics-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.panel-diagnostics-filters {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.panel-diagnostics-filter-btn {
+  border: 1px solid #d1dbe8;
+  border-radius: 999px;
+  background: #fff;
+  color: #334155;
+  padding: 0.42rem 0.72rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.panel-diagnostics-filter-btn-active {
+  border-color: #7d98bb;
+  background: #e9f1fc;
+  color: #16385d;
+}
+
+.panel-diagnostics-event-card {
+  border: 1px solid #dbe2eb;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ffffff 0%, #f9fbff 100%);
+  padding: 0.9rem;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
+}
+
+.panel-diagnostics-event-card-latest {
+  border-color: #9cb6d6;
+  box-shadow: 0 10px 22px rgba(43, 94, 153, 0.09);
+}
+
+.panel-diagnostics-event-main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.9rem;
+  flex-wrap: wrap;
+}
+
+.panel-diagnostics-event-copy {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.panel-diagnostics-event-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.panel-diagnostics-event-meta {
+  text-align: right;
+}
+
+.panel-diagnostics-fresh-badge {
+  border: 1px solid #b7d5bf;
+  border-radius: 999px;
+  background: #edf9f0;
+  color: #205c31;
+  padding: 0.14rem 0.45rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.panel-diagnostics-highlight-grid {
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  margin-top: 0.8rem;
+}
+
+.panel-diagnostics-highlight-card {
+  border: 1px solid #dbe2eb;
+  border-radius: 12px;
+  background: #fff;
+  padding: 0.65rem 0.72rem;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.panel-diagnostics-highlight-card-danger {
+  border-color: #efb6b6;
+  background: linear-gradient(180deg, #fff5f5 0%, #fffafa 100%);
+}
+
+.panel-diagnostics-highlight-card-warning {
+  border-color: #e6cf9b;
+  background: linear-gradient(180deg, #fff8e8 0%, #fffdf5 100%);
+}
+
+.panel-diagnostics-highlight-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #eef3f9;
+  color: #365274;
+  flex: 0 0 34px;
+}
+
+.panel-diagnostics-highlight-label {
+  display: block;
+  color: #64748b;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
 @media (max-width: 991.98px) {
   .panel-section-head {
     align-items: stretch;
@@ -691,6 +905,34 @@
 
   .panel-demo-btn {
     justify-content: center;
+  }
+
+  .panel-page-switch {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .panel-page-switch-btn {
+    justify-content: center;
+  }
+
+  .panel-diagnostics-hero {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .panel-diagnostics-hero-actions {
+    width: 100%;
+  }
+
+  .panel-diagnostics-hero-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .panel-diagnostics-event-meta {
+    text-align: left;
   }
 }
 
@@ -738,12 +980,16 @@
   bottom: 0;
   z-index: 1020;
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 0.35rem;
   padding: 0.5rem 0.65rem calc(0.5rem + env(safe-area-inset-bottom));
   border-top: 1px solid #d5deea;
   background: rgba(248, 251, 255, 0.96);
   backdrop-filter: blur(8px);
+}
+
+.panel-mobile-bottom-nav-diagnostics {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .panel-mobile-bottom-btn {
@@ -790,8 +1036,19 @@
   #panel-section-live,
   #panel-section-ranking,
   #panel-section-movements,
-  #panel-section-payments {
+  #panel-section-payments,
+  #panel-section-diagnostics {
     scroll-margin-top: 86px;
+  }
+}
+
+@media (min-width: 768px) {
+  .panel-diagnostics-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .panel-diagnostics-highlight-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 

@@ -60,8 +60,27 @@
 - `PanelControlFeature.jsx`: contenedor/compose principal.
 - `model/usePanelControlController.js`: estado y casos de uso de panel.
 - `model/panelControl.formatters.js`: formateadores de dominio UI.
+- `model/panelControl.diagnostics.js`: normalizacion/filtros/visibilidad de incidentes remotos.
 - `services/panelControl.api.js`: acceso API propio del feature.
-- `components/*`: bloques UI desacoplados (metricas, movimientos, ranking, pagos, modal).
+- `components/*`: bloques UI desacoplados (metricas, movimientos, ranking, pagos, modal, diagnostico).
+
+#### Diagnostico remoto en panel
+
+- `Panel de control` soporta 2 vistas en frontend:
+  - `Operacion`
+  - `Diagnostico`
+- `Diagnostico` esta pensado como tooling interno de soporte:
+  - visibilidad frontend acotada a `admin + staff`.
+  - no reemplaza permisos backend; solo evita exponer esta vista a la clienta en esta etapa.
+- `DiagnosticEventsPanel.jsx` concentra la UI de incidentes:
+  - resumen.
+  - filtros.
+  - cards por evento.
+- `panelControl.diagnostics.js` concentra criterio de presentacion:
+  - normalizacion de eventos.
+  - severidad.
+  - etiquetas de tiempo.
+  - filtros por familia visible.
 
 ## Boundary API por feature
 

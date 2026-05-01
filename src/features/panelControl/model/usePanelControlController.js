@@ -1,7 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { parsePositiveAmount } from '../../../shared/lib/number';
 import { toUserErrorMessage } from '../../../shared/lib/userErrorMessages';
 import { flushScannerDiagnosticQueue } from '../../scanner/services/scanner.diagnostics';
+import {
+  canViewPanelDiagnostics,
+  normalizeDiagnosticEvent
+} from './panelControl.diagnostics';
 import {
   fetchPanelDiagnosticEvents,
   registerPanelPayment,
@@ -42,7 +46,7 @@ const DEFAULT_PROFIT_RATE = 0.3;
 const DIAGNOSTIC_POLL_MS = 15000;
 
 export function usePanelControlController({ currentUser, onUnauthorized }) {
-  const canViewDiagnostics = String(currentUser?.username || '').trim().toLowerCase() === 'staff';
+  const canViewDiagnostics = canViewPanelDiagnostics(currentUser);
   const [dashboard, setDashboard] = useState(EMPTY_DASHBOARD);
   const [remoteLiveScanner, setRemoteLiveScanner] = useState(null);
   const [dashboardError, setDashboardError] = useState('');
@@ -58,6 +62,7 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
   const [isSavingInitialCash, setIsSavingInitialCash] = useState(false);
   const [profitRate, setProfitRate] = useState(DEFAULT_PROFIT_RATE);
   const [diagnosticEvents, setDiagnosticEvents] = useState([]);
+  const [diagnosticFilter, setDiagnosticFilter] = useState('all');
   const [diagnosticEventsError, setDiagnosticEventsError] = useState('');
   const [isLoadingDiagnosticEvents, setIsLoadingDiagnosticEvents] = useState(false);
   const lastLiveSnapshotKeyRef = useRef('');
@@ -73,46 +78,65 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
     };
   }, [currentStoreDateLabel]);
 
+  const loadDiagnosticEvents = useCallback(async ({ silent = false } = {}) => {
+    if (!currentUser?.sessionToken || !canViewDiagnostics) {
+      setDiagnosticEvents([]);
+      setDiagnosticEventsError('');
+      setIsLoadingDiagnosticEvents(false);
+      return { ok: false };
+    }
+
+    const requestId = diagnosticEventsRequestRef.current + 1;
+    diagnosticEventsRequestRef.current = requestId;
+    if (!silent) {
+      setIsLoadingDiagnosticEvents(true);
+    }
+
+    try {
+      await flushScannerDiagnosticQueue({
+        token: currentUser?.sessionToken || ''
+      }).catch(() => {});
+      const result = await fetchPanelDiagnosticEvents({ limit: 18 }, {
+        token: currentUser?.sessionToken || ''
+      });
+      if (diagnosticEventsRequestRef.current !== requestId) {
+        return { ok: false };
+      }
+
+      const nextEvents = (Array.isArray(result?.events) ? result.events : [])
+        .map((event, index) => normalizeDiagnosticEvent(event, index))
+        .sort((left, right) => (right.createdAtMs || 0) - (left.createdAtMs || 0));
+
+      setDiagnosticEvents(nextEvents);
+      setDiagnosticEventsError('');
+      return {
+        ok: true,
+        events: nextEvents
+      };
+    } catch (error) {
+      if (diagnosticEventsRequestRef.current !== requestId) {
+        return { ok: false };
+      }
+
+      const message = toUserErrorMessage(error, { context: 'panel_dashboard' });
+      setDiagnosticEventsError(message);
+      return {
+        ok: false,
+        error: message
+      };
+    } finally {
+      if (diagnosticEventsRequestRef.current === requestId) {
+        setIsLoadingDiagnosticEvents(false);
+      }
+    }
+  }, [canViewDiagnostics, currentUser?.sessionToken]);
+
   useEffect(() => {
-    const currentRole = String(currentUser?.role || '').trim().toLowerCase();
-    if (!currentUser?.sessionToken || currentRole !== 'admin' || !canViewDiagnostics) {
+    if (!currentUser?.sessionToken || !canViewDiagnostics) {
       setDiagnosticEvents([]);
       setDiagnosticEventsError('');
       setIsLoadingDiagnosticEvents(false);
       return undefined;
-    }
-
-    let isMounted = true;
-
-    async function loadDiagnosticEvents({ silent = false } = {}) {
-      const requestId = diagnosticEventsRequestRef.current + 1;
-      diagnosticEventsRequestRef.current = requestId;
-      if (!silent) {
-        setIsLoadingDiagnosticEvents(true);
-      }
-
-      try {
-        await flushScannerDiagnosticQueue({
-          token: currentUser?.sessionToken || ''
-        }).catch(() => {});
-        const result = await fetchPanelDiagnosticEvents({ limit: 12 }, {
-          token: currentUser?.sessionToken || ''
-        });
-        if (!isMounted || diagnosticEventsRequestRef.current !== requestId) {
-          return;
-        }
-        setDiagnosticEvents(Array.isArray(result?.events) ? result.events : []);
-        setDiagnosticEventsError('');
-      } catch (error) {
-        if (!isMounted || diagnosticEventsRequestRef.current !== requestId) {
-          return;
-        }
-        setDiagnosticEventsError(toUserErrorMessage(error, { context: 'panel_dashboard' }));
-      } finally {
-        if (isMounted && diagnosticEventsRequestRef.current === requestId) {
-          setIsLoadingDiagnosticEvents(false);
-        }
-      }
     }
 
     loadDiagnosticEvents();
@@ -121,10 +145,9 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
     }, DIAGNOSTIC_POLL_MS);
 
     return () => {
-      isMounted = false;
       window.clearInterval(intervalId);
     };
-  }, [canViewDiagnostics, currentUser?.role, currentUser?.sessionToken]);
+  }, [canViewDiagnostics, currentUser?.sessionToken, loadDiagnosticEvents]);
 
   useEffect(() => {
     let isMounted = true;
@@ -409,32 +432,7 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
   }
 
   async function refreshDiagnosticEvents() {
-    const currentRole = String(currentUser?.role || '').trim().toLowerCase();
-    if (!currentUser?.sessionToken || currentRole !== 'admin' || !canViewDiagnostics) {
-      return { ok: false };
-    }
-
-    setIsLoadingDiagnosticEvents(true);
-    try {
-      await flushScannerDiagnosticQueue({
-        token: currentUser?.sessionToken || ''
-      }).catch(() => {});
-      const result = await fetchPanelDiagnosticEvents({ limit: 12 }, {
-        token: currentUser?.sessionToken || ''
-      });
-      setDiagnosticEvents(Array.isArray(result?.events) ? result.events : []);
-      setDiagnosticEventsError('');
-      return { ok: true };
-    } catch (error) {
-      const message = toUserErrorMessage(error, { context: 'panel_dashboard' });
-      setDiagnosticEventsError(message);
-      return {
-        ok: false,
-        error: message
-      };
-    } finally {
-      setIsLoadingDiagnosticEvents(false);
-    }
+    return loadDiagnosticEvents();
   }
 
   function toggleMovementDetail(movementId) {
@@ -490,6 +488,7 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
     isRegisteringPayment,
     isSavingInitialCash,
     diagnosticEvents,
+    diagnosticFilter,
     diagnosticEventsError,
     isLoadingDiagnosticEvents,
     canViewDiagnostics,
@@ -499,6 +498,7 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
     saveInitialCash,
     updateProfitRate,
     refreshDiagnosticEvents,
+    setDiagnosticFilter,
     toggleMovementDetail,
     expandMovements,
     expandRanking,

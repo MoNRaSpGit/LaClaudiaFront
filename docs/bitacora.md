@@ -17,6 +17,51 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
 
 ## Mini Changelog Tecnico (2026-04-27)
 
+- Diagnostico remoto mas legible en panel staff (2026-05-01):
+  - el monitoreo remoto del scanner ahora vive en una vista propia `Diagnostico` dentro de `Panel de control`.
+  - esta vista solo se muestra en frontend si el usuario cumple:
+    - `role = admin`
+    - `username = staff`
+  - objetivo:
+    - evitar que la clienta vea tooling interno de soporte.
+    - mantener el acceso rapido para diagnostico sin tocar RBAC backend en esta etapa.
+  - refactor aplicado en `panelControl`:
+    - nueva UI dedicada `DiagnosticEventsPanel`.
+    - nuevo helper `panelControl.diagnostics.js` para:
+      - visibilidad.
+      - normalizacion.
+      - labels de tiempo.
+      - filtros.
+      - severidad.
+    - `usePanelControlController` ahora unifica:
+      - carga inicial.
+      - refresh manual.
+      - polling de eventos.
+  - mejoras de lectura para soporte:
+    - resumen superior de eventos / errores / warnings / `sale_sync_error`.
+    - filtros:
+      - `Todos`
+      - `Errores`
+      - `Warnings`
+      - `Sync venta`
+    - cards mas claras por incidente mostrando:
+      - severidad.
+      - timestamp.
+      - antiguedad relativa.
+      - `eventType`.
+      - `HTTP status` cuando existe.
+      - pendientes cuando existe.
+      - usuario / terminal / origen.
+    - el evento mas reciente queda visualmente destacado.
+  - mobile:
+    - acceso a `Diag.` desde navbar inferior solo para soporte.
+    - subnav minima para volver al panel o refrescar eventos.
+  - validacion tecnica:
+    - `npm run lint` OK.
+    - `npm run test -- --run` OK.
+    - `npm run build` OK.
+    - `npm run test:smoke:web` OK.
+
 - Hardening de sesion operativa en caja (2026-05-01):
   - agregado keepalive autenticado de sesion en frontend (`/api/auth/session`) para mantener renovacion activa durante operacion.
   - intervalo de keepalive: `3 min` con reintentos por fallo transitorio de red.

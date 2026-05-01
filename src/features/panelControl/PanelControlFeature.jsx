@@ -1,5 +1,5 @@
 ﻿import { useCallback, useEffect, useRef, useState } from 'react';
-import { Wallet, Radio, Trophy, ArrowLeftRight, HandCoins } from 'lucide-react';
+import { Wallet, Radio, Trophy, ArrowLeftRight, HandCoins, ShieldAlert, LayoutPanelTop } from 'lucide-react';
 import { ToastContainer, toast } from 'react-toastify';
 import MetricCard from './components/MetricCard';
 import PanelModal from './components/PanelModal';
@@ -7,6 +7,7 @@ import LiveCartPanel from './components/LiveCartPanel';
 import MovementsPanel from './components/MovementsPanel';
 import RankingPanel from './components/RankingPanel';
 import PaymentFormPanel from './components/PaymentFormPanel';
+import DiagnosticEventsPanel from './components/DiagnosticEventsPanel';
 import { moneyNoDecimals } from './model/panelControl.formatters';
 import { usePanelControlController } from './model/usePanelControlController';
 
@@ -35,6 +36,7 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
     onUnauthorized: handleUnauthorized
   });
   const [isMobileLayout, setIsMobileLayout] = useState(false);
+  const [activeView, setActiveView] = useState('dashboard');
   const [activeMobileSection, setActiveMobileSection] = useState('daily');
   const [isInitialCashModalOpen, setIsInitialCashModalOpen] = useState(false);
   const [initialCashDraft, setInitialCashDraft] = useState(() => String(controller.initialCashAmount || 0));
@@ -63,6 +65,12 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
   useEffect(() => {
     setProfitRateDraft(String(controller.profitRatePercent || 30));
   }, [controller.profitRatePercent]);
+
+  useEffect(() => {
+    if (!controller.canViewDiagnostics && activeView === 'diagnostics') {
+      setActiveView('dashboard');
+    }
+  }, [activeView, controller.canViewDiagnostics]);
 
   function openInitialCashModal() {
     setInitialCashDraft(String(controller.initialCashAmount || 0));
@@ -163,13 +171,17 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
   }
 
   function scrollToSection(sectionKey) {
+    if (activeView !== 'dashboard') {
+      setActiveView('dashboard');
+    }
     setActiveMobileSection(sectionKey);
     const sectionIdByKey = {
       daily: 'panel-section-daily',
       live: 'panel-section-live',
       ranking: 'panel-section-ranking',
       movements: 'panel-section-movements',
-      payments: 'panel-section-payments'
+      payments: 'panel-section-payments',
+      diagnostics: 'panel-section-diagnostics'
     };
     const targetId = sectionIdByKey[sectionKey];
     const target = typeof document !== 'undefined' ? document.getElementById(targetId) : null;
@@ -237,83 +249,17 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
     );
   }
 
-  function renderDiagnosticContext(event) {
-    const status = Number(event?.context?.status || 0);
-    const pending = Number(event?.context?.pending || 0);
-    const productName = String(event?.context?.productName || '').trim();
-    const trigger = String(event?.context?.trigger || '').trim();
-    const parts = [];
-
-    if (status > 0) {
-      parts.push(`HTTP ${status}`);
-    }
-    if (pending > 0) {
-      parts.push(`pendientes ${pending}`);
-    }
-    if (productName) {
-      parts.push(productName);
-    }
-    if (trigger) {
-      parts.push(trigger);
-    }
-
-    return parts.join(' | ');
-  }
-
-  function renderDiagnosticEventsPanel() {
+  function renderDiagnosticsPage() {
     return (
-      <section className="panel-section mt-4">
-        <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
-          <div>
-            <h2 className="h5 mb-1 panel-section-title">Eventos de diagnostico</h2>
-            <p className="mb-0 text-muted small">Incidentes recientes enviados desde scanner para soporte remoto.</p>
-          </div>
-          <div className="d-flex align-items-center gap-2">
-            {controller.diagnosticEventsError ? <small className="text-danger">{controller.diagnosticEventsError}</small> : null}
-            <button
-              type="button"
-              className="btn btn-sm btn-outline-secondary"
-              onClick={() => {
-                controller.refreshDiagnosticEvents().catch(() => {});
-              }}
-              disabled={controller.isLoadingDiagnosticEvents}
-            >
-              {controller.isLoadingDiagnosticEvents ? 'Actualizando...' : 'Actualizar'}
-            </button>
-          </div>
-        </div>
-
-        {!controller.diagnosticEvents.length ? (
-          <div className="panel-empty-state">
-            <strong>Sin eventos recientes.</strong>
-            <p className="mb-0">Cuando un scanner reporte una inconsistencia, va a quedar visible aca.</p>
-          </div>
-        ) : (
-          <div className="d-grid gap-2">
-            {controller.diagnosticEvents.map((event) => (
-              <article key={event.id} className="panel-metric-card-v2">
-                <div className="d-flex align-items-start justify-content-between gap-3 flex-wrap">
-                  <div className="d-grid gap-1">
-                    <strong>{event.message}</strong>
-                    <small className="text-muted">
-                      {event.sourceLabel || 'scanner'} | {event.user?.username || 'sin usuario'} | {event.terminalId || 'sin terminal'}
-                    </small>
-                    {renderDiagnosticContext(event) ? (
-                      <small className="text-muted">{renderDiagnosticContext(event)}</small>
-                    ) : null}
-                  </div>
-                  <div className="text-end">
-                    <span className={`badge ${event.severity === 'error' ? 'text-bg-danger' : (event.severity === 'warning' ? 'text-bg-warning' : 'text-bg-secondary')}`}>
-                      {event.severity}
-                    </span>
-                    <div className="small text-muted mt-2">{event.createdAt ? new Date(event.createdAt).toLocaleString('es-UY') : '-'}</div>
-                    <div className="small text-muted">{event.eventType}</div>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
+      <section id="panel-section-diagnostics">
+        <DiagnosticEventsPanel
+          events={controller.diagnosticEvents}
+          error={controller.diagnosticEventsError}
+          isLoading={controller.isLoadingDiagnosticEvents}
+          activeFilter={controller.diagnosticFilter}
+          onFilterChange={controller.setDiagnosticFilter}
+          onRefresh={controller.refreshDiagnosticEvents}
+        />
       </section>
     );
   }
@@ -335,71 +281,96 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
               </div>
             </section>
 
-            <section className="panel-section mb-4">
-              <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
-                <h2 className="h5 mb-0 panel-section-title">Caja diaria</h2>
-                <div className="d-flex align-items-center gap-2">
-                  {controller.dashboardError ? <small className="text-danger">{controller.dashboardError}</small> : null}
-                </div>
-              </div>
+            {controller.canViewDiagnostics ? (
+              <section className="panel-page-switch mb-4" aria-label="Vistas del panel">
+                <button
+                  type="button"
+                  className={`panel-page-switch-btn ${activeView === 'dashboard' ? 'panel-page-switch-btn-active' : ''}`}
+                  onClick={() => setActiveView('dashboard')}
+                >
+                  <LayoutPanelTop size={16} />
+                  <span>Operación</span>
+                </button>
+                <button
+                  type="button"
+                  className={`panel-page-switch-btn ${activeView === 'diagnostics' ? 'panel-page-switch-btn-active' : ''}`}
+                  onClick={() => setActiveView('diagnostics')}
+                >
+                  <ShieldAlert size={16} />
+                  <span>Diagnóstico</span>
+                </button>
+              </section>
+            ) : null}
 
-              <div className="panel-grid-6-v2">
-                {controller.metrics.map((item) => (
-                  <MetricCard
-                    key={item.title}
-                    title={item.title}
-                    value={item.value}
-                    hint={item.hint}
-                    onDoubleClick={item.title === 'Caja inicial'
-                      ? openInitialCashModal
-                      : (item.title === 'Ganancia diaria' ? openProfitRateModal : undefined)}
-                  />
-                ))}
-
-                <article className="panel-metric-card-v2 panel-comparison-card">
-                  <p className="panel-metric-title">Comparación</p>
-                  <div className="panel-comparison-row mb-1">
-                    <span>Hoy vs ayer</span>
-                    <strong className={controller.comparisonClass}>{controller.percent(controller.comparisonVsYesterday)}</strong>
-                  </div>
-                  <div className="panel-comparison-values mb-2">
-                    <span>{moneyNoDecimals(controller.comparison.today)}</span>
-                    <span>{moneyNoDecimals(controller.comparison.yesterday)}</span>
-                  </div>
-                  <button type="button" className="btn btn-sm btn-outline-secondary panel-comparison-btn" onClick={() => controller.setIsComparisonOpen(true)}>
-                    Ver detalle
-                  </button>
-                </article>
-              </div>
-            </section>
-
-            {isMobileLayout ? (
-              <div className="panel-mobile-stack">
-                <section id="panel-section-live">{renderLivePanel()}</section>
-                <section id="panel-section-ranking">{renderRankingPanel()}</section>
-                <section id="panel-section-movements">{renderMovementsPanel()}</section>
-                <section id="panel-section-payments">{renderPaymentPanel()}</section>
-              </div>
+            {activeView === 'diagnostics' && controller.canViewDiagnostics ? (
+              renderDiagnosticsPage()
             ) : (
-              <div className="panel-layout-grid-v2 panel-sections-grid">
-                <div className="panel-left-stack">
-                  {renderLivePanel()}
-                  {renderMovementsPanel()}
-                </div>
+              <>
+                <section className="panel-section mb-4">
+                  <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                    <h2 className="h5 mb-0 panel-section-title">Caja diaria</h2>
+                    <div className="d-flex align-items-center gap-2">
+                      {controller.dashboardError ? <small className="text-danger">{controller.dashboardError}</small> : null}
+                    </div>
+                  </div>
 
-                <div className="panel-right-stack">
-                  {renderRankingPanel()}
-                  {renderPaymentPanel()}
-                </div>
-              </div>
+                  <div className="panel-grid-6-v2">
+                    {controller.metrics.map((item) => (
+                      <MetricCard
+                        key={item.title}
+                        title={item.title}
+                        value={item.value}
+                        hint={item.hint}
+                        onDoubleClick={item.title === 'Caja inicial'
+                          ? openInitialCashModal
+                          : (item.title === 'Ganancia diaria' ? openProfitRateModal : undefined)}
+                      />
+                    ))}
+
+                    <article className="panel-metric-card-v2 panel-comparison-card">
+                      <p className="panel-metric-title">Comparación</p>
+                      <div className="panel-comparison-row mb-1">
+                        <span>Hoy vs ayer</span>
+                        <strong className={controller.comparisonClass}>{controller.percent(controller.comparisonVsYesterday)}</strong>
+                      </div>
+                      <div className="panel-comparison-values mb-2">
+                        <span>{moneyNoDecimals(controller.comparison.today)}</span>
+                        <span>{moneyNoDecimals(controller.comparison.yesterday)}</span>
+                      </div>
+                      <button type="button" className="btn btn-sm btn-outline-secondary panel-comparison-btn" onClick={() => controller.setIsComparisonOpen(true)}>
+                        Ver detalle
+                      </button>
+                    </article>
+                  </div>
+                </section>
+
+                {isMobileLayout ? (
+                  <div className="panel-mobile-stack">
+                    <section id="panel-section-live">{renderLivePanel()}</section>
+                    <section id="panel-section-ranking">{renderRankingPanel()}</section>
+                    <section id="panel-section-movements">{renderMovementsPanel()}</section>
+                    <section id="panel-section-payments">{renderPaymentPanel()}</section>
+                  </div>
+                ) : (
+                  <div className="panel-layout-grid-v2 panel-sections-grid">
+                    <div className="panel-left-stack">
+                      {renderLivePanel()}
+                      {renderMovementsPanel()}
+                    </div>
+
+                    <div className="panel-right-stack">
+                      {renderRankingPanel()}
+                      {renderPaymentPanel()}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
-
-            {controller.canViewDiagnostics ? renderDiagnosticEventsPanel() : null}
           </div>
         </div>
       </div>
 
-      {isMobileLayout ? (
+      {isMobileLayout && activeView === 'dashboard' ? (
         <nav className="panel-mobile-bottom-nav" aria-label="Navegación de secciones del panel">
           <button type="button" className={`panel-mobile-bottom-btn ${activeMobileSection === 'daily' ? 'panel-mobile-bottom-btn-active' : ''}`} onClick={() => scrollToSection('daily')}>
             <Wallet size={16} />
@@ -420,6 +391,44 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
           <button type="button" className={`panel-mobile-bottom-btn ${activeMobileSection === 'payments' ? 'panel-mobile-bottom-btn-active' : ''}`} onClick={() => scrollToSection('payments')}>
             <HandCoins size={16} />
             <span>Pago</span>
+          </button>
+          {controller.canViewDiagnostics ? (
+            <button
+              type="button"
+              className="panel-mobile-bottom-btn"
+              onClick={() => {
+                setActiveView('diagnostics');
+              }}
+            >
+              <ShieldAlert size={16} />
+              <span>Diag.</span>
+            </button>
+          ) : null}
+        </nav>
+      ) : null}
+
+      {isMobileLayout && activeView === 'diagnostics' && controller.canViewDiagnostics ? (
+        <nav className="panel-mobile-bottom-nav panel-mobile-bottom-nav-diagnostics" aria-label="Acciones de diagnóstico">
+          <button
+            type="button"
+            className="panel-mobile-bottom-btn panel-mobile-bottom-btn-active"
+            onClick={() => {
+              setActiveView('dashboard');
+              setActiveMobileSection('daily');
+            }}
+          >
+            <LayoutPanelTop size={16} />
+            <span>Panel</span>
+          </button>
+          <button
+            type="button"
+            className="panel-mobile-bottom-btn"
+            onClick={() => {
+              controller.refreshDiagnosticEvents().catch(() => {});
+            }}
+          >
+            <ShieldAlert size={16} />
+            <span>Actualizar</span>
           </button>
         </nav>
       ) : null}
