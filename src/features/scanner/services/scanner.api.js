@@ -103,4 +103,13 @@ export async function publishScannerLiveState(payload, { token } = {}) {
   return readJson(response);
 }
 
+export async function createScannerDiagnosticEvent(payload, { token } = {}) {
+  const response = await fetch(`${apiUrl}/api/scanner/diagnostic-events`, {
+    method: 'POST',
+    headers: buildHeaders({ token, json: true }),
+    body: JSON.stringify(payload || {})
+  });
+  return readJson(response);
+}
+
 export { apiUrl };

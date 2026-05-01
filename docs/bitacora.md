@@ -380,6 +380,25 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
 
 - hacer text manuales   y ver q errores salen
 
+## Paquete local en validacion - monitoreo remoto scanner
+
+- Se implemento un paquete local de monitoreo remoto para incidentes del scanner.
+- Objetivo:
+  - que errores reales del flujo de caja queden visibles despues en panel para soporte.
+- Incluye:
+  - cola local `scanner_diagnostic_queue_v1` para no perder eventos si backend esta caido.
+  - flush al volver online.
+  - flush periodico desde scanner.
+  - flush previo desde panel antes de leer eventos.
+  - visibilidad de eventos recientes en `Panel de control`.
+- Estado actual de validacion manual:
+  - evento manual: OK.
+  - `sale_sync_error` real con backend caido y luego backend levantado: OK.
+  - hora de eventos: corregida y validada.
+- Restriccion operativa actual:
+  - el monitoreo visible en panel queda reservado para `staff`.
+  - el boton rapido `staff // staff` es solo local para soporte y no se debe subir.
+
 ## Regla operativa permanente (documentacion)
 
 - Modo de trabajo acordado:

@@ -8,6 +8,7 @@ import ScannerCheckout from './components/ScannerCheckout';
 import ScannerManualModal from './components/ScannerManualModal';
 import ScannerQuickAddModal from './components/ScannerQuickAddModal';
 import { publishScannerLiveState } from './services/scanner.api';
+import { flushScannerDiagnosticQueue, reportScannerDiagnosticEvent } from './services/scanner.diagnostics';
 import { printSaleTicket } from './services/scanner.print';
 import { printSaleTicketByQz } from './services/scanner.qzPrint';
 import {
@@ -24,6 +25,7 @@ const POST_CHARGE_ENTER_GUARD_MS = 1200;
 const LIVE_STATE_PUBLISH_DELAY_MS = 100;
 const LIVE_STATE_SLOW_MS = 300;
 const SCANNER_DIAG_KEY = 'scanner_diag_enabled_v1';
+const DIAGNOSTIC_FLUSH_RETRY_MS = 10000;
 const WORKER_DAY_BANNER_DATE = '2026-05-01';
 const WORKER_DAY_BANNER_COPY = {
   quote: 'El placer en el trabajo pone perfeccion en la obra.',
@@ -145,6 +147,9 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
     flushScannerSalesQueue({
       token: currentUser?.sessionToken || ''
     }).catch(() => {});
+    flushScannerDiagnosticQueue({
+      token: currentUser?.sessionToken || ''
+    }).catch(() => {});
   }, [currentUser?.sessionToken, focusScannerInput]);
 
   useEffect(() => {
@@ -162,6 +167,9 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
       flushScannerSalesQueue({
         token: currentUser?.sessionToken || ''
       }).catch(() => {});
+      flushScannerDiagnosticQueue({
+        token: currentUser?.sessionToken || ''
+      }).catch(() => {});
     }
 
     window.addEventListener('online', handleOnline);
@@ -177,6 +185,21 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
   }, [pendingSalesCount]);
 
   useEffect(() => {
+    const token = String(currentUser?.sessionToken || '').trim();
+    if (!token) {
+      return undefined;
+    }
+
+    const intervalId = window.setInterval(() => {
+      flushScannerDiagnosticQueue({ token }).catch(() => {});
+    }, DIAGNOSTIC_FLUSH_RETRY_MS);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [currentUser?.sessionToken]);
+
+  useEffect(() => {
     unauthorizedHandledRef.current = false;
   }, [currentUser?.sessionToken]);
 
@@ -186,6 +209,19 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
       const status = Number(error?.status || 0);
       const errorMessage = String(error?.message || '').toLowerCase();
       const isUnauthorized = status === 401 || errorMessage.includes('unauthorized') || errorMessage.includes('sesion expirada');
+      reportScannerDiagnosticEvent({
+        eventType: isUnauthorized ? 'scanner.session_unauthorized' : 'scanner.sale_sync_error',
+        severity: isUnauthorized ? 'warning' : 'error',
+        message: String(error?.message || '').trim() || 'Error de sincronizacion en scanner',
+        context: {
+          status,
+          pending: getScannerSalesQueuePendingCount(),
+          online: typeof navigator !== 'undefined' ? navigator.onLine !== false : true
+        }
+      }, {
+        token: currentUser?.sessionToken || '',
+        currentUser
+      }).catch(() => {});
       if (isUnauthorized) {
         if (unauthorizedHandledRef.current) {
           return;
@@ -224,7 +260,7 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
     return () => {
       unsubscribeErrors();
     };
-  }, [onUnauthorized]);
+  }, [currentUser, onUnauthorized]);
 
   useEffect(() => {
     if (!currentUser?.sessionToken || !isOperario) {
@@ -570,6 +606,18 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
         onClose={closeQuickAddModal}
         onConfirm={(payload) => actions.addQuickBarcodeProduct(payload, {
           onBackgroundError: ({ error, nombre }) => {
+            reportScannerDiagnosticEvent({
+              eventType: 'scanner.quick_add_sync_error',
+              severity: 'error',
+              message: String(error?.message || '').trim() || 'Error en alta rapida de producto',
+              context: {
+                productName: nombre || 'Producto Manual',
+                status: Number(error?.status || 0)
+              }
+            }, {
+              token: currentUser?.sessionToken || '',
+              currentUser
+            }).catch(() => {});
             toast.error(`${nombre || 'Producto Manual'} dio error al guardar en backend.`, {
               toastId: `scanner-quick-add-fail-${Date.now()}`,
               autoClose: 3200

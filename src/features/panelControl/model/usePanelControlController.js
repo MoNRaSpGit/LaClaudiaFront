@@ -1,7 +1,13 @@
-﻿import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { parsePositiveAmount } from '../../../shared/lib/number';
 import { toUserErrorMessage } from '../../../shared/lib/userErrorMessages';
-import { registerPanelPayment, subscribePanelDashboard, updatePanelInitialCash } from '../services/panelControl.api';
+import { flushScannerDiagnosticQueue } from '../../scanner/services/scanner.diagnostics';
+import {
+  fetchPanelDiagnosticEvents,
+  registerPanelPayment,
+  subscribePanelDashboard,
+  updatePanelInitialCash
+} from '../services/panelControl.api';
 import {
   getMsUntilNextStoreMidnight,
   getStoreDateLabel,
@@ -33,8 +39,10 @@ const PANEL_LIVE_SLOW_MS = 300;
 const PANEL_YESTERDAY_BOOTSTRAP_DATE = '2026-04-30';
 const PANEL_YESTERDAY_BOOTSTRAP_AMOUNT = 5000;
 const DEFAULT_PROFIT_RATE = 0.3;
+const DIAGNOSTIC_POLL_MS = 15000;
 
 export function usePanelControlController({ currentUser, onUnauthorized }) {
+  const canViewDiagnostics = String(currentUser?.username || '').trim().toLowerCase() === 'staff';
   const [dashboard, setDashboard] = useState(EMPTY_DASHBOARD);
   const [remoteLiveScanner, setRemoteLiveScanner] = useState(null);
   const [dashboardError, setDashboardError] = useState('');
@@ -49,7 +57,11 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
   const [currentStoreDateLabel, setCurrentStoreDateLabel] = useState(() => getStoreDateLabel());
   const [isSavingInitialCash, setIsSavingInitialCash] = useState(false);
   const [profitRate, setProfitRate] = useState(DEFAULT_PROFIT_RATE);
+  const [diagnosticEvents, setDiagnosticEvents] = useState([]);
+  const [diagnosticEventsError, setDiagnosticEventsError] = useState('');
+  const [isLoadingDiagnosticEvents, setIsLoadingDiagnosticEvents] = useState(false);
   const lastLiveSnapshotKeyRef = useRef('');
+  const diagnosticEventsRequestRef = useRef(0);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -60,6 +72,59 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
       window.clearTimeout(timeoutId);
     };
   }, [currentStoreDateLabel]);
+
+  useEffect(() => {
+    const currentRole = String(currentUser?.role || '').trim().toLowerCase();
+    if (!currentUser?.sessionToken || currentRole !== 'admin' || !canViewDiagnostics) {
+      setDiagnosticEvents([]);
+      setDiagnosticEventsError('');
+      setIsLoadingDiagnosticEvents(false);
+      return undefined;
+    }
+
+    let isMounted = true;
+
+    async function loadDiagnosticEvents({ silent = false } = {}) {
+      const requestId = diagnosticEventsRequestRef.current + 1;
+      diagnosticEventsRequestRef.current = requestId;
+      if (!silent) {
+        setIsLoadingDiagnosticEvents(true);
+      }
+
+      try {
+        await flushScannerDiagnosticQueue({
+          token: currentUser?.sessionToken || ''
+        }).catch(() => {});
+        const result = await fetchPanelDiagnosticEvents({ limit: 12 }, {
+          token: currentUser?.sessionToken || ''
+        });
+        if (!isMounted || diagnosticEventsRequestRef.current !== requestId) {
+          return;
+        }
+        setDiagnosticEvents(Array.isArray(result?.events) ? result.events : []);
+        setDiagnosticEventsError('');
+      } catch (error) {
+        if (!isMounted || diagnosticEventsRequestRef.current !== requestId) {
+          return;
+        }
+        setDiagnosticEventsError(toUserErrorMessage(error, { context: 'panel_dashboard' }));
+      } finally {
+        if (isMounted && diagnosticEventsRequestRef.current === requestId) {
+          setIsLoadingDiagnosticEvents(false);
+        }
+      }
+    }
+
+    loadDiagnosticEvents();
+    const intervalId = window.setInterval(() => {
+      loadDiagnosticEvents({ silent: true }).catch(() => {});
+    }, DIAGNOSTIC_POLL_MS);
+
+    return () => {
+      isMounted = false;
+      window.clearInterval(intervalId);
+    };
+  }, [canViewDiagnostics, currentUser?.role, currentUser?.sessionToken]);
 
   useEffect(() => {
     let isMounted = true;
@@ -343,6 +408,35 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
     return { ok: true };
   }
 
+  async function refreshDiagnosticEvents() {
+    const currentRole = String(currentUser?.role || '').trim().toLowerCase();
+    if (!currentUser?.sessionToken || currentRole !== 'admin' || !canViewDiagnostics) {
+      return { ok: false };
+    }
+
+    setIsLoadingDiagnosticEvents(true);
+    try {
+      await flushScannerDiagnosticQueue({
+        token: currentUser?.sessionToken || ''
+      }).catch(() => {});
+      const result = await fetchPanelDiagnosticEvents({ limit: 12 }, {
+        token: currentUser?.sessionToken || ''
+      });
+      setDiagnosticEvents(Array.isArray(result?.events) ? result.events : []);
+      setDiagnosticEventsError('');
+      return { ok: true };
+    } catch (error) {
+      const message = toUserErrorMessage(error, { context: 'panel_dashboard' });
+      setDiagnosticEventsError(message);
+      return {
+        ok: false,
+        error: message
+      };
+    } finally {
+      setIsLoadingDiagnosticEvents(false);
+    }
+  }
+
   function toggleMovementDetail(movementId) {
     setExpandedMovementId((current) => (current === movementId ? null : movementId));
   }
@@ -395,11 +489,16 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
     paymentError,
     isRegisteringPayment,
     isSavingInitialCash,
+    diagnosticEvents,
+    diagnosticEventsError,
+    isLoadingDiagnosticEvents,
+    canViewDiagnostics,
     profitRatePercent: Number(((panelMetrics.profitRate ?? profitRate) || 0) * 100),
     percent,
     handleRegisterPayment,
     saveInitialCash,
     updateProfitRate,
+    refreshDiagnosticEvents,
     toggleMovementDetail,
     expandMovements,
     expandRanking,
@@ -407,11 +506,4 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
     setPaymentDescription
   };
 }
-
-
-
-
-
-
-
 

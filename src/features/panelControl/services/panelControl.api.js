@@ -27,6 +27,16 @@ export async function updatePanelInitialCash(payload, options) {
   return readJson(response);
 }
 
+export async function fetchPanelDiagnosticEvents({ limit = 12 } = {}, options = {}) {
+  const search = new URLSearchParams();
+  search.set('limit', String(limit));
+  const response = await fetch(`${apiUrl}/api/scanner/diagnostic-events?${search.toString()}`, {
+    headers: buildHeaders({ token: options?.token })
+  });
+
+  return readJson(response);
+}
+
 export function subscribePanelDashboard(params) {
   const search = new URLSearchParams();
   if (params?.params?.initialCash != null) {

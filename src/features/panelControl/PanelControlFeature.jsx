@@ -237,6 +237,87 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
     );
   }
 
+  function renderDiagnosticContext(event) {
+    const status = Number(event?.context?.status || 0);
+    const pending = Number(event?.context?.pending || 0);
+    const productName = String(event?.context?.productName || '').trim();
+    const trigger = String(event?.context?.trigger || '').trim();
+    const parts = [];
+
+    if (status > 0) {
+      parts.push(`HTTP ${status}`);
+    }
+    if (pending > 0) {
+      parts.push(`pendientes ${pending}`);
+    }
+    if (productName) {
+      parts.push(productName);
+    }
+    if (trigger) {
+      parts.push(trigger);
+    }
+
+    return parts.join(' | ');
+  }
+
+  function renderDiagnosticEventsPanel() {
+    return (
+      <section className="panel-section mt-4">
+        <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+          <div>
+            <h2 className="h5 mb-1 panel-section-title">Eventos de diagnostico</h2>
+            <p className="mb-0 text-muted small">Incidentes recientes enviados desde scanner para soporte remoto.</p>
+          </div>
+          <div className="d-flex align-items-center gap-2">
+            {controller.diagnosticEventsError ? <small className="text-danger">{controller.diagnosticEventsError}</small> : null}
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-secondary"
+              onClick={() => {
+                controller.refreshDiagnosticEvents().catch(() => {});
+              }}
+              disabled={controller.isLoadingDiagnosticEvents}
+            >
+              {controller.isLoadingDiagnosticEvents ? 'Actualizando...' : 'Actualizar'}
+            </button>
+          </div>
+        </div>
+
+        {!controller.diagnosticEvents.length ? (
+          <div className="panel-empty-state">
+            <strong>Sin eventos recientes.</strong>
+            <p className="mb-0">Cuando un scanner reporte una inconsistencia, va a quedar visible aca.</p>
+          </div>
+        ) : (
+          <div className="d-grid gap-2">
+            {controller.diagnosticEvents.map((event) => (
+              <article key={event.id} className="panel-metric-card-v2">
+                <div className="d-flex align-items-start justify-content-between gap-3 flex-wrap">
+                  <div className="d-grid gap-1">
+                    <strong>{event.message}</strong>
+                    <small className="text-muted">
+                      {event.sourceLabel || 'scanner'} | {event.user?.username || 'sin usuario'} | {event.terminalId || 'sin terminal'}
+                    </small>
+                    {renderDiagnosticContext(event) ? (
+                      <small className="text-muted">{renderDiagnosticContext(event)}</small>
+                    ) : null}
+                  </div>
+                  <div className="text-end">
+                    <span className={`badge ${event.severity === 'error' ? 'text-bg-danger' : (event.severity === 'warning' ? 'text-bg-warning' : 'text-bg-secondary')}`}>
+                      {event.severity}
+                    </span>
+                    <div className="small text-muted mt-2">{event.createdAt ? new Date(event.createdAt).toLocaleString('es-UY') : '-'}</div>
+                    <div className="small text-muted">{event.eventType}</div>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+    );
+  }
+
   return (
     <>
       <ToastContainer position="top-right" newestOnTop closeOnClick pauseOnFocusLoss={false} theme="light" />
@@ -312,6 +393,8 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
                 </div>
               </div>
             )}
+
+            {controller.canViewDiagnostics ? renderDiagnosticEventsPanel() : null}
           </div>
         </div>
       </div>
