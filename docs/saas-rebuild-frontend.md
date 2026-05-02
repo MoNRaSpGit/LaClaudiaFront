@@ -8,7 +8,7 @@ No esta pensado como historial de cambios, sino como mapa funcional para rehacer
 
 ## Alcance funcional actual
 
-El frontend cubre 2 modulos operativos principales:
+El frontend cubre 3 modulos operativos principales:
 
 1. `Scanner`
    - ingreso por barcode
@@ -25,6 +25,11 @@ El frontend cubre 2 modulos operativos principales:
    - ranking
    - registro de pagos
    - ajuste de caja inicial
+
+3. `Productos`
+   - buscador por nombre
+   - listado simple de producto y precio
+   - edicion de nombre/precio en modal
 
 ## Features y archivos clave
 
@@ -80,6 +85,18 @@ Responsabilidad:
 - movimientos
 - caja inicial editable
 - tiempo real por SSE
+
+### Productos
+
+- `src/features/products/ProductsFeature.jsx`
+- `src/features/products/model/useProductsController.js`
+- `src/features/products/services/products.api.js`
+- `src/features/products/components/*`
+
+Responsabilidad:
+- busqueda admin de catalogo por nombre
+- mostrar producto y precio
+- editar nombre/precio desde modal
 
 ### Shared
 
@@ -148,6 +165,7 @@ Uso:
 - products lookup
 - product update
 - dashboard initial cash
+- products search
 
 ### Impresion
 

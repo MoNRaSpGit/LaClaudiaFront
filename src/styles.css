@@ -2,6 +2,7 @@
 @import "./styles/scanner.css";
 @import "./styles/auth.css";
 @import "./styles/panel.css";
+@import "./styles/products.css";
 
 :root {
   color-scheme: light;

@@ -17,6 +17,22 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
 
 ## Mini Changelog Tecnico (2026-04-27)
 
+- Pagina admin `Productos` con buscador por nombre (2026-05-02):
+  - nueva tab `Productos` visible solo para `admin`.
+  - muestra resultados simples con:
+    - `producto`
+    - `precio`
+  - nuevo feature `src/features/products/*`.
+  - edicion desde modal por fila para actualizar:
+    - `nombre`
+    - `precio`
+  - backend acompaña con busqueda parcial por nombre en `GET /api/scanner/products?q=...`.
+  - validacion tecnica:
+    - `npm run lint` OK.
+    - `npm run test -- --run` OK.
+    - `npm run build` OK.
+    - `npm run test:smoke:web` OK.
+
 - Enriquecimiento etapa 1 de reportes remotos scanner (2026-05-01):
   - primera capa de logs mas finos agregada al monitoreo remoto del scanner.
   - objetivo:

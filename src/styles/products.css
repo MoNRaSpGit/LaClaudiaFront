@@ -1,0 +1,37 @@
+.products-search-panel {
+  padding: 1.1rem;
+}
+
+.products-search-input-wrap {
+  width: 100%;
+  max-width: 360px;
+}
+
+.products-search-input {
+  min-height: 46px;
+  border-radius: 12px;
+}
+
+.products-search-table thead th {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  border-bottom-width: 1px;
+}
+
+.products-search-table tbody td {
+  padding-top: 0.9rem;
+  padding-bottom: 0.9rem;
+  border-color: #e5e7eb;
+}
+
+.products-search-row-selected td {
+  background: #eef4fb;
+}
+
+@media (max-width: 575.98px) {
+  .products-search-panel {
+    padding: 0.95rem;
+  }
+}

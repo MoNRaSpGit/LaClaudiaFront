@@ -17,6 +17,7 @@
 - Carpetas separadas por contexto funcional:
   - `auth`, `scanner`, `panelControl`.
   - `payments`.
+  - `products`.
 - Boundary por modulo:
   - cada feature consume su propia capa `services`.
   - `shared` solo contiene utilidades/comunes, no reglas de negocio acopladas.
@@ -34,6 +35,7 @@
 - `src/features/scanner`: flujo scanner completo.
 - `src/features/panelControl`: caja, movimientos, ranking y pagos (desde backend).
 - `src/features/payments`: pagina operativa de pagos para rol `operario`.
+- `src/features/products`: consulta admin de catalogo por nombre.
 - `src/shared/lib`: utilidades reutilizables.
 - `src/shared/services`: cliente HTTP base + servicios transversales.
 - `src/app/store.js`: composicion de slices (scanner).
@@ -63,6 +65,16 @@
 - `model/panelControl.diagnostics.js`: normalizacion/filtros/visibilidad de incidentes remotos.
 - `services/panelControl.api.js`: acceso API propio del feature.
 - `components/*`: bloques UI desacoplados (metricas, movimientos, ranking, pagos, modal, diagnostico).
+
+### Products feature
+
+- `ProductsFeature.jsx`: pagina admin de consulta de catalogo.
+- `model/useProductsController.js`: estado de busqueda y resultados.
+- `services/products.api.js`: acceso a listado/busqueda de productos.
+- `components/*`: UI desacoplada del buscador y la tabla.
+- edicion actual:
+  - boton `Editar` por fila.
+  - modal para editar `nombre` y `precio`.
 
 #### Diagnostico remoto en panel
 
