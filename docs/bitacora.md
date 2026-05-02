@@ -572,3 +572,35 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
   - `test -- --run`: OK.
   - `build`: OK.
   - `test:smoke:web`: OK.
+
+## Flujo de actualizacion frontend - deteccion real y recarga controlada
+
+- Se reemplazo la simulacion puramente local por un flujo real de actualizacion basado en `app-version.json`.
+- El build ahora publica un manifiesto con:
+  - `version`.
+  - `forceLogout`.
+  - `generatedAt`.
+- La app abierta chequea updates:
+  - al iniciar sesion.
+  - al volver a foco.
+  - al volver a pestaña visible.
+  - cada 2 minutos.
+- Si detecta nueva version:
+  - muestra modal simple `Hay una nueva actualizacion`.
+  - permite `Mas tarde`.
+  - deja banner compacto `Nueva version disponible`.
+  - aplica recarga con feedback visual `Actualizando...`.
+- Se agrego distincion entre:
+  - update normal: recarga manteniendo sesion.
+  - update critico: recarga pidiendo reingreso si `forceLogout` viene en `true`.
+- El laboratorio local se mantiene para validar ambos caminos sin exponerlo en produccion:
+  - `Simular update`.
+  - `Simular update critico`.
+- Variables de control para deploy:
+  - `VITE_APP_VERSION`.
+  - `VITE_APP_FORCE_LOGOUT`.
+- Validacion:
+  - `lint`: OK.
+  - `test -- --run`: OK.
+  - `build`: OK.
+  - `test:smoke:web`: OK.

@@ -1,11 +1,22 @@
 ﻿import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { Menu, UserRound, LogOut } from 'lucide-react';
+import { Menu, UserRound, LogOut, RefreshCcw, BellRing, FlaskConical } from 'lucide-react';
 import AuthGate from './features/auth/AuthGate';
 import ScannerFeature from './features/scanner/ScannerFeature';
 import PanelControlFeature from './features/panelControl/PanelControlFeature';
 import PaymentsFeature from './features/payments/PaymentsFeature';
 import { resetScannerState } from './features/scanner/scannerSlice';
+import {
+  canUseUpdateLab,
+  checkForAppUpdate,
+  clearDismissedUpdate,
+  clearSimulatedUpdate,
+  dismissAvailableUpdate,
+  getAppUpdateSnapshot,
+  reloadToApplyUpdate,
+  simulateAvailableUpdate,
+  subscribeToUpdateChanges
+} from './shared/lib/appUpdate';
 
 function Workspace({ user, onLogout }) {
   const dispatch = useDispatch();
@@ -14,6 +25,13 @@ function Workspace({ user, onLogout }) {
   const canAccessPayments = userRole === 'operario';
   const [activeTab, setActiveTab] = useState(canAccessPanel ? 'panel' : 'scanner');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [updateState, setUpdateState] = useState(() => getAppUpdateSnapshot());
+  const [isUpdatePromptOpen, setIsUpdatePromptOpen] = useState(false);
+  const [isLocalUpdateToolsOpen, setIsLocalUpdateToolsOpen] = useState(false);
+  const [isApplyingUpdate, setIsApplyingUpdate] = useState(false);
+  const [updateProgress, setUpdateProgress] = useState(0);
+  const [shouldResetSessionOnApply, setShouldResetSessionOnApply] = useState(false);
+  const isUpdateLabVisible = canUseUpdateLab();
 
   useEffect(() => {
     if (!canAccessPanel && activeTab === 'panel') {
@@ -24,11 +42,118 @@ function Workspace({ user, onLogout }) {
     }
   }, [activeTab, canAccessPanel, canAccessPayments]);
 
+  useEffect(() => {
+    function syncUpdateState() {
+      setUpdateState(getAppUpdateSnapshot());
+    }
+
+    syncUpdateState();
+    const unsubscribe = subscribeToUpdateChanges(syncUpdateState);
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!user?.sessionToken) {
+      return undefined;
+    }
+
+    let isCancelled = false;
+
+    async function refreshAvailableUpdate() {
+      await checkForAppUpdate();
+      if (!isCancelled) {
+        setUpdateState(getAppUpdateSnapshot());
+      }
+    }
+
+    refreshAvailableUpdate();
+
+    const intervalId = window.setInterval(refreshAvailableUpdate, 120000);
+    const handleFocus = () => {
+      refreshAvailableUpdate();
+    };
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        refreshAvailableUpdate();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      isCancelled = true;
+      window.clearInterval(intervalId);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [user?.sessionToken]);
+
+  useEffect(() => {
+    if (!user?.sessionToken) {
+      return;
+    }
+
+    if (updateState.hasPendingUpdate && updateState.dismissedVersion !== updateState.availableVersion) {
+      setIsUpdatePromptOpen(true);
+      return;
+    }
+
+    if (!updateState.hasPendingUpdate) {
+      setIsUpdatePromptOpen(false);
+    }
+  }, [updateState.availableVersion, updateState.dismissedVersion, updateState.hasPendingUpdate, user?.sessionToken]);
+
   function handleLogout() {
     setIsMenuOpen(false);
     dispatch(resetScannerState());
     onLogout();
   }
+
+  function handleApplyUpdate() {
+    if (isApplyingUpdate) {
+      return;
+    }
+
+    clearDismissedUpdate();
+    setIsUpdatePromptOpen(false);
+    setShouldResetSessionOnApply(updateState.requiresSessionReset);
+    setIsApplyingUpdate(true);
+    setUpdateProgress(0);
+  }
+
+  function handleDismissUpdate() {
+    dismissAvailableUpdate(updateState.availableVersion);
+    setIsUpdatePromptOpen(false);
+  }
+
+  useEffect(() => {
+    if (!isApplyingUpdate) {
+      return undefined;
+    }
+
+    const startedAt = Date.now();
+    const durationMs = 1400;
+
+    const intervalId = window.setInterval(() => {
+      const elapsed = Date.now() - startedAt;
+      const nextProgress = Math.min(100, Math.round((elapsed / durationMs) * 100));
+      setUpdateProgress(nextProgress);
+      if (nextProgress >= 100) {
+        window.clearInterval(intervalId);
+        if (shouldResetSessionOnApply) {
+          onLogout();
+        }
+        reloadToApplyUpdate();
+      }
+    }, 60);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [isApplyingUpdate, onLogout, shouldResetSessionOnApply]);
 
   return (
     <div className="landing-bg min-vh-100">
@@ -120,6 +245,64 @@ function Workspace({ user, onLogout }) {
                     </button>
                   ) : null}
                   <div className="scanner-user-dropdown-divider" />
+                  {isUpdateLabVisible ? (
+                    <>
+                      <button
+                        type="button"
+                        className="scanner-user-dropdown-item"
+                        onClick={() => setIsLocalUpdateToolsOpen((current) => !current)}
+                      >
+                        <FlaskConical size={14} />
+                        <span>Lab update local</span>
+                      </button>
+                      {isLocalUpdateToolsOpen ? (
+                        <div className="scanner-user-dropdown-lab">
+                          <button
+                            type="button"
+                            className="scanner-user-dropdown-item"
+                            onClick={async () => {
+                              simulateAvailableUpdate();
+                              await checkForAppUpdate();
+                              setUpdateState(getAppUpdateSnapshot());
+                              setIsUpdatePromptOpen(true);
+                              setIsMenuOpen(false);
+                            }}
+                          >
+                            <BellRing size={14} />
+                            <span>Simular update</span>
+                          </button>
+                          <button
+                            type="button"
+                            className="scanner-user-dropdown-item"
+                            onClick={async () => {
+                              simulateAvailableUpdate({ forceLogout: true });
+                              await checkForAppUpdate();
+                              setUpdateState(getAppUpdateSnapshot());
+                              setIsUpdatePromptOpen(true);
+                              setIsMenuOpen(false);
+                            }}
+                          >
+                            <BellRing size={14} />
+                            <span>Simular update critico</span>
+                          </button>
+                          <button
+                            type="button"
+                            className="scanner-user-dropdown-item"
+                            onClick={() => {
+                              clearSimulatedUpdate();
+                              setUpdateState(getAppUpdateSnapshot());
+                              setIsUpdatePromptOpen(false);
+                              setIsMenuOpen(false);
+                            }}
+                          >
+                            <RefreshCcw size={14} />
+                            <span>Limpiar simulacion</span>
+                          </button>
+                        </div>
+                      ) : null}
+                      <div className="scanner-user-dropdown-divider" />
+                    </>
+                  ) : null}
                   <button type="button" className="scanner-user-dropdown-item" onClick={handleLogout}>
                     <LogOut size={14} />
                     <span>Salir</span>
@@ -131,6 +314,25 @@ function Workspace({ user, onLogout }) {
         </div>
       </nav>
 
+      {updateState.hasPendingUpdate && !isUpdatePromptOpen ? (
+        <div className="app-update-mini-banner">
+          <div className="container app-update-mini-banner-inner">
+            <div className="app-update-mini-copy">
+              <BellRing size={14} />
+              <span>Nueva version disponible</span>
+            </div>
+            <div className="app-update-mini-actions">
+              <button type="button" className="btn btn-sm btn-outline-light" onClick={() => setIsUpdatePromptOpen(true)}>
+                Ver
+              </button>
+              <button type="button" className="btn btn-sm btn-light" onClick={handleApplyUpdate} disabled={isApplyingUpdate}>
+                Actualizar
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {activeTab === 'scanner' && (
         <ScannerFeature currentUser={user} onUnauthorized={handleLogout} />
       )}
@@ -140,6 +342,47 @@ function Workspace({ user, onLogout }) {
       {activeTab === 'payments' && canAccessPayments && (
         <PaymentsFeature currentUser={user} onUnauthorized={handleLogout} />
       )}
+
+      {isUpdatePromptOpen && updateState.hasPendingUpdate ? (
+        <div className="app-update-modal-backdrop" role="presentation">
+          <section className="app-update-modal-card" role="dialog" aria-modal="true" aria-labelledby="app-update-title">
+            <p className="app-update-modal-kicker app-update-modal-kicker-simple mb-2">Actualizacion disponible</p>
+            <h2 id="app-update-title" className="app-update-modal-title app-update-modal-title-simple mb-2">
+              Hay una nueva actualizacion.
+            </h2>
+            <p className="app-update-modal-copy app-update-modal-copy-simple mb-3">
+              Podemos aplicarla ahora o dejarla para despues.
+            </p>
+            {updateState.requiresSessionReset ? (
+              <p className="app-update-modal-note app-update-modal-note-simple mb-3">
+                Esta actualizacion requiere volver a ingresar.
+              </p>
+            ) : null}
+            <div className="app-update-modal-actions">
+              <button type="button" className="btn btn-outline-secondary" onClick={handleDismissUpdate} disabled={isApplyingUpdate}>
+                Mas tarde
+              </button>
+              <button type="button" className="btn btn-dark" onClick={handleApplyUpdate} disabled={isApplyingUpdate}>
+                Actualizar
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
+
+      {isApplyingUpdate ? (
+        <div className="app-update-progress-shell" role="status" aria-live="polite">
+          <div className="app-update-progress-card">
+            <p className="app-update-progress-kicker mb-1">Actualizando</p>
+            <strong className="app-update-progress-title d-block mb-2">
+              {shouldResetSessionOnApply ? 'Aplicando nueva version y reiniciando sesion...' : 'Aplicando nueva version...'}
+            </strong>
+            <div className="app-update-progress-track" aria-hidden="true">
+              <div className="app-update-progress-bar" style={{ width: `${updateProgress}%` }} />
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

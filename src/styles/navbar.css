@@ -150,6 +150,12 @@
   margin: 0.35rem 0.25rem;
 }
 
+.scanner-user-dropdown-lab {
+  display: grid;
+  gap: 0.25rem;
+  margin-top: 0.25rem;
+}
+
 .scanner-user-dropdown-nav-item {
   justify-content: center;
 }
@@ -158,6 +164,191 @@
   background: #1a263b;
   border-color: #2f4361;
   color: #ffffff;
+}
+
+.app-update-mini-banner {
+  border-bottom: 1px solid #355376;
+  background: linear-gradient(90deg, #16324f 0%, #24486e 100%);
+  color: #edf5ff;
+}
+
+.app-update-mini-banner-inner {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding-top: 0.45rem;
+  padding-bottom: 0.45rem;
+}
+
+.app-update-mini-copy {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.app-update-mini-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.app-update-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(9, 15, 26, 0.58);
+}
+
+.app-update-modal-card {
+  width: 100%;
+  max-width: 560px;
+  border: 1px solid #d6e0eb;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  box-shadow: 0 20px 48px rgba(8, 15, 28, 0.28);
+  padding: 1.15rem 1.15rem 1.2rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.app-update-modal-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: linear-gradient(90deg, #2b6cd6 0%, #6ea8ff 100%);
+}
+
+.app-update-modal-kicker {
+  color: #205287;
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 800;
+}
+
+.app-update-modal-kicker-simple {
+  text-align: center;
+}
+
+.app-update-modal-title {
+  color: #0f172a;
+  font-size: 1.45rem;
+  font-weight: 800;
+}
+
+.app-update-modal-title-simple {
+  font-size: 1.2rem;
+  line-height: 1.25;
+  text-align: center;
+}
+
+.app-update-modal-copy {
+  color: #475569;
+  line-height: 1.45;
+}
+
+.app-update-modal-copy-simple {
+  text-align: center;
+  font-size: 0.95rem;
+}
+
+.app-update-modal-note-simple {
+  text-align: center;
+}
+
+.app-update-modal-meta {
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+.app-update-modal-meta > div {
+  border: 1px solid #dbe4ef;
+  border-radius: 12px;
+  background: #fff;
+  padding: 0.7rem 0.8rem;
+  display: grid;
+  gap: 0.2rem;
+}
+
+.app-update-modal-meta span {
+  color: #64748b;
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+}
+
+.app-update-modal-meta strong {
+  color: #0f172a;
+}
+
+.app-update-modal-note {
+  color: #64748b;
+  font-size: 0.85rem;
+}
+
+.app-update-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.app-update-modal-actions .btn {
+  min-width: 140px;
+}
+
+.app-update-progress-shell {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 1250;
+  width: min(360px, calc(100vw - 2rem));
+}
+
+.app-update-progress-card {
+  border: 1px solid #d6e0eb;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 18px 40px rgba(8, 15, 28, 0.22);
+  padding: 0.9rem 0.95rem;
+}
+
+.app-update-progress-kicker {
+  color: #205287;
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 800;
+}
+
+.app-update-progress-title {
+  color: #0f172a;
+  font-size: 0.96rem;
+}
+
+.app-update-progress-track {
+  height: 8px;
+  border-radius: 999px;
+  background: #dce8f6;
+  overflow: hidden;
+}
+
+.app-update-progress-bar {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #2b6cd6 0%, #6ea8ff 100%);
+  transition: width 80ms linear;
 }
 
 @media (max-width: 991.98px) {
@@ -196,6 +387,34 @@
 
   .scanner-navbar-user {
     justify-self: auto;
+  }
+
+  .app-update-mini-banner-inner {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .app-update-mini-actions {
+    width: 100%;
+  }
+
+  .app-update-mini-actions .btn {
+    flex: 1 1 0;
+  }
+
+  .app-update-modal-meta {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+
+  .app-update-modal-actions .btn {
+    width: 100%;
+  }
+
+  .app-update-progress-shell {
+    left: 1rem;
+    right: 1rem;
+    bottom: 1rem;
+    width: auto;
   }
 }
 
@@ -238,5 +457,11 @@
 
   .scanner-navbar-user {
     justify-self: auto;
+  }
+}
+
+@media (min-width: 640px) {
+  .app-update-modal-meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
