@@ -593,12 +593,16 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
 - Se agrego distincion entre:
   - update normal: recarga manteniendo sesion.
   - update critico: recarga pidiendo reingreso si `forceLogout` viene en `true`.
-- El laboratorio local se mantiene para validar ambos caminos sin exponerlo en produccion:
-  - `Simular update`.
-  - `Simular update critico`.
 - Variables de control para deploy:
   - `VITE_APP_VERSION`.
   - `VITE_APP_FORCE_LOGOUT`.
+- Workflow operativo:
+  - deploy normal: no definir `VITE_APP_FORCE_LOGOUT` o dejarlo en `false`.
+  - deploy critico: definir `VITE_APP_FORCE_LOGOUT=true` en variables del repo/entorno.
+- Criterio de uso:
+  - normal para UX, fixes de frontend y cambios no sensibles de sesion.
+  - critico para auth, permisos, tokens o compatibilidad fuerte entre frontend y backend.
+- Se retiro el laboratorio local de la UI para dejar solo el flujo productivo real.
 - Validacion:
   - `lint`: OK.
   - `test -- --run`: OK.

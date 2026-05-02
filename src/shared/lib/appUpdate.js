@@ -8,9 +8,6 @@ const CURRENT_APP_VERSION = typeof __APP_BUILD_VERSION__ !== 'undefined'
 const AVAILABLE_VERSION_KEY = 'laclau_available_version_v1';
 const AVAILABLE_FORCE_LOGOUT_KEY = 'laclau_available_force_logout_v1';
 const DISMISSED_VERSION_KEY = 'laclau_dismissed_version_v1';
-const DEBUG_AVAILABLE_VERSION_KEY = 'laclau_debug_available_version_v1';
-const DEBUG_APPLIED_VERSION_KEY = 'laclau_debug_applied_version_v1';
-const DEBUG_FORCE_LOGOUT_KEY = 'laclau_debug_force_logout_v1';
 const SKIP_UNLOAD_LOGOUT_ONCE_KEY = 'laclau_skip_unload_logout_once_v1';
 const UPDATE_EVENT_NAME = 'laclau-app-update-changed';
 const UPDATE_URL = new URL(`${import.meta.env.BASE_URL}app-version.json`, window.location.origin).toString();
@@ -57,11 +54,6 @@ function markPlannedReload() {
   window.sessionStorage.setItem(SKIP_UNLOAD_LOGOUT_ONCE_KEY, 'true');
 }
 
-function getEffectiveCurrentVersion() {
-  const debugAppliedVersion = canUseUpdateLab() ? readStorage(DEBUG_APPLIED_VERSION_KEY) : '';
-  return debugAppliedVersion || CURRENT_APP_VERSION;
-}
-
 function parseRemoteVersion(payload) {
   if (!payload || typeof payload !== 'object') {
     return { version: '', forceLogout: false };
@@ -75,7 +67,7 @@ function parseRemoteVersion(payload) {
 
 function persistAvailableUpdate(nextVersion, { forceLogout = false } = {}) {
   const normalized = String(nextVersion || '').trim();
-  const currentVersion = getEffectiveCurrentVersion();
+  const currentVersion = CURRENT_APP_VERSION;
 
   if (!normalized || normalized === currentVersion) {
     clearAvailableUpdate();
@@ -92,12 +84,8 @@ function persistAvailableUpdate(nextVersion, { forceLogout = false } = {}) {
   return true;
 }
 
-export function canUseUpdateLab() {
-  return import.meta.env.DEV || import.meta.env.VITE_ENABLE_UPDATE_LAB === 'true';
-}
-
 export function getCurrentAppVersion() {
-  return getEffectiveCurrentVersion();
+  return CURRENT_APP_VERSION;
 }
 
 export function getAvailableUpdateVersion() {
@@ -108,23 +96,14 @@ export function getDismissedUpdateVersion() {
   return readStorage(DISMISSED_VERSION_KEY);
 }
 
-export function getSimulatedAvailableVersion() {
-  return readStorage(DEBUG_AVAILABLE_VERSION_KEY);
-}
-
 export function getAvailableForceLogout() {
   return readStorage(AVAILABLE_FORCE_LOGOUT_KEY) === 'true';
-}
-
-export function getSimulatedForceLogout() {
-  return readStorage(DEBUG_FORCE_LOGOUT_KEY) === 'true';
 }
 
 export function getAppUpdateSnapshot() {
   const currentVersion = getCurrentAppVersion();
   const availableVersion = getAvailableUpdateVersion();
   const dismissedVersion = getDismissedUpdateVersion();
-  const simulatedVersion = getSimulatedAvailableVersion();
   const requiresSessionReset = getAvailableForceLogout();
   const hasPendingUpdate = Boolean(availableVersion) && availableVersion !== currentVersion;
 
@@ -133,7 +112,6 @@ export function getAppUpdateSnapshot() {
     availableVersion,
     dismissedVersion,
     hasPendingUpdate,
-    isSimulated: Boolean(simulatedVersion) && simulatedVersion === availableVersion,
     requiresSessionReset
   };
 }
@@ -149,12 +127,6 @@ export function clearDismissedUpdate() {
 }
 
 export async function checkForAppUpdate({ signal } = {}) {
-  const simulatedVersion = getSimulatedAvailableVersion();
-  if (simulatedVersion) {
-    persistAvailableUpdate(simulatedVersion, { forceLogout: getSimulatedForceLogout() });
-    return getAppUpdateSnapshot();
-  }
-
   try {
     const response = await fetch(UPDATE_URL, {
       method: 'GET',
@@ -179,41 +151,9 @@ export async function checkForAppUpdate({ signal } = {}) {
 }
 
 export function reloadToApplyUpdate() {
-  const availableVersion = getAvailableUpdateVersion();
-  const simulatedVersion = getSimulatedAvailableVersion();
-
-  if (canUseUpdateLab() && availableVersion && simulatedVersion && availableVersion === simulatedVersion) {
-    writeStorage(DEBUG_APPLIED_VERSION_KEY, availableVersion);
-    writeStorage(DEBUG_AVAILABLE_VERSION_KEY, '');
-    writeStorage(DEBUG_FORCE_LOGOUT_KEY, '');
-    clearAvailableUpdate();
-  }
-
   clearDismissedUpdate();
   markPlannedReload();
   window.location.reload();
-}
-
-export function simulateAvailableUpdate({ forceLogout = false } = {}) {
-  if (!canUseUpdateLab()) {
-    return '';
-  }
-
-  const nextVersion = `${CURRENT_APP_VERSION}-remote-${Date.now()}`;
-  writeStorage(DEBUG_AVAILABLE_VERSION_KEY, nextVersion);
-  writeStorage(DEBUG_FORCE_LOGOUT_KEY, forceLogout ? 'true' : '');
-  emitUpdateChange();
-  return nextVersion;
-}
-
-export function clearSimulatedUpdate() {
-  writeStorage(DEBUG_AVAILABLE_VERSION_KEY, '');
-  writeStorage(DEBUG_APPLIED_VERSION_KEY, '');
-  writeStorage(DEBUG_FORCE_LOGOUT_KEY, '');
-  writeStorage(AVAILABLE_VERSION_KEY, '');
-  writeStorage(AVAILABLE_FORCE_LOGOUT_KEY, '');
-  writeStorage(DISMISSED_VERSION_KEY, '');
-  emitUpdateChange();
 }
 
 export function subscribeToUpdateChanges(listener) {
@@ -230,9 +170,6 @@ export function subscribeToUpdateChanges(listener) {
       event.key === AVAILABLE_VERSION_KEY
       || event.key === AVAILABLE_FORCE_LOGOUT_KEY
       || event.key === DISMISSED_VERSION_KEY
-      || event.key === DEBUG_AVAILABLE_VERSION_KEY
-      || event.key === DEBUG_APPLIED_VERSION_KEY
-      || event.key === DEBUG_FORCE_LOGOUT_KEY
     ) {
       listener();
     }

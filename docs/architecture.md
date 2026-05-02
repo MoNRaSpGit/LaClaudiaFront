@@ -114,6 +114,32 @@
   - se limpia toda la persistencia local de auth/scanner/queue.
   - se resetea el estado scanner en memoria inmediatamente (sin recarga manual).
 
+## Actualizaciones frontend en caliente
+
+- El frontend publica `app-version.json` en cada build.
+- La app cliente consulta ese manifiesto:
+  - al iniciar sesion.
+  - al volver a foco.
+  - al volver a pestana visible.
+  - cada 2 minutos.
+- Si detecta una version distinta:
+  - muestra modal simple de actualizacion.
+  - permite posponer con banner compacto.
+  - aplica recarga con feedback visual.
+- Modo normal:
+  - recarga y mantiene sesion.
+- Modo critico:
+  - recarga y exige reingreso.
+  - se activa con `forceLogout: true` en el manifiesto generado por build.
+- Regla operativa:
+  - usar modo normal para cambios visuales, fixes de frontend y mejoras no sensibles.
+  - usar modo critico para cambios de auth, permisos, sesion o compatibilidad fuerte backend/frontend.
+- Deploy automatizado:
+  - el workflow de GitHub Pages pasa `VITE_APP_FORCE_LOGOUT` desde variables del repo/entorno.
+  - si la variable no esta definida, el comportamiento por defecto es update normal.
+- Restriccion actual:
+  - no queda expuesto ningun laboratorio/manual trigger en UI productiva.
+
 ## Flujo principal
 
 1. Arranque de app con boot screen para disimular spin-up del backend.

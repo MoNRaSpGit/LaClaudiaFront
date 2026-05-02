@@ -1,20 +1,17 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { Menu, UserRound, LogOut, RefreshCcw, BellRing, FlaskConical } from 'lucide-react';
+import { Menu, UserRound, LogOut, BellRing } from 'lucide-react';
 import AuthGate from './features/auth/AuthGate';
 import ScannerFeature from './features/scanner/ScannerFeature';
 import PanelControlFeature from './features/panelControl/PanelControlFeature';
 import PaymentsFeature from './features/payments/PaymentsFeature';
 import { resetScannerState } from './features/scanner/scannerSlice';
 import {
-  canUseUpdateLab,
   checkForAppUpdate,
   clearDismissedUpdate,
-  clearSimulatedUpdate,
   dismissAvailableUpdate,
   getAppUpdateSnapshot,
   reloadToApplyUpdate,
-  simulateAvailableUpdate,
   subscribeToUpdateChanges
 } from './shared/lib/appUpdate';
 
@@ -27,11 +24,9 @@ function Workspace({ user, onLogout }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [updateState, setUpdateState] = useState(() => getAppUpdateSnapshot());
   const [isUpdatePromptOpen, setIsUpdatePromptOpen] = useState(false);
-  const [isLocalUpdateToolsOpen, setIsLocalUpdateToolsOpen] = useState(false);
   const [isApplyingUpdate, setIsApplyingUpdate] = useState(false);
   const [updateProgress, setUpdateProgress] = useState(0);
   const [shouldResetSessionOnApply, setShouldResetSessionOnApply] = useState(false);
-  const isUpdateLabVisible = canUseUpdateLab();
 
   useEffect(() => {
     if (!canAccessPanel && activeTab === 'panel') {
@@ -245,64 +240,6 @@ function Workspace({ user, onLogout }) {
                     </button>
                   ) : null}
                   <div className="scanner-user-dropdown-divider" />
-                  {isUpdateLabVisible ? (
-                    <>
-                      <button
-                        type="button"
-                        className="scanner-user-dropdown-item"
-                        onClick={() => setIsLocalUpdateToolsOpen((current) => !current)}
-                      >
-                        <FlaskConical size={14} />
-                        <span>Lab update local</span>
-                      </button>
-                      {isLocalUpdateToolsOpen ? (
-                        <div className="scanner-user-dropdown-lab">
-                          <button
-                            type="button"
-                            className="scanner-user-dropdown-item"
-                            onClick={async () => {
-                              simulateAvailableUpdate();
-                              await checkForAppUpdate();
-                              setUpdateState(getAppUpdateSnapshot());
-                              setIsUpdatePromptOpen(true);
-                              setIsMenuOpen(false);
-                            }}
-                          >
-                            <BellRing size={14} />
-                            <span>Simular update</span>
-                          </button>
-                          <button
-                            type="button"
-                            className="scanner-user-dropdown-item"
-                            onClick={async () => {
-                              simulateAvailableUpdate({ forceLogout: true });
-                              await checkForAppUpdate();
-                              setUpdateState(getAppUpdateSnapshot());
-                              setIsUpdatePromptOpen(true);
-                              setIsMenuOpen(false);
-                            }}
-                          >
-                            <BellRing size={14} />
-                            <span>Simular update critico</span>
-                          </button>
-                          <button
-                            type="button"
-                            className="scanner-user-dropdown-item"
-                            onClick={() => {
-                              clearSimulatedUpdate();
-                              setUpdateState(getAppUpdateSnapshot());
-                              setIsUpdatePromptOpen(false);
-                              setIsMenuOpen(false);
-                            }}
-                          >
-                            <RefreshCcw size={14} />
-                            <span>Limpiar simulacion</span>
-                          </button>
-                        </div>
-                      ) : null}
-                      <div className="scanner-user-dropdown-divider" />
-                    </>
-                  ) : null}
                   <button type="button" className="scanner-user-dropdown-item" onClick={handleLogout}>
                     <LogOut size={14} />
                     <span>Salir</span>
@@ -396,4 +333,3 @@ function App() {
 }
 
 export default App;
-

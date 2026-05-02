@@ -150,12 +150,6 @@
   margin: 0.35rem 0.25rem;
 }
 
-.scanner-user-dropdown-lab {
-  display: grid;
-  gap: 0.25rem;
-  margin-top: 0.25rem;
-}
-
 .scanner-user-dropdown-nav-item {
   justify-content: center;
 }
@@ -263,33 +257,6 @@
 
 .app-update-modal-note-simple {
   text-align: center;
-}
-
-.app-update-modal-meta {
-  display: grid;
-  gap: 0.65rem;
-  grid-template-columns: repeat(1, minmax(0, 1fr));
-}
-
-.app-update-modal-meta > div {
-  border: 1px solid #dbe4ef;
-  border-radius: 12px;
-  background: #fff;
-  padding: 0.7rem 0.8rem;
-  display: grid;
-  gap: 0.2rem;
-}
-
-.app-update-modal-meta span {
-  color: #64748b;
-  font-size: 0.74rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  font-weight: 700;
-}
-
-.app-update-modal-meta strong {
-  color: #0f172a;
 }
 
 .app-update-modal-note {
@@ -402,10 +369,6 @@
     flex: 1 1 0;
   }
 
-  .app-update-modal-meta {
-    grid-template-columns: repeat(1, minmax(0, 1fr));
-  }
-
   .app-update-modal-actions .btn {
     width: 100%;
   }
@@ -457,11 +420,5 @@
 
   .scanner-navbar-user {
     justify-self: auto;
-  }
-}
-
-@media (min-width: 640px) {
-  .app-update-modal-meta {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

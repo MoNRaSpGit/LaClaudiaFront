@@ -35,6 +35,7 @@ jobs:
         env:
           VITE_BASE_PATH: /LaClaudiaFront/
           VITE_API_URL: https://laclaudiabackend.onrender.com
+          VITE_APP_FORCE_LOGOUT: ${{ vars.VITE_APP_FORCE_LOGOUT }}
         run: npm run build
 
       - name: Setup Pages
