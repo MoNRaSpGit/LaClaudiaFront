@@ -604,3 +604,9 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
   - `test -- --run`: OK.
   - `build`: OK.
   - `test:smoke:web`: OK.
+
+## Prueba controlada de despliegue
+
+- Se realizo una publicacion minima para validar en produccion el detector de nueva version con una pestana ya abierta.
+- Objetivo:
+  - confirmar aparicion del modal o banner de actualizacion sin depender de refresh manual.
