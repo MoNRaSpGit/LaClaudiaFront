@@ -6,6 +6,7 @@ import { toUserErrorMessage } from '../../../shared/lib/userErrorMessages';
 const REMEMBER_KEY = 'laclau_auth_remember_v1';
 const SESSION_KEY = 'laclau_auth_session_v1';
 const CLOSE_MARKER_KEY = 'laclau_auth_close_marker_v1';
+const SKIP_UNLOAD_LOGOUT_ONCE_KEY = 'laclau_skip_unload_logout_once_v1';
 const SCANNER_STATE_KEY = 'scanner_state_v1';
 const SCANNER_QUEUE_KEY = 'scanner_sales_queue_v1';
 const AUTH_KEEPALIVE_INTERVAL_MS = 3 * 60 * 1000;
@@ -167,6 +168,18 @@ function persistCloseMarker(user) {
   }));
 }
 
+function consumeSkipUnloadLogoutFlag() {
+  if (typeof window === 'undefined' || typeof window.sessionStorage === 'undefined') {
+    return false;
+  }
+
+  const shouldSkip = window.sessionStorage.getItem(SKIP_UNLOAD_LOGOUT_ONCE_KEY) === 'true';
+  if (shouldSkip) {
+    window.sessionStorage.removeItem(SKIP_UNLOAD_LOGOUT_ONCE_KEY);
+  }
+  return shouldSkip;
+}
+
 export function useAuthGateController() {
   const [phase, setPhase] = useState('booting');
   const [username, setUsername] = useState('');
@@ -227,6 +240,11 @@ export function useAuthGateController() {
         return;
       }
       if (event?.type === 'pagehide' && event.persisted) {
+        return;
+      }
+
+      if (consumeSkipUnloadLogoutFlag()) {
+        handled = true;
         return;
       }
 

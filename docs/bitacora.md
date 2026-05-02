@@ -610,3 +610,12 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
 - Se realizo una publicacion minima para validar en produccion el detector de nueva version con una pestana ya abierta.
 - Objetivo:
   - confirmar aparicion del modal o banner de actualizacion sin depender de refresh manual.
+
+## Ajuste de sesion en reload por update
+
+- Se detecto un riesgo de logout involuntario durante `reload` de actualizacion.
+- Causa probable:
+  - el handler de cierre de ventana podia disparar `logout best effort` tambien en una recarga planificada.
+- Blindaje agregado:
+  - los reloads iniciados desde el flujo de actualizacion marcan una excepcion temporal.
+  - auth evita invalidar la sesion backend en ese unload puntual.

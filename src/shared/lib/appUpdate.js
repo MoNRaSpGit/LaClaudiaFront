@@ -11,6 +11,7 @@ const DISMISSED_VERSION_KEY = 'laclau_dismissed_version_v1';
 const DEBUG_AVAILABLE_VERSION_KEY = 'laclau_debug_available_version_v1';
 const DEBUG_APPLIED_VERSION_KEY = 'laclau_debug_applied_version_v1';
 const DEBUG_FORCE_LOGOUT_KEY = 'laclau_debug_force_logout_v1';
+const SKIP_UNLOAD_LOGOUT_ONCE_KEY = 'laclau_skip_unload_logout_once_v1';
 const UPDATE_EVENT_NAME = 'laclau-app-update-changed';
 const UPDATE_URL = new URL(`${import.meta.env.BASE_URL}app-version.json`, window.location.origin).toString();
 
@@ -46,6 +47,14 @@ function writeStorage(key, value) {
 function clearAvailableUpdate() {
   writeStorage(AVAILABLE_VERSION_KEY, '');
   writeStorage(AVAILABLE_FORCE_LOGOUT_KEY, '');
+}
+
+function markPlannedReload() {
+  if (typeof window === 'undefined' || typeof window.sessionStorage === 'undefined') {
+    return;
+  }
+
+  window.sessionStorage.setItem(SKIP_UNLOAD_LOGOUT_ONCE_KEY, 'true');
 }
 
 function getEffectiveCurrentVersion() {
@@ -181,6 +190,7 @@ export function reloadToApplyUpdate() {
   }
 
   clearDismissedUpdate();
+  markPlannedReload();
   window.location.reload();
 }
 
