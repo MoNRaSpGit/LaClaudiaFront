@@ -7,7 +7,6 @@ import PanelControlFeature from './features/panelControl/PanelControlFeature';
 import PaymentsFeature from './features/payments/PaymentsFeature';
 import ProductsFeature from './features/products/ProductsFeature';
 import StockFeature from './features/stock/StockFeature';
-import OthersFeature from './features/others/OthersFeature';
 import { resetScannerState } from './features/scanner/scannerSlice';
 import {
   checkForAppUpdate,
@@ -24,8 +23,8 @@ function Workspace({ user, onLogout }) {
   const canAccessPanel = userRole === 'admin';
   const canAccessProducts = userRole === 'admin';
   const canAccessStock = userRole === 'admin' || userRole === 'operario';
-  const canAccessOthers = userRole === 'admin';
   const canAccessPayments = userRole === 'operario';
+  const canAccessScannerTab = userRole !== 'admin';
   const [activeTab, setActiveTab] = useState(canAccessPanel ? 'panel' : 'scanner');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [updateState, setUpdateState] = useState(() => getAppUpdateSnapshot());
@@ -44,13 +43,10 @@ function Workspace({ user, onLogout }) {
     if (!canAccessStock && activeTab === 'stock') {
       setActiveTab(canAccessPanel ? 'panel' : 'scanner');
     }
-    if (!canAccessOthers && activeTab === 'others') {
-      setActiveTab(canAccessPanel ? 'panel' : 'scanner');
-    }
     if (!canAccessPayments && activeTab === 'payments') {
       setActiveTab(canAccessPanel ? 'panel' : 'scanner');
     }
-  }, [activeTab, canAccessOthers, canAccessPanel, canAccessPayments, canAccessProducts, canAccessStock]);
+  }, [activeTab, canAccessPanel, canAccessPayments, canAccessProducts, canAccessStock]);
 
   useEffect(() => {
     function syncUpdateState() {
@@ -175,14 +171,16 @@ function Workspace({ user, onLogout }) {
 
           <div className="scanner-navbar-main d-flex align-items-center gap-2 flex-wrap ms-auto">
             <div className="scanner-navbar-tabs navbar-nav gap-1">
-              <button
-                type="button"
-                className={`btn nav-tab-btn nav-tab-btn-dark ${activeTab === 'scanner' ? 'nav-tab-btn-active' : ''}`}
-                onClick={() => setActiveTab('scanner')}
-                aria-current={activeTab === 'scanner' ? 'page' : undefined}
-              >
-                Scanner
-              </button>
+              {canAccessScannerTab ? (
+                <button
+                  type="button"
+                  className={`btn nav-tab-btn nav-tab-btn-dark ${activeTab === 'scanner' ? 'nav-tab-btn-active' : ''}`}
+                  onClick={() => setActiveTab('scanner')}
+                  aria-current={activeTab === 'scanner' ? 'page' : undefined}
+                >
+                  Scanner
+                </button>
+              ) : null}
               {canAccessPanel ? (
                 <button
                   type="button"
@@ -213,16 +211,6 @@ function Workspace({ user, onLogout }) {
                   Stock
                 </button>
               ) : null}
-              {canAccessOthers ? (
-                <button
-                  type="button"
-                  className={`btn nav-tab-btn nav-tab-btn-dark ${activeTab === 'others' ? 'nav-tab-btn-active' : ''}`}
-                  onClick={() => setActiveTab('others')}
-                  aria-current={activeTab === 'others' ? 'page' : undefined}
-                >
-                  Otros
-                </button>
-              ) : null}
               {canAccessPayments ? (
                 <button
                   type="button"
@@ -250,16 +238,18 @@ function Workspace({ user, onLogout }) {
 
               {isMenuOpen ? (
                 <div className="scanner-user-dropdown">
-                  <button
-                    type="button"
-                    className={`scanner-user-dropdown-item scanner-user-dropdown-nav-item ${activeTab === 'scanner' ? 'scanner-user-dropdown-nav-item-active' : ''}`}
-                    onClick={() => {
-                      setActiveTab('scanner');
-                      setIsMenuOpen(false);
-                    }}
-                  >
-                    <span>Scanner</span>
-                  </button>
+                  {canAccessScannerTab ? (
+                    <button
+                      type="button"
+                      className={`scanner-user-dropdown-item scanner-user-dropdown-nav-item ${activeTab === 'scanner' ? 'scanner-user-dropdown-nav-item-active' : ''}`}
+                      onClick={() => {
+                        setActiveTab('scanner');
+                        setIsMenuOpen(false);
+                      }}
+                    >
+                      <span>Scanner</span>
+                    </button>
+                  ) : null}
                   {canAccessPanel ? (
                     <button
                       type="button"
@@ -294,18 +284,6 @@ function Workspace({ user, onLogout }) {
                       }}
                     >
                       <span>Stock</span>
-                    </button>
-                  ) : null}
-                  {canAccessOthers ? (
-                    <button
-                      type="button"
-                      className={`scanner-user-dropdown-item scanner-user-dropdown-nav-item ${activeTab === 'others' ? 'scanner-user-dropdown-nav-item-active' : ''}`}
-                      onClick={() => {
-                        setActiveTab('others');
-                        setIsMenuOpen(false);
-                      }}
-                    >
-                      <span>Otros</span>
                     </button>
                   ) : null}
                   {canAccessPayments ? (
@@ -362,9 +340,6 @@ function Workspace({ user, onLogout }) {
       )}
       {activeTab === 'stock' && canAccessStock && (
         <StockFeature currentUser={user} onUnauthorized={handleLogout} />
-      )}
-      {activeTab === 'others' && canAccessOthers && (
-        <OthersFeature />
       )}
       {activeTab === 'payments' && canAccessPayments && (
         <PaymentsFeature currentUser={user} onUnauthorized={handleLogout} />

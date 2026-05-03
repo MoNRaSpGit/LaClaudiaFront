@@ -17,6 +17,22 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
 
 ## Mini Changelog Tecnico (2026-04-27)
 
+- Limpieza de navegacion admin (2026-05-02):
+  - removido tab experimental `Otros`.
+  - removido archivo `src/features/others/OthersFeature.jsx`.
+  - `admin` ya no ve `Scanner` en navbar ni en menu de usuario.
+  - el feature `Scanner` no se elimino:
+    - solo se oculto de la navegacion admin.
+    - `operario` lo sigue viendo como antes.
+  - objetivo:
+    - dejar la barra admin mas limpia y enfocada en:
+      - `Panel de control`
+      - `Productos`
+      - `Stock`
+  - validacion tecnica:
+    - `npm run lint` OK.
+    - `npm run build` OK.
+
 - Stock simple para pedido operario -> admin (2026-05-02):
   - nuevo tab `Stock` disponible para:
     - `operario`

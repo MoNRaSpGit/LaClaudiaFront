@@ -96,6 +96,10 @@
 - persistencia actual:
   - usa `localStorage` del navegador solo como puente demo entre operario/admin.
   - no hay backend propio de stock todavia.
+- navegacion actual:
+  - `operario` ve `Scanner`, `Stock` y `Pagos`.
+  - `admin` ve `Panel de control`, `Productos` y `Stock`.
+  - `Scanner` queda oculto en navbar/menu para `admin`, pero el feature no se elimina.
 
 #### Diagnostico remoto en panel
 
