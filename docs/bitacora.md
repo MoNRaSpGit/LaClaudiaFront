@@ -17,6 +17,35 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
 
 ## Mini Changelog Tecnico (2026-04-27)
 
+- Stock simple para pedido operario -> admin (2026-05-02):
+  - nuevo tab `Stock` disponible para:
+    - `operario`
+    - `admin`
+  - flujo final simplificado segun validacion con cliente:
+    - `operario` entra a `Stock`.
+    - escribe producto.
+    - recibe sugerencias desde catalogo real por nombre (`GET /api/scanner/products?q=...`).
+    - selecciona productos para armar una lista.
+    - ajusta cantidad por item con `+ / -`.
+    - `Confirmar` envia la lista.
+  - vista admin del mismo `Stock`:
+    - muestra pedidos recibidos.
+    - cada pedido incluye:
+      - productos + cantidad.
+      - quien lo pidio.
+      - fecha/hora.
+    - boton `Listo` para remover el pedido ya atendido.
+  - implementacion actual:
+    - `src/features/stock/StockFeature.jsx`.
+    - usa `localStorage` como puente demo entre operario/admin, sin backend especifico de stock.
+  - limpieza incluida:
+    - removida la version previa de stock mas compleja (proveedores/reparto/pedidos por tarjeta).
+    - removido CSS legacy de ese flujo para dejar solo el stock simple vigente.
+  - validacion tecnica:
+    - `npm run lint` OK.
+    - `npm run test -- --run` OK.
+    - `npm run build` OK.
+
 - Pagina admin `Productos` con buscador por nombre (2026-05-02):
   - nueva tab `Productos` visible solo para `admin`.
   - muestra resultados simples con:

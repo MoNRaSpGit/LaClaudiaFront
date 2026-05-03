@@ -36,6 +36,7 @@
 - `src/features/panelControl`: caja, movimientos, ranking y pagos (desde backend).
 - `src/features/payments`: pagina operativa de pagos para rol `operario`.
 - `src/features/products`: consulta admin de catalogo por nombre.
+- `src/features/stock`: pedido simple de stock entre operario y admin.
 - `src/shared/lib`: utilidades reutilizables.
 - `src/shared/services`: cliente HTTP base + servicios transversales.
 - `src/app/store.js`: composicion de slices (scanner).
@@ -75,6 +76,26 @@
 - edicion actual:
   - boton `Editar` por fila.
   - modal para editar `nombre` y `precio`.
+
+### Stock feature
+
+- `StockFeature.jsx`: flujo simple de pedido de stock.
+- `operario`:
+  - escribe/busca producto por nombre.
+  - selecciona sugerencias del catalogo real.
+  - arma una lista con cantidades.
+  - confirma y envia el pedido.
+- `admin`:
+  - ve lista de pedidos recibidos.
+  - cada pedido muestra:
+    - productos.
+    - cantidades.
+    - quien lo pidio.
+    - fecha/hora.
+  - boton `Listo` para limpiar el pedido atendido.
+- persistencia actual:
+  - usa `localStorage` del navegador solo como puente demo entre operario/admin.
+  - no hay backend propio de stock todavia.
 
 #### Diagnostico remoto en panel
 
