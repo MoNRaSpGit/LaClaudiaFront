@@ -17,6 +17,29 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
 
 ## Mini Changelog Tecnico (2026-04-27)
 
+- Stock manual + reparto + mas vendidos (2026-05-05):
+  - `Stock` dejo de depender de `localStorage` como puente demo.
+  - ahora usa backend real para pedidos:
+    - guardar pedido manual.
+    - listar pendientes segun usuario.
+    - confirmar llegada.
+  - flujo operario validado:
+    - confirma `Proveedor`.
+    - carga productos faltantes manualmente con `Enter` o `Agregar`.
+    - guarda pedido y lo ve en `Reparto`.
+  - flujo admin actualizado:
+    - ve en `Stock` los pedidos reales creados por operarios, incluso desde otra sesion/PC.
+  - nueva subtab `+Vendidos`:
+    - muestra ranking simple de productos mas vendidos del dia.
+    - se usa como referencia de compra/reposicion.
+  - UX aplicada:
+    - tabs `Pedido`, `Reparto`, `+Vendidos`.
+    - armado manual mas guiado por pasos.
+    - `+Vendidos` simplificado a lista clasica vertical.
+  - validacion tecnica:
+    - `npm run build` OK.
+    - `npm run test:smoke:web` OK.
+
 - Limpieza de navegacion admin (2026-05-02):
   - removido tab experimental `Otros`.
   - removido archivo `src/features/others/OthersFeature.jsx`.
@@ -51,9 +74,9 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
       - quien lo pidio.
       - fecha/hora.
     - boton `Listo` para remover el pedido ya atendido.
-  - implementacion actual:
-    - `src/features/stock/StockFeature.jsx`.
-    - usa `localStorage` como puente demo entre operario/admin, sin backend especifico de stock.
+  - nota historica:
+    - esta etapa empezo con `localStorage` como puente demo.
+    - desde 2026-05-05 paso a backend real y ese detalle ya no aplica al estado vigente.
   - limpieza incluida:
     - removida la version previa de stock mas compleja (proveedores/reparto/pedidos por tarjeta).
     - removido CSS legacy de ese flujo para dejar solo el stock simple vigente.

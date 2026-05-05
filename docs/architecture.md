@@ -81,21 +81,28 @@
 
 - `StockFeature.jsx`: flujo simple de pedido de stock.
 - `operario`:
-  - escribe/busca producto por nombre.
-  - selecciona sugerencias del catalogo real.
+  - confirma proveedor.
+  - escribe productos faltantes manualmente.
   - arma una lista con cantidades.
-  - confirma y envia el pedido.
+  - guarda el pedido en backend.
+  - ve sus pendientes en subtab `Reparto`.
+  - consulta subtab `+Vendidos` como referencia de reposicion del dia.
 - `admin`:
   - ve lista de pedidos recibidos.
   - cada pedido muestra:
+    - proveedor.
     - productos.
     - cantidades.
     - quien lo pidio.
     - fecha/hora.
-  - boton `Listo` para limpiar el pedido atendido.
+  - lectura actual sin accion de cierre desde vista admin.
 - persistencia actual:
-  - usa `localStorage` del navegador solo como puente demo entre operario/admin.
-  - no hay backend propio de stock todavia.
+  - usa backend real via `stock.api.js`.
+  - endpoints activos:
+    - `POST /api/scanner/stock-requests`
+    - `GET /api/scanner/stock-requests`
+    - `PUT /api/scanner/stock-requests/:id/resolve`
+    - `GET /api/scanner/dashboard/ranking`
 - navegacion actual:
   - `operario` ve `Scanner`, `Stock` y `Pagos`.
   - `admin` ve `Panel de control`, `Productos` y `Stock`.
