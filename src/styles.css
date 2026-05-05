@@ -348,6 +348,27 @@ body {
   color: #111827;
 }
 
+.stock-simple-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+}
+
+.stock-simple-line-name {
+  min-width: 0;
+  flex: 1 1 auto;
+  color: #22303a;
+}
+
+.stock-simple-line-qty {
+  flex: 0 0 auto;
+  color: #4b5563;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 .stock-request-grid {
   display: grid;
   gap: 0.85rem;
@@ -584,6 +605,7 @@ body {
   .stock-request-qty-pill {
     min-width: 52px;
   }
+
 }
 
 @media (max-width: 575.98px) {

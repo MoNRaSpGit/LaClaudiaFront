@@ -48,6 +48,24 @@ function formatItemsLabel(count) {
   return `${count} producto${count === 1 ? '' : 's'}`;
 }
 
+function renderStockRequestItem(product) {
+  if (typeof product === 'string') {
+    return (
+      <div className="stock-simple-line">
+        <span className="stock-simple-line-name">{product}</span>
+        <span className="stock-simple-line-qty">Cant 1</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="stock-simple-line">
+      <span className="stock-simple-line-name">{product.name}</span>
+      <span className="stock-simple-line-qty">Cant {product.quantity}</span>
+    </div>
+  );
+}
+
 function StockFeature({ currentUser, onUnauthorized }) {
   const [providerName, setProviderName] = useState('');
   const [confirmedProviderName, setConfirmedProviderName] = useState('');
@@ -391,9 +409,7 @@ function StockFeature({ currentUser, onUnauthorized }) {
                         <div>
                           {Array.isArray(item.items) ? item.items.map((product, index) => (
                             <div key={`${item.id}-${index}`} className="border rounded px-3 py-2 mb-2 bg-light">
-                              {typeof product === 'string'
-                                ? product
-                                : `${product.name} x ${product.quantity}`}
+                              {renderStockRequestItem(product)}
                             </div>
                           )) : null}
                         </div>
@@ -561,9 +577,7 @@ function StockFeature({ currentUser, onUnauthorized }) {
                             <div className="mb-3">
                               {Array.isArray(item.items) ? item.items.map((product, index) => (
                                 <div key={`${item.id}-${index}`} className="border rounded px-3 py-2 mb-2 bg-light">
-                                  {typeof product === 'string'
-                                    ? product
-                                    : `${product.name} x ${product.quantity}`}
+                                  {renderStockRequestItem(product)}
                                 </div>
                               )) : null}
                             </div>
