@@ -1400,6 +1400,11 @@
   gap: 0.85rem;
 }
 
+.months-day-row-outside {
+  background: #f8fafc;
+  opacity: 0.72;
+}
+
 .months-day-copy {
   display: grid;
   gap: 0.15rem;

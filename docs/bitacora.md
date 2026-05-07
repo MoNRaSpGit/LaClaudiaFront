@@ -707,3 +707,17 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
 - Blindaje agregado:
   - los reloads iniciados desde el flujo de actualizacion marcan una excepcion temporal.
   - auth evita invalidar la sesion backend en ese unload puntual.
+
+## Meses - semanas completas y edicion oculta
+
+- La vista `Meses` ahora muestra cada semana como bloque calendario completo `lunes -> domingo`.
+- Si un dia no tiene datos:
+  - igual aparece.
+  - muestra montos en `0`.
+- El detalle semanal ya no arranca en el primer dia con movimiento.
+- El override manual semanal se mantuvo implementado en codigo para poder reactivarlo rapido si hace falta.
+- Por decision operativa actual:
+  - el boton `Editar` queda oculto en UI.
+  - el modal y la logica no se eliminaron.
+- Validacion:
+  - `build`: OK.

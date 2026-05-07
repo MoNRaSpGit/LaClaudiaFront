@@ -5,6 +5,8 @@ import { moneyNoDecimals } from '../panelControl/model/panelControl.formatters';
 import PanelModal from '../panelControl/components/PanelModal';
 import { useMonthsController } from './model/useMonthsController';
 
+const MONTHS_WEEK_EDIT_ENABLED = false;
+
 function MonthsFeature({ currentUser, onUnauthorized }) {
   const unauthorizedHandledRef = useRef(false);
   const handleUnauthorized = useCallback(() => {
@@ -295,6 +297,9 @@ function MonthsFeature({ currentUser, onUnauthorized }) {
                                       type="button"
                                       className="btn btn-sm btn-outline-secondary months-week-edit-btn"
                                       onClick={() => openWeekEditor(month, week)}
+                                      hidden={!MONTHS_WEEK_EDIT_ENABLED}
+                                      aria-hidden={!MONTHS_WEEK_EDIT_ENABLED}
+                                      tabIndex={MONTHS_WEEK_EDIT_ENABLED ? 0 : -1}
                                     >
                                       <Pencil size={14} />
                                       <span>Editar</span>
@@ -310,7 +315,7 @@ function MonthsFeature({ currentUser, onUnauthorized }) {
                                       ) : null}
                                       {Array.isArray(week.days) && week.days.length ? (
                                         week.days.map((day) => (
-                                          <div key={day.dateLabel} className="months-day-row">
+                                          <div key={day.dateLabel} className={`months-day-row ${day.isOutsideMonth ? 'months-day-row-outside' : ''}`}>
                                             <div className="months-day-copy">
                                               <strong>{day.weekdayLabel}</strong>
                                               <span>{day.dateLabel}</span>
@@ -353,7 +358,7 @@ function MonthsFeature({ currentUser, onUnauthorized }) {
         </div>
       </div>
 
-      {editingWeek ? (
+      {MONTHS_WEEK_EDIT_ENABLED && editingWeek ? (
         <PanelModal
           title={`Editar ${editingWeek.weekLabel}`}
           body={(
