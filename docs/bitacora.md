@@ -721,3 +721,8 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
   - el modal y la logica no se eliminaron.
 - Validacion:
   - `build`: OK.
+
+## Redeploy operativo - frontend Meses
+
+- Se fuerza nuevo deploy de frontend para sincronizar `Meses` con el backend publicado.
+- La UI ya espera semanas completas con dias faltantes en `0`.
