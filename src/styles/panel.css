@@ -1126,6 +1126,319 @@
   box-shadow: 0 2px 8px rgba(43, 94, 153, 0.18);
 }
 
+.months-summary-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+.months-summary-card {
+  border: 1px solid #dbe2eb;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  padding: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.months-summary-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #e8f0fb;
+  color: #1f4f84;
+  flex: 0 0 38px;
+}
+
+.months-summary-label {
+  margin: 0 0 0.18rem;
+  color: #64748b;
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+}
+
+.months-summary-value {
+  color: #0f172a;
+  font-size: 1.15rem;
+}
+
+.months-empty-state,
+.months-empty-inline {
+  border: 1px dashed #cfd8e3;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #fbfdff 0%, #f5f9fd 100%);
+  padding: 1rem;
+  color: #64748b;
+}
+
+.months-empty-state strong {
+  color: #0f172a;
+}
+
+.months-list {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.months-card {
+  border: 1px solid #d8e1ec;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #ffffff 0%, #f9fbff 100%);
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.05);
+  overflow: hidden;
+}
+
+.months-card-head {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 1rem 1.05rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  text-align: left;
+}
+
+.months-card-head-copy {
+  min-width: 0;
+}
+
+.months-card-kicker {
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.months-card-title {
+  color: #0f172a;
+  font-size: 1.1rem;
+  font-weight: 800;
+  text-transform: capitalize;
+}
+
+.months-card-subtitle {
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.months-card-head-meta {
+  display: grid;
+  gap: 0.4rem;
+  justify-items: end;
+  flex: 0 0 auto;
+}
+
+.months-card-total {
+  color: #12355a;
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.months-card-toggle {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #edf4ff;
+  color: #153f68;
+}
+
+.months-card-body {
+  border-top: 1px solid #e4ebf4;
+  padding: 0 1.05rem 1rem;
+}
+
+.months-metric-strip {
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  padding-top: 0.95rem;
+  margin-bottom: 0.9rem;
+}
+
+.months-mini-metric {
+  border: 1px solid #dbe4ef;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 0.72rem 0.8rem;
+  display: grid;
+  gap: 0.15rem;
+}
+
+.months-mini-metric span {
+  color: #64748b;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+}
+
+.months-mini-metric strong {
+  color: #0f172a;
+  font-size: 1rem;
+}
+
+.months-weeks-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.months-week-card {
+  border: 1px solid #dbe4ef;
+  border-radius: 14px;
+  background: #f8fbff;
+  overflow: hidden;
+}
+
+.months-week-row {
+  padding: 0.85rem 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.months-week-main {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  text-align: left;
+  width: 100%;
+}
+
+.months-week-copy {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.months-week-copy strong {
+  color: #0f172a;
+}
+
+.months-week-copy span {
+  color: #64748b;
+  font-size: 0.84rem;
+}
+
+.months-week-override-flag {
+  color: #1d4f84;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.months-week-values {
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  min-width: min(100%, 420px);
+}
+
+.months-week-values div {
+  display: grid;
+  gap: 0.15rem;
+  text-align: right;
+}
+
+.months-week-values small {
+  color: #64748b;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.months-week-values strong {
+  color: #12355a;
+}
+
+.months-week-edit-btn {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.months-week-days {
+  border-top: 1px solid #e0e8f3;
+  padding: 0 0.9rem 0.9rem;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.months-week-override-note {
+  margin-top: 0.7rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px dashed #c7d7ea;
+  border-radius: 12px;
+  background: #edf4ff;
+  color: #234b73;
+  font-size: 0.82rem;
+}
+
+.months-day-row {
+  padding: 0.7rem 0.75rem;
+  border: 1px solid #e1e8f2;
+  border-radius: 12px;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
+}
+
+.months-day-copy {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.months-day-copy strong {
+  color: #0f172a;
+  text-transform: capitalize;
+}
+
+.months-day-copy span {
+  color: #64748b;
+  font-size: 0.8rem;
+}
+
+.months-day-values {
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  min-width: min(100%, 280px);
+}
+
+.months-day-values div {
+  display: grid;
+  gap: 0.12rem;
+  text-align: right;
+}
+
+.months-day-values small {
+  color: #64748b;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.months-day-values strong {
+  color: #12355a;
+}
+
 @media (max-width: 991.98px) {
   #panel-section-daily,
   #panel-section-live,
@@ -1134,6 +1447,37 @@
   #panel-section-payments,
   #panel-section-diagnostics {
     scroll-margin-top: 86px;
+  }
+
+  .months-card-head,
+  .months-week-row,
+  .months-week-main,
+  .months-day-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .months-card-head-meta,
+  .months-week-values,
+  .months-day-values {
+    width: 100%;
+  }
+
+  .months-card-head-meta {
+    justify-items: start;
+  }
+
+  .months-week-values {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
+  }
+
+  .months-week-values div,
+  .months-day-values div {
+    text-align: left;
+  }
+
+  .months-day-values {
+    grid-template-columns: repeat(1, minmax(0, 1fr));
   }
 }
 
@@ -1144,6 +1488,14 @@
 
   .panel-diagnostics-highlight-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .months-summary-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .months-metric-strip {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 

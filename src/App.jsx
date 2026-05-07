@@ -4,6 +4,7 @@ import { Menu, UserRound, LogOut, BellRing } from 'lucide-react';
 import AuthGate from './features/auth/AuthGate';
 import ScannerFeature from './features/scanner/ScannerFeature';
 import PanelControlFeature from './features/panelControl/PanelControlFeature';
+import MonthsFeature from './features/months/MonthsFeature';
 import PaymentsFeature from './features/payments/PaymentsFeature';
 import ProductsFeature from './features/products/ProductsFeature';
 import StockFeature from './features/stock/StockFeature';
@@ -22,6 +23,7 @@ function Workspace({ user, onLogout }) {
   const userRole = String(user?.role || 'operario').toLowerCase();
   const canAccessPanel = userRole === 'admin';
   const canAccessProducts = userRole === 'admin';
+  const canAccessMonths = userRole === 'admin';
   const canAccessStock = userRole === 'admin' || userRole === 'operario';
   const canAccessPayments = userRole === 'operario';
   const canAccessScannerTab = userRole !== 'admin';
@@ -40,13 +42,16 @@ function Workspace({ user, onLogout }) {
     if (!canAccessProducts && activeTab === 'products') {
       setActiveTab(canAccessPanel ? 'panel' : 'scanner');
     }
+    if (!canAccessMonths && activeTab === 'months') {
+      setActiveTab(canAccessPanel ? 'panel' : 'scanner');
+    }
     if (!canAccessStock && activeTab === 'stock') {
       setActiveTab(canAccessPanel ? 'panel' : 'scanner');
     }
     if (!canAccessPayments && activeTab === 'payments') {
       setActiveTab(canAccessPanel ? 'panel' : 'scanner');
     }
-  }, [activeTab, canAccessPanel, canAccessPayments, canAccessProducts, canAccessStock]);
+  }, [activeTab, canAccessMonths, canAccessPanel, canAccessPayments, canAccessProducts, canAccessStock]);
 
   useEffect(() => {
     function syncUpdateState() {
@@ -201,6 +206,16 @@ function Workspace({ user, onLogout }) {
                   Productos
                 </button>
               ) : null}
+              {canAccessMonths ? (
+                <button
+                  type="button"
+                  className={`btn nav-tab-btn nav-tab-btn-dark ${activeTab === 'months' ? 'nav-tab-btn-active' : ''}`}
+                  onClick={() => setActiveTab('months')}
+                  aria-current={activeTab === 'months' ? 'page' : undefined}
+                >
+                  Meses
+                </button>
+              ) : null}
               {canAccessStock ? (
                 <button
                   type="button"
@@ -274,6 +289,18 @@ function Workspace({ user, onLogout }) {
                       <span>Productos</span>
                     </button>
                   ) : null}
+                  {canAccessMonths ? (
+                    <button
+                      type="button"
+                      className={`scanner-user-dropdown-item scanner-user-dropdown-nav-item ${activeTab === 'months' ? 'scanner-user-dropdown-nav-item-active' : ''}`}
+                      onClick={() => {
+                        setActiveTab('months');
+                        setIsMenuOpen(false);
+                      }}
+                    >
+                      <span>Meses</span>
+                    </button>
+                  ) : null}
                   {canAccessStock ? (
                     <button
                       type="button"
@@ -337,6 +364,9 @@ function Workspace({ user, onLogout }) {
       )}
       {activeTab === 'products' && canAccessProducts && (
         <ProductsFeature currentUser={user} onUnauthorized={handleLogout} />
+      )}
+      {activeTab === 'months' && canAccessMonths && (
+        <MonthsFeature currentUser={user} onUnauthorized={handleLogout} />
       )}
       {activeTab === 'stock' && canAccessStock && (
         <StockFeature currentUser={user} onUnauthorized={handleLogout} />

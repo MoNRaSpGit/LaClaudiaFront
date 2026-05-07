@@ -326,7 +326,7 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
   const metrics = [
     { title: 'Caja inicial', value: moneyNoDecimals(panelMetrics.initialCash), hint: 'Monto de apertura del dia.' },
     { title: 'Ventas del dia', value: moneyNoDecimals(panelMetrics.salesToday), hint: 'Confirmadas con el boton Cobrar.' },
-    { title: 'Ganancia diaria', value: moneyNoDecimals(panelMetrics.profitToday), hint: `${Number((panelMetrics.profitRate ?? profitRate) || 0) * 100}% de ventas del dia` },
+    { title: 'Ganancia estimada', value: moneyNoDecimals(panelMetrics.profitToday), hint: `${Number((panelMetrics.profitRate ?? profitRate) || 0) * 100}% de ventas del dia. No descuenta pagos.` },
     { title: 'Monto actual', value: moneyNoDecimals(panelMetrics.currentAmount), hint: 'Caja diaria + ventas - pagos' },
     { title: 'Pagos realizados', value: moneyNoDecimals(panelMetrics.paymentsTotal), hint: 'Suma de pagos registrados' }
   ];

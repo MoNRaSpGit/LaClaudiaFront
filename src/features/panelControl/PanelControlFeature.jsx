@@ -323,7 +323,7 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
                         hint={item.hint}
                         onDoubleClick={item.title === 'Caja inicial'
                           ? openInitialCashModal
-                          : (item.title === 'Ganancia diaria' ? openProfitRateModal : undefined)}
+                          : (item.title === 'Ganancia estimada' ? openProfitRateModal : undefined)}
                       />
                     ))}
 
@@ -462,7 +462,7 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
           title="Editar porcentaje de ganancia"
           body={(
             <form className="d-grid gap-3" onSubmit={handleProfitRateSubmit}>
-              <p className="mb-0 small text-muted">Doble click en la tarjeta de Ganancia diaria para editar este porcentaje otra vez.</p>
+              <p className="mb-0 small text-muted">Doble click en la tarjeta de Ganancia estimada para editar este porcentaje otra vez.</p>
               <input
                 type="number"
                 min="0"
