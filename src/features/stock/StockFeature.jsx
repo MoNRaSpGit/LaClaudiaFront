@@ -66,6 +66,144 @@ function renderStockRequestItem(product) {
   );
 }
 
+function buildEditableDraftItems(items) {
+  return items.map((item, index) => ({
+    id: `${item.name}-${index}-${Date.now()}`,
+    name: String(item.name || ''),
+    quantity: Math.max(1, Number(item.quantity || 1))
+  }));
+}
+
+function normalizeEditedDraftItems(items) {
+  const merged = new Map();
+
+  items.forEach((item) => {
+    const normalizedName = normalizeItemName(item?.name);
+    const normalizedQuantity = Math.max(1, Number(item?.quantity || 1));
+
+    if (!normalizedName) {
+      return;
+    }
+
+    const key = normalizedName.toLowerCase();
+    const current = merged.get(key);
+    if (current) {
+      current.quantity += normalizedQuantity;
+      return;
+    }
+
+    merged.set(key, {
+      name: normalizedName,
+      quantity: normalizedQuantity
+    });
+  });
+
+  return Array.from(merged.values());
+}
+
+function DraftEditorModal({
+  providerValue,
+  items,
+  onProviderChange,
+  onItemChange,
+  onItemQuantityChange,
+  onItemRemove,
+  onAddItem,
+  onClose,
+  onSave
+}) {
+  return (
+    <div className="stock-editor-overlay" role="dialog" aria-modal="true" aria-label="Editar pedido">
+      <div className="stock-editor-card">
+        <div className="stock-editor-head">
+          <div>
+            <h3 className="h5 mb-1">Editar pedido</h3>
+            <p className="mb-0 text-muted">Corrige proveedor, nombres o cantidades sin tocar la pantalla principal.</p>
+          </div>
+          <button type="button" className="stock-remove-icon-btn stock-editor-close-btn" onClick={onClose} aria-label="Cerrar editor">
+            x
+          </button>
+        </div>
+
+        <div className="stock-editor-section">
+          <label className="form-label" htmlFor="stock-editor-provider">Proveedor</label>
+          <input
+            id="stock-editor-provider"
+            type="text"
+            className="form-control"
+            value={providerValue}
+            onChange={(event) => onProviderChange(event.target.value)}
+            placeholder="Nombre del proveedor"
+          />
+        </div>
+
+        <div className="stock-editor-section">
+          <div className="stock-editor-list-head">
+            <strong>Productos</strong>
+            <button type="button" className="btn btn-outline-dark btn-sm" onClick={onAddItem}>
+              Agregar fila
+            </button>
+          </div>
+          <div className="stock-editor-list">
+            {items.length ? (
+              items.map((item) => (
+                <div key={item.id} className="stock-editor-item">
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={item.name}
+                    onChange={(event) => onItemChange(item.id, event.target.value)}
+                    placeholder="Nombre del producto"
+                  />
+                  <div className="stock-request-qty-controls">
+                    <button
+                      type="button"
+                      className="btn btn-outline-secondary stock-qty-btn"
+                      onClick={() => onItemQuantityChange(item.id, -1)}
+                    >
+                      -
+                    </button>
+                    <strong className="stock-request-qty-value">{item.quantity}</strong>
+                    <button
+                      type="button"
+                      className="btn btn-outline-secondary stock-qty-btn"
+                      onClick={() => onItemQuantityChange(item.id, 1)}
+                    >
+                      +
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    className="stock-remove-icon-btn"
+                    onClick={() => onItemRemove(item.id)}
+                    aria-label={`Eliminar ${item.name || 'producto'}`}
+                  >
+                    x
+                  </button>
+                </div>
+              ))
+            ) : (
+              <div className="stock-empty-state">
+                <strong>Sin productos en edicion.</strong>
+                <p className="mb-0">Agrega una fila o vuelve al formulario para seguir armando el pedido.</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="stock-editor-footer">
+          <button type="button" className="btn btn-outline-secondary" onClick={onClose}>
+            Cancelar
+          </button>
+          <button type="button" className="btn btn-dark" onClick={onSave}>
+            Guardar cambios
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function StockFeature({ currentUser, onUnauthorized }) {
   const [providerName, setProviderName] = useState('');
   const [confirmedProviderName, setConfirmedProviderName] = useState('');
@@ -81,6 +219,9 @@ function StockFeature({ currentUser, onUnauthorized }) {
   const [topSellingDateLabel, setTopSellingDateLabel] = useState('');
   const [isLoadingTopSelling, setIsLoadingTopSelling] = useState(false);
   const [topSellingError, setTopSellingError] = useState('');
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editProviderName, setEditProviderName] = useState('');
+  const [editItemsDraft, setEditItemsDraft] = useState([]);
   const productInputRef = useRef(null);
 
   const userRole = String(currentUser?.role || 'operario').trim().toLowerCase();
@@ -98,6 +239,10 @@ function StockFeature({ currentUser, onUnauthorized }) {
       ? []
       : sortedRequests.filter((item) => String(item.requestedBy || '').trim().toLowerCase() === requestedByLabel.toLowerCase());
   }, [isAdmin, requestedByLabel, sortedRequests]);
+
+  const summaryItemsPreview = useMemo(() => draftItems.slice(0, 4), [draftItems]);
+  const remainingPreviewCount = Math.max(0, draftItems.length - summaryItemsPreview.length);
+  const hasDraftSummary = Boolean(confirmedProviderName || draftItems.length);
 
   useEffect(() => {
     if (!currentUser?.sessionToken) {
@@ -279,6 +424,86 @@ function StockFeature({ currentUser, onUnauthorized }) {
     });
   }
 
+  function handleOpenEditModal() {
+    setEditProviderName(confirmedProviderName);
+    setEditItemsDraft(buildEditableDraftItems(draftItems));
+    setIsEditModalOpen(true);
+  }
+
+  function handleCloseEditModal() {
+    setIsEditModalOpen(false);
+    setEditProviderName('');
+    setEditItemsDraft([]);
+  }
+
+  function handleEditItemChange(itemId, nextName) {
+    setEditItemsDraft((current) => current.map((item) => (
+      item.id === itemId
+        ? { ...item, name: nextName }
+        : item
+    )));
+  }
+
+  function handleEditItemQuantityChange(itemId, delta) {
+    if (!Number.isFinite(delta) || delta === 0) {
+      return;
+    }
+
+    setEditItemsDraft((current) => current.map((item) => (
+      item.id === itemId
+        ? { ...item, quantity: Math.max(1, Number(item.quantity || 1) + delta) }
+        : item
+    )));
+  }
+
+  function handleRemoveEditedItem(itemId) {
+    setEditItemsDraft((current) => current.filter((item) => item.id !== itemId));
+  }
+
+  function handleAddEditedItem() {
+    setEditItemsDraft((current) => [
+      ...current,
+      {
+        id: `draft-edit-${Date.now()}-${current.length}`,
+        name: '',
+        quantity: 1
+      }
+    ]);
+  }
+
+  function handleSaveEditModal() {
+    const normalizedProvider = normalizeProviderName(editProviderName);
+    const normalizedItems = normalizeEditedDraftItems(editItemsDraft);
+
+    if (!normalizedProvider) {
+      toast.error('Escribi el proveedor del pedido.', {
+        toastId: 'stock-edit-provider-required',
+        autoClose: 1800
+      });
+      return;
+    }
+
+    if (!normalizedItems.length) {
+      toast.error('El pedido tiene que tener al menos un producto.', {
+        toastId: 'stock-edit-items-required',
+        autoClose: 1800
+      });
+      return;
+    }
+
+    setConfirmedProviderName(normalizedProvider);
+    setDraftItems(normalizedItems);
+    handleCloseEditModal();
+  }
+
+  function handleClearDraft() {
+    setDraftItems([]);
+    setConfirmedProviderName('');
+    setProviderName('');
+    setProductName('');
+    handleCloseEditModal();
+  }
+
   async function handleSubmit(event) {
     event.preventDefault();
 
@@ -315,10 +540,12 @@ function StockFeature({ currentUser, onUnauthorized }) {
       if (createdRequest) {
         setRequests((current) => [createdRequest, ...current]);
       }
+
       setDraftItems([]);
       setProviderName('');
       setConfirmedProviderName('');
       setProductName('');
+      handleCloseEditModal();
       setActiveTab('reparto');
       toast.success('Pedido de stock guardado en Reparto.', {
         toastId: `stock-request-ok-${Date.now()}`,
@@ -335,20 +562,6 @@ function StockFeature({ currentUser, onUnauthorized }) {
     } finally {
       setIsSubmittingRequest(false);
     }
-  }
-
-  function updateDraftItemQuantity(itemName, delta) {
-    if (!itemName || !Number.isFinite(delta) || delta === 0) {
-      return;
-    }
-
-    setDraftItems((current) => current
-      .map((item) => (
-        item.name === itemName
-          ? { ...item, quantity: Math.max(0, Number(item.quantity || 0) + delta) }
-          : item
-      ))
-      .filter((item) => item.quantity > 0));
   }
 
   function handleProductInputKeyDown(event) {
@@ -452,102 +665,120 @@ function StockFeature({ currentUser, onUnauthorized }) {
                 </div>
 
                 {activeTab === 'pedido' ? (
-                  <div className="row g-3">
-                    <div className="col-lg-7">
-                      <div className="border rounded p-3 bg-white">
-                        <h2 className="h5 mb-3">Armar pedido manual</h2>
-                      <form onSubmit={handleSubmit}>
+                  <div className="stock-compose-grid">
+                    <div className="stock-compose-card stock-compose-entry">
+                      <div className="stock-compose-head">
+                        <div>
+                          <h2 className="h5 mb-1">Armar pedido</h2>
+                          <p className="mb-0 text-muted">Carga proveedor y productos con foco en rapidez.</p>
+                        </div>
+                        <span className="stock-badge-pill">Carga</span>
+                      </div>
+
+                      <form onSubmit={handleSubmit} className="stock-compose-form">
+                        <div className="stock-compose-block">
                           <label className="form-label" htmlFor="stock-provider-input">Proveedor</label>
-                          <div className="d-flex gap-2 mb-2 flex-column flex-sm-row">
-                              <input
-                                id="stock-provider-input"
-                                type="text"
-                                className="form-control"
-                                value={providerName}
-                                onChange={(event) => setProviderName(event.target.value)}
-                                onKeyDown={handleProviderInputKeyDown}
-                                placeholder="Ej: Coca Cola"
-                              />
-                              <button type="button" className="btn btn-outline-dark" onClick={handleConfirmProvider}>
-                                Agregar
-                              </button>
+                          <div className="stock-compose-inline">
+                            <input
+                              id="stock-provider-input"
+                              type="text"
+                              className="form-control"
+                              value={providerName}
+                              onChange={(event) => setProviderName(event.target.value)}
+                              onKeyDown={handleProviderInputKeyDown}
+                              placeholder="Ej: Coca Cola"
+                            />
+                            <button type="button" className="btn btn-outline-dark stock-inline-btn" onClick={handleConfirmProvider}>
+                              Confirmar
+                            </button>
                           </div>
                           {confirmedProviderName ? (
-                            <div className="mb-3"><strong>Proveedor confirmado:</strong> {confirmedProviderName}</div>
-                          ) : (
-                            <div className="mb-3 text-muted">Confirma el proveedor antes de cargar productos.</div>
-                          )}
-
-                          <label className="form-label" htmlFor="stock-product-input">Producto faltante</label>
-                          <div className="d-flex gap-2 mb-2 flex-column flex-sm-row">
-                              <input
-                                ref={productInputRef}
-                                id="stock-product-input"
-                                type="text"
-                                className="form-control"
-                                value={productName}
-                                onChange={(event) => setProductName(event.target.value)}
-                                onKeyDown={handleProductInputKeyDown}
-                                placeholder="Escribi el nombre del producto"
-                              />
-                              <button type="button" className="btn btn-outline-dark" onClick={handleAddDraftItem}>
-                                Agregar
-                              </button>
-                          </div>
-                          <div className="mb-3 text-muted">Tip: apreta `Enter` y el foco vuelve solo para seguir cargando.</div>
-
-                          <button type="submit" className="btn btn-dark" disabled={isSubmittingRequest}>
-                            {isSubmittingRequest ? 'Guardando...' : 'Guardar pedido'}
-                          </button>
-                      </form>
-                    </div>
-                    </div>
-
-                    <div className="col-lg-5">
-                      {draftItems.length ? (
-                        <div className="stock-draft-panel">
-                          <div className="stock-draft-panel-head">
-                            <strong>Resumen del pedido</strong>
-                            <span>{formatItemsLabel(draftItems.length)}</span>
-                          </div>
-                          {confirmedProviderName ? (
-                            <div className="stock-summary-provider">
-                              <span>Proveedor</span>
+                            <div className="stock-confirm-chip">
+                              <span className="stock-confirm-chip-label">Proveedor activo</span>
                               <strong>{confirmedProviderName}</strong>
                             </div>
-                          ) : null}
-                          <div className="stock-draft-list">
-                            {draftItems.map((item) => (
-                              <div key={item.name} className="stock-draft-item">
-                                <div className="stock-draft-copy">
-                                  <strong>{item.name}</strong>
-                                  <small>Cantidad a pedir</small>
-                                </div>
-                                <div className="stock-request-qty-controls">
-                                  <button
-                                    type="button"
-                                    className="btn btn-outline-secondary stock-qty-btn"
-                                    onClick={() => updateDraftItemQuantity(item.name, -1)}
-                                  >
-                                    -
-                                  </button>
-                                  <strong className="stock-request-qty-value">{item.quantity}</strong>
-                                  <button
-                                    type="button"
-                                    className="btn btn-outline-secondary stock-qty-btn"
-                                    onClick={() => updateDraftItemQuantity(item.name, 1)}
-                                  >
-                                    +
-                                  </button>
-                                </div>
+                          ) : (
+                            <p className="stock-step-hint mb-0">Primero confirma el proveedor para habilitar la carga de productos.</p>
+                          )}
+                        </div>
+
+                        <div className="stock-compose-block">
+                          <label className="form-label" htmlFor="stock-product-input">Producto faltante</label>
+                          <div className="stock-compose-inline">
+                            <input
+                              ref={productInputRef}
+                              id="stock-product-input"
+                              type="text"
+                              className="form-control"
+                              value={productName}
+                              onChange={(event) => setProductName(event.target.value)}
+                              onKeyDown={handleProductInputKeyDown}
+                              placeholder="Escribi el nombre del producto"
+                            />
+                            <button type="button" className="btn btn-outline-dark stock-inline-btn" onClick={handleAddDraftItem}>
+                              Agregar
+                            </button>
+                          </div>
+                          <p className="stock-step-hint mb-0">Enter agrega el producto y deja el foco listo para seguir cargando.</p>
+                        </div>
+
+                        <div className="stock-save-row">
+                          <button type="submit" className="btn btn-dark stock-save-btn" disabled={isSubmittingRequest}>
+                            {isSubmittingRequest ? 'Guardando...' : 'Guardar pedido'}
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+
+                    <div className="stock-compose-card stock-compose-summary">
+                      <div className="stock-compose-head">
+                        <div>
+                          <h2 className="h5 mb-1">Resumen del pedido</h2>
+                          <p className="mb-0 text-muted">Vista limpia. La edicion vive en un modal para no ensuciar esta pantalla.</p>
+                        </div>
+                        {hasDraftSummary ? <span className="stock-badge-pill">{formatItemsLabel(draftItems.length)}</span> : null}
+                      </div>
+
+                      {hasDraftSummary ? (
+                        <>
+                          <div className="stock-summary-hero">
+                            <div className="stock-summary-kpi">
+                              <span>Proveedor</span>
+                              <strong>{confirmedProviderName || 'Sin confirmar'}</strong>
+                            </div>
+                            <div className="stock-summary-kpi">
+                              <span>Items cargados</span>
+                              <strong>{draftItems.length}</strong>
+                            </div>
+                          </div>
+
+                          <div className="stock-summary-preview">
+                            {summaryItemsPreview.map((item) => (
+                              <div key={item.name} className="stock-summary-preview-row">
+                                <span>{item.name}</span>
+                                <strong>x{item.quantity}</strong>
                               </div>
                             ))}
+                            {remainingPreviewCount ? (
+                              <div className="stock-summary-preview-more">
+                                +{remainingPreviewCount} producto{remainingPreviewCount === 1 ? '' : 's'} mas
+                              </div>
+                            ) : null}
                           </div>
-                        </div>
+
+                          <div className="stock-summary-actions">
+                            <button type="button" className="btn btn-outline-dark stock-summary-edit-btn" onClick={handleOpenEditModal}>
+                              Editar pedido
+                            </button>
+                            <button type="button" className="stock-text-action-btn" onClick={handleClearDraft}>
+                              Vaciar todo
+                            </button>
+                          </div>
+                        </>
                       ) : (
-                        <div className="border rounded p-3 bg-white text-muted">
-                          <strong>Pedido vacio.</strong>
-                          <p className="mb-0">Confirma proveedor y agrega productos para ver el resumen aca.</p>
+                        <div className="stock-empty-state stock-summary-empty">
+                          <strong>El resumen aparece aca.</strong>
+                          <p className="mb-0">Cuando confirmes proveedor y agregues productos, vas a ver una vista compacta del pedido y un boton unico para editarlo.</p>
                         </div>
                       )}
                     </div>
@@ -648,6 +879,20 @@ function StockFeature({ currentUser, onUnauthorized }) {
           </div>
         </div>
       </div>
+
+      {isEditModalOpen ? (
+        <DraftEditorModal
+          providerValue={editProviderName}
+          items={editItemsDraft}
+          onProviderChange={setEditProviderName}
+          onItemChange={handleEditItemChange}
+          onItemQuantityChange={handleEditItemQuantityChange}
+          onItemRemove={handleRemoveEditedItem}
+          onAddItem={handleAddEditedItem}
+          onClose={handleCloseEditModal}
+          onSave={handleSaveEditModal}
+        />
+      ) : null}
     </>
   );
 }

@@ -84,6 +84,8 @@
   - confirma proveedor.
   - escribe productos faltantes manualmente.
   - arma una lista con cantidades.
+  - ve un resumen compacto del pedido en paralelo a la carga.
+  - corrige proveedor/items desde modal dedicado de edicion para no contaminar la pantalla principal.
   - guarda el pedido en backend.
   - ve sus pendientes en subtab `Reparto`.
   - consulta subtab `+Vendidos` como referencia de reposicion del dia.

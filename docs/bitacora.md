@@ -17,6 +17,34 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
 
 ## Mini Changelog Tecnico (2026-04-27)
 
+- Rediseño UX de `Stock > Pedido` con editor desacoplado (2026-05-07):
+  - se rehizo la experiencia del armado manual de stock para operario.
+  - nuevo layout principal:
+    - columna izquierda para carga rapida.
+    - columna derecha para resumen compacto del pedido.
+  - el resumen deja de exponer edicion inline por fila en pantalla principal.
+  - nuevo flujo de correccion:
+    - boton unico `Editar pedido`.
+    - modal dedicado para corregir proveedor.
+    - renombrar productos.
+    - ajustar cantidades.
+    - eliminar filas.
+    - agregar filas nuevas.
+  - objetivo UX:
+    - mantener la pantalla principal limpia durante operacion.
+    - evitar ruido visual de demasiados botones por item.
+    - separar `cargar` de `corregir`.
+  - resumen visible actual:
+    - proveedor activo.
+    - cantidad de items.
+    - preview corta de productos cargados.
+    - accion `Vaciar todo`.
+  - validacion tecnica:
+    - `npm run lint` OK.
+    - `npm run test -- --run` OK.
+    - `npm run build` OK.
+    - `npm run test:smoke:web` OK.
+
 - Stock manual + reparto + mas vendidos (2026-05-05):
   - `Stock` dejo de depender de `localStorage` como puente demo.
   - ahora usa backend real para pedidos:
