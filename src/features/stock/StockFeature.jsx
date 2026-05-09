@@ -4,7 +4,8 @@ import {
   createStockRequest,
   fetchStockRequests,
   fetchTopSellingProducts,
-  resolveStockRequest
+  resolveStockRequest,
+  updateStockRequest
 } from './services/stock.api';
 
 function formatCreatedAt(value) {
@@ -214,12 +215,14 @@ function StockFeature({ currentUser, onUnauthorized }) {
   const [isLoadingRequests, setIsLoadingRequests] = useState(false);
   const [requestsError, setRequestsError] = useState('');
   const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
+  const [isUpdatingRequest, setIsUpdatingRequest] = useState(false);
   const [isResolvingRequestId, setIsResolvingRequestId] = useState('');
   const [topSellingItems, setTopSellingItems] = useState([]);
   const [topSellingDateLabel, setTopSellingDateLabel] = useState('');
   const [isLoadingTopSelling, setIsLoadingTopSelling] = useState(false);
   const [topSellingError, setTopSellingError] = useState('');
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingRequestId, setEditingRequestId] = useState('');
   const [editProviderName, setEditProviderName] = useState('');
   const [editItemsDraft, setEditItemsDraft] = useState([]);
   const productInputRef = useRef(null);
@@ -425,13 +428,22 @@ function StockFeature({ currentUser, onUnauthorized }) {
   }
 
   function handleOpenEditModal() {
+    setEditingRequestId('');
     setEditProviderName(confirmedProviderName);
     setEditItemsDraft(buildEditableDraftItems(draftItems));
     setIsEditModalOpen(true);
   }
 
+  function handleOpenSavedRequestEditModal(request) {
+    setEditingRequestId(String(request?.requestId || request?.id || ''));
+    setEditProviderName(String(request?.provider || ''));
+    setEditItemsDraft(buildEditableDraftItems(Array.isArray(request?.items) ? request.items : []));
+    setIsEditModalOpen(true);
+  }
+
   function handleCloseEditModal() {
     setIsEditModalOpen(false);
+    setEditingRequestId('');
     setEditProviderName('');
     setEditItemsDraft([]);
   }
@@ -494,6 +506,66 @@ function StockFeature({ currentUser, onUnauthorized }) {
     setConfirmedProviderName(normalizedProvider);
     setDraftItems(normalizedItems);
     handleCloseEditModal();
+  }
+
+  async function handleSaveRequestEditModal() {
+    const normalizedProvider = normalizeProviderName(editProviderName);
+    const normalizedItems = normalizeEditedDraftItems(editItemsDraft);
+
+    if (!normalizedProvider) {
+      toast.error('Escribi el proveedor del pedido.', {
+        toastId: 'stock-saved-edit-provider-required',
+        autoClose: 1800
+      });
+      return;
+    }
+
+    if (!normalizedItems.length) {
+      toast.error('El pedido tiene que tener al menos un producto.', {
+        toastId: 'stock-saved-edit-items-required',
+        autoClose: 1800
+      });
+      return;
+    }
+
+    if (!editingRequestId || !currentUser?.sessionToken || isUpdatingRequest) {
+      return;
+    }
+
+    setIsUpdatingRequest(true);
+    try {
+      const result = await updateStockRequest(editingRequestId, {
+        provider: normalizedProvider,
+        items: normalizedItems
+      }, {
+        token: currentUser?.sessionToken || ''
+      });
+
+      const updatedRequest = result?.request;
+      if (updatedRequest) {
+        setRequests((current) => current.map((item) => (
+          String(item.requestId || item.id) === String(updatedRequest.requestId || updatedRequest.id)
+            ? updatedRequest
+            : item
+        )));
+      }
+
+      handleCloseEditModal();
+      toast.success('Pedido actualizado en reparto.', {
+        toastId: `stock-request-edit-ok-${editingRequestId}`,
+        autoClose: 1600
+      });
+    } catch (error) {
+      if (Number(error?.status) === 401) {
+        onUnauthorized?.();
+      }
+      toast.error(error?.message || 'No se pudo actualizar el pedido.', {
+        toastId: `stock-request-edit-error-${editingRequestId}`,
+        autoClose: 1800
+      });
+    } finally {
+      setIsUpdatingRequest(false);
+    }
   }
 
   function handleClearDraft() {
@@ -812,14 +884,24 @@ function StockFeature({ currentUser, onUnauthorized }) {
                                 </div>
                               )) : null}
                             </div>
-                            <button
-                              type="button"
-                              className="btn btn-dark"
-                              onClick={() => handleResolveRequest(item.requestId)}
-                              disabled={isResolvingRequestId === String(item.requestId)}
-                            >
-                              {isResolvingRequestId === String(item.requestId) ? 'Confirmando...' : 'Confirmar llegada'}
-                            </button>
+                            <div className="d-flex gap-2 flex-wrap align-items-center">
+                              <button
+                                type="button"
+                                className="btn btn-dark"
+                                onClick={() => handleResolveRequest(item.requestId)}
+                                disabled={isResolvingRequestId === String(item.requestId)}
+                              >
+                                {isResolvingRequestId === String(item.requestId) ? 'Confirmando...' : 'Confirmar llegada'}
+                              </button>
+                              <button
+                                type="button"
+                                className="btn btn-secondary"
+                                onClick={() => handleOpenSavedRequestEditModal(item)}
+                                disabled={isUpdatingRequest && editingRequestId === String(item.requestId)}
+                              >
+                                {isUpdatingRequest && editingRequestId === String(item.requestId) ? 'Guardando...' : 'Editar'}
+                              </button>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -890,7 +972,7 @@ function StockFeature({ currentUser, onUnauthorized }) {
           onItemRemove={handleRemoveEditedItem}
           onAddItem={handleAddEditedItem}
           onClose={handleCloseEditModal}
-          onSave={handleSaveEditModal}
+          onSave={editingRequestId ? handleSaveRequestEditModal : handleSaveEditModal}
         />
       ) : null}
     </>

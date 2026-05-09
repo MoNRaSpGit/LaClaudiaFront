@@ -754,3 +754,16 @@ Frontend conectado a backend real para auth + ventas + pagos + dashboard, con fo
 
 - Se fuerza nuevo deploy de frontend para sincronizar `Meses` con el backend publicado.
 - La UI ya espera semanas completas con dias faltantes en `0`.
+
+## Stock - edicion de reparto
+
+- Fecha: `2026-05-08`
+- `operario` ahora puede editar pedidos ya guardados desde `Stock > Reparto`.
+- La edicion permite:
+  - agregar productos nuevos.
+  - renombrar productos existentes.
+  - ajustar cantidades.
+  - eliminar filas.
+- Se reutiliza el modal existente de `Editar pedido` para mantener la misma UX del armado inicial.
+- Validacion:
+  - `npm run build`: OK.

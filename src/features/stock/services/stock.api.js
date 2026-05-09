@@ -29,6 +29,16 @@ export async function createStockRequest(payload, options = {}) {
   return readJson(response);
 }
 
+export async function updateStockRequest(requestId, payload, options = {}) {
+  const response = await fetch(`${apiUrl}/api/scanner/stock-requests/${requestId}`, {
+    method: 'PUT',
+    headers: buildHeaders({ token: options?.token, json: true }),
+    body: JSON.stringify(payload)
+  });
+
+  return readJson(response);
+}
+
 export async function resolveStockRequest(requestId, options = {}) {
   const response = await fetch(`${apiUrl}/api/scanner/stock-requests/${requestId}/resolve`, {
     method: 'PUT',
