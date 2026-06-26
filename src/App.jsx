@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { Menu, UserRound, LogOut, BellRing } from 'lucide-react';
 import AuthGate from './features/auth/AuthGate';
@@ -7,6 +7,7 @@ import PanelControlFeature from './features/panelControl/PanelControlFeature';
 import MonthsFeature from './features/months/MonthsFeature';
 import PaymentsFeature from './features/payments/PaymentsFeature';
 import ProductsFeature from './features/products/ProductsFeature';
+import CustomersFeature from './features/customers/CustomersFeature';
 import StockFeature from './features/stock/StockFeature';
 import { resetScannerState } from './features/scanner/scannerSlice';
 import {
@@ -26,6 +27,7 @@ function Workspace({ user, onLogout }) {
   const canAccessMonths = userRole === 'admin';
   const canAccessStock = userRole === 'admin' || userRole === 'operario';
   const canAccessPayments = userRole === 'operario';
+  const canAccessCustomers = userRole === 'admin' || userRole === 'operario';
   const canAccessScannerTab = userRole !== 'admin';
   const [activeTab, setActiveTab] = useState(canAccessPanel ? 'panel' : 'scanner');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -51,7 +53,10 @@ function Workspace({ user, onLogout }) {
     if (!canAccessPayments && activeTab === 'payments') {
       setActiveTab(canAccessPanel ? 'panel' : 'scanner');
     }
-  }, [activeTab, canAccessMonths, canAccessPanel, canAccessPayments, canAccessProducts, canAccessStock]);
+    if (!canAccessCustomers && activeTab === 'customers') {
+      setActiveTab(canAccessPanel ? 'panel' : 'scanner');
+    }
+  }, [activeTab, canAccessCustomers, canAccessMonths, canAccessPanel, canAccessPayments, canAccessProducts, canAccessStock]);
 
   useEffect(() => {
     function syncUpdateState() {
@@ -117,11 +122,11 @@ function Workspace({ user, onLogout }) {
     }
   }, [updateState.availableVersion, updateState.dismissedVersion, updateState.hasPendingUpdate, user?.sessionToken]);
 
-  function handleLogout() {
+  const handleLogout = useCallback(() => {
     setIsMenuOpen(false);
     dispatch(resetScannerState());
     onLogout();
-  }
+  }, [dispatch, onLogout]);
 
   function handleApplyUpdate() {
     if (isApplyingUpdate) {
@@ -236,6 +241,16 @@ function Workspace({ user, onLogout }) {
                   Pagos
                 </button>
               ) : null}
+              {canAccessCustomers ? (
+                <button
+                  type="button"
+                  className={`btn nav-tab-btn nav-tab-btn-dark ${activeTab === 'customers' ? 'nav-tab-btn-active' : ''}`}
+                  onClick={() => setActiveTab('customers')}
+                  aria-current={activeTab === 'customers' ? 'page' : undefined}
+                >
+                  Clientes
+                </button>
+              ) : null}
             </div>
 
             <div className="scanner-user-menu scanner-navbar-user">
@@ -325,6 +340,18 @@ function Workspace({ user, onLogout }) {
                       <span>Pagos</span>
                     </button>
                   ) : null}
+                  {canAccessCustomers ? (
+                    <button
+                      type="button"
+                      className={`scanner-user-dropdown-item scanner-user-dropdown-nav-item ${activeTab === 'customers' ? 'scanner-user-dropdown-nav-item-active' : ''}`}
+                      onClick={() => {
+                        setActiveTab('customers');
+                        setIsMenuOpen(false);
+                      }}
+                    >
+                      <span>Clientes</span>
+                    </button>
+                  ) : null}
                   <div className="scanner-user-dropdown-divider" />
                   <button type="button" className="scanner-user-dropdown-item" onClick={handleLogout}>
                     <LogOut size={14} />
@@ -373,6 +400,9 @@ function Workspace({ user, onLogout }) {
       )}
       {activeTab === 'payments' && canAccessPayments && (
         <PaymentsFeature currentUser={user} onUnauthorized={handleLogout} />
+      )}
+      {activeTab === 'customers' && canAccessCustomers && (
+        <CustomersFeature currentUser={user} onUnauthorized={handleLogout} />
       )}
 
       {isUpdatePromptOpen && updateState.hasPendingUpdate ? (

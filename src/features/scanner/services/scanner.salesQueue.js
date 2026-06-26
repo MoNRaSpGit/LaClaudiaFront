@@ -26,10 +26,16 @@ function sanitizeSaleItemForTransport(item = {}) {
 
 function sanitizeSalePayload(payload = {}) {
   const rawItems = Array.isArray(payload.items) ? payload.items : [];
+  const rawPaymentMethod = String(payload.paymentMethod || '').trim().toLowerCase();
+  const paymentMethod = rawPaymentMethod === 'debito' || rawPaymentMethod === 'credito'
+    ? 'tarjeta'
+    : rawPaymentMethod;
 
   return {
     externalId: String(payload.externalId || payload.id || '').trim(),
     userId: payload.userId ?? null,
+    customerId: payload.customerId ?? null,
+    paymentMethod: paymentMethod || 'efectivo',
     notes: payload.notes ?? null,
     items: rawItems.map(sanitizeSaleItemForTransport)
   };

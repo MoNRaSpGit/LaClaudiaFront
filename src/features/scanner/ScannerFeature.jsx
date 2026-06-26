@@ -7,7 +7,7 @@ import ScannerCart from './components/ScannerCart';
 import ScannerCheckout from './components/ScannerCheckout';
 import ScannerManualModal from './components/ScannerManualModal';
 import ScannerQuickAddModal from './components/ScannerQuickAddModal';
-import { publishScannerLiveState } from './services/scanner.api';
+import { fetchScannerCustomers, publishScannerLiveState } from './services/scanner.api';
 import {
   classifyDiagnosticError,
   flushScannerDiagnosticQueue,
@@ -70,6 +70,7 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
     barcode: ''
   });
   const [pendingSalesCount, setPendingSalesCount] = useState(getScannerSalesQueuePendingCount());
+  const [customerOptions, setCustomerOptions] = useState([]);
   const [currentStoreDateLabel, setCurrentStoreDateLabel] = useState(() => getStoreDateLabel());
   const [isWorkerDayBannerDismissed, setIsWorkerDayBannerDismissed] = useState(false);
   const [workerDayBannerTone] = useState(WORKER_DAY_BANNER_TONES[1].key);
@@ -155,6 +156,22 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
       token: currentUser?.sessionToken || ''
     }).catch(() => {});
   }, [currentUser?.sessionToken, focusScannerInput]);
+
+  useEffect(() => {
+    const token = String(currentUser?.sessionToken || '').trim();
+    if (!token) {
+      setCustomerOptions([]);
+      return;
+    }
+
+    fetchScannerCustomers({ token })
+      .then((data) => {
+        setCustomerOptions(Array.isArray(data?.customers) ? data.customers : []);
+      })
+      .catch(() => {
+        setCustomerOptions([]);
+      });
+  }, [currentUser?.sessionToken]);
 
   useEffect(() => {
     if (isManualModalOpen || quickAddState.isOpen) {
@@ -375,8 +392,8 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
     focusScannerInput();
   }
 
-  const executeCharge = useCallback(async () => {
-    const result = await actions.chargeCart();
+  const executeCharge = useCallback(async (chargeOptions) => {
+    const result = await actions.chargeCart(chargeOptions);
     if (result?.ok) {
       lastChargeAtRef.current = Date.now();
       setIsCheckoutConfirmOpen(false);
@@ -541,6 +558,7 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
                 pendingSalesCount={pendingSalesCount}
                 isChargeBlocked={isChargeBlocked}
                 chargeBlockMessage={chargeBlockMessage}
+                customerOptions={customerOptions}
                 onCharge={executeCharge}
                 openConfirmSignal={openConfirmSignal}
                 confirmByEnterSignal={confirmByEnterSignal}

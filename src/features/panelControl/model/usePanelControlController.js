@@ -29,7 +29,17 @@ const EMPTY_DASHBOARD = {
     profitToday: 0,
     currentAmount: 0,
     paymentsTotal: 0,
+    customerAccountPaymentsTotal: 0,
+    customerAccountPaymentsCashTotal: 0,
+    customerAccountPaymentsCardTotal: 0,
+    nonCashPendingTotal: 0,
+    outstandingDebtTotal: 0,
     profitRate: 0.4
+  },
+  salesByPaymentMethod: {
+    efectivo: 0,
+    tarjeta: 0,
+    cuenta: 0
   },
   comparison: {
     today: 0,
@@ -229,6 +239,9 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
   }, [currentUser?.sessionToken, currentStoreDateLabel, onUnauthorized, profitRate]);
 
   const panelMetrics = dashboard.metrics || EMPTY_DASHBOARD.metrics;
+  const salesByPaymentMethod = dashboard.salesByPaymentMethod || EMPTY_DASHBOARD.salesByPaymentMethod;
+  const effectiveCashTotal = Number(salesByPaymentMethod.efectivo || 0) + Number(panelMetrics.customerAccountPaymentsCashTotal || 0);
+  const effectiveCardTotal = Number(salesByPaymentMethod.tarjeta || 0) + Number(panelMetrics.customerAccountPaymentsCardTotal || 0);
   const comparison = useMemo(() => {
     const baseComparison = dashboard.comparison || EMPTY_DASHBOARD.comparison;
     const dashboardDate = String(dashboard?.date || '').trim();
@@ -327,8 +340,13 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
     { title: 'Caja inicial', value: moneyNoDecimals(panelMetrics.initialCash), hint: 'Monto de apertura del dia.' },
     { title: 'Ventas del dia', value: moneyNoDecimals(panelMetrics.salesToday), hint: 'Confirmadas con el boton Cobrar.' },
     { title: 'Ganancia estimada', value: moneyNoDecimals(panelMetrics.profitToday), hint: `${Number((panelMetrics.profitRate ?? profitRate) || 0) * 100}% de ventas del dia. No descuenta pagos.` },
-    { title: 'Monto actual', value: moneyNoDecimals(panelMetrics.currentAmount), hint: 'Caja diaria + ventas - pagos' },
+    { title: 'Monto actual', value: moneyNoDecimals(panelMetrics.currentAmount), hint: 'Plata fisica en caja: caja inicial + efectivo + cobros de cuenta en efectivo - pagos.' },
     { title: 'Pagos realizados', value: moneyNoDecimals(panelMetrics.paymentsTotal), hint: 'Suma de pagos registrados' }
+  ];
+  const salePaymentMethodMetrics = [
+    { title: 'Efectivo', value: moneyNoDecimals(effectiveCashTotal), hint: 'Todo lo que ingreso en efectivo: ventas nuevas + cobros de cuenta en efectivo.' },
+    { title: 'En tarjeta', value: moneyNoDecimals(effectiveCardTotal), hint: 'Ventas y cobros de cuenta que se efectivizaron con tarjeta.' },
+    { title: 'En cuenta', value: moneyNoDecimals(salesByPaymentMethod.cuenta), hint: 'Ventas del dia que quedaron fiadas.' }
   ];
 
   async function saveInitialCash(rawAmount) {
@@ -473,6 +491,7 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
     isComparisonOpen,
     setIsComparisonOpen,
     metrics,
+    salePaymentMethodMetrics,
     comparison,
     comparisonClass,
     comparisonVsYesterday,

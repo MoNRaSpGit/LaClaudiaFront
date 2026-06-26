@@ -539,6 +539,64 @@
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
 }
 
+.scanner-payment-method-grid {
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+
+.scanner-payment-method-btn {
+  position: relative;
+  min-height: 58px;
+  border: 2px solid transparent;
+  border-radius: 14px;
+  padding: 0.8rem 0.95rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 140ms ease, border-color 140ms ease, filter 140ms ease;
+}
+
+.scanner-payment-method-btn:hover,
+.scanner-payment-method-btn:focus-within {
+  transform: translateY(-1px);
+  filter: saturate(1.04);
+}
+
+.scanner-payment-method-btn-cash {
+  background: linear-gradient(180deg, #f3fbf5 0%, #dcf5e4 100%);
+  color: #1b5a33;
+}
+
+.scanner-payment-method-btn-card {
+  background: linear-gradient(180deg, #f2f8ff 0%, #dceaff 100%);
+  color: #18467d;
+}
+
+.scanner-payment-method-btn-account {
+  background: linear-gradient(180deg, #fff7e8 0%, #ffe7be 100%);
+  color: #8a4b00;
+}
+
+.scanner-payment-method-btn-active {
+  border-color: rgba(17, 24, 39, 0.82);
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.12);
+}
+
+.scanner-payment-method-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.scanner-payment-method-label {
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
 .scanner-inline-error {
   margin: 0;
   padding: 0.55rem 0.75rem;
@@ -575,6 +633,12 @@
 @media (max-width: 640px) {
   .scanner-diagnostics-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 640px) {
+  .scanner-payment-method-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 

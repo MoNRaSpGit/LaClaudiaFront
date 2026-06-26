@@ -94,6 +94,48 @@ export async function createScannerSale(payload, { token } = {}) {
   return readJson(response);
 }
 
+export async function fetchScannerCustomers({ token } = {}) {
+  const response = await fetch(`${apiUrl}/api/scanner/customers`, {
+    headers: buildHeaders({ token })
+  });
+  return readJson(response);
+}
+
+export async function fetchScannerCustomerDetail(customerId, { token } = {}) {
+  const normalizedId = Number(customerId);
+  if (!Number.isInteger(normalizedId) || normalizedId <= 0) {
+    throw new Error('customerId invalido');
+  }
+
+  const response = await fetch(`${apiUrl}/api/scanner/customers/${normalizedId}`, {
+    headers: buildHeaders({ token })
+  });
+  return readJson(response);
+}
+
+export async function createScannerCustomer(payload, { token } = {}) {
+  const response = await fetch(`${apiUrl}/api/scanner/customers`, {
+    method: 'POST',
+    headers: buildHeaders({ token, json: true }),
+    body: JSON.stringify(payload || {})
+  });
+  return readJson(response);
+}
+
+export async function createScannerCustomerAccountPayment(customerId, payload, { token } = {}) {
+  const normalizedId = Number(customerId);
+  if (!Number.isInteger(normalizedId) || normalizedId <= 0) {
+    throw new Error('customerId invalido');
+  }
+
+  const response = await fetch(`${apiUrl}/api/scanner/customers/${normalizedId}/payments`, {
+    method: 'POST',
+    headers: buildHeaders({ token, json: true }),
+    body: JSON.stringify(payload || {})
+  });
+  return readJson(response);
+}
+
 export async function publishScannerLiveState(payload, { token } = {}) {
   const response = await fetch(`${apiUrl}/api/scanner/live-state`, {
     method: 'POST',

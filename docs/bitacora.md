@@ -32,6 +32,30 @@
 
 ## Changelog reciente
 
+### 2026-06-24
+
+- Cobro del scanner actualizado para trabajar con tres medios operativos:
+  - `Efectivo`
+  - `Tarjeta`
+  - `Cuenta`
+- `Efectivo` queda seleccionado por defecto para mantener el flujo rapido de caja con `Enter`.
+- `Tarjeta` unifica operativamente lo que antes podia pensarse como `debito/credito`.
+- Si se elige `Cuenta`:
+  - el modal obliga a seleccionar un cliente existente.
+  - el `customerId` queda incluido en el payload de venta.
+  - el `customerId` tambien viaja en la cola offline para no perder la asociacion si la venta sincroniza despues.
+- Nueva pestaña `Clientes` visible para `admin` y `operario`:
+  - alta rapida de cliente.
+  - listado con deuda total.
+  - detalle con ultimas ventas cargadas a cuenta.
+- `Panel de control` sigue siendo solo `admin`, pero ahora refleja ventas discriminadas por:
+  - `efectivo`
+  - `tarjeta`
+  - `cuenta`
+- Validacion:
+  - `npm run test` OK.
+  - `npm run build` OK.
+
 ### 2026-05-08
 
 - `Stock > Reparto` ahora permite editar pedidos ya guardados.
@@ -187,6 +211,15 @@
 - Cobro optimista.
 - Cola local para reintentos.
 - Impresion automatica por QZ Tray con fallback.
+- Checkout con selector visible de medio de cobro.
+- Si el medio es `Cuenta`, exige cliente antes de confirmar.
+
+### Clientes
+
+- Visible para `admin` y `operario`.
+- Alta rapida desde frontend.
+- Lista con deuda total por cliente.
+- Detalle con historial reciente de ventas en cuenta.
 
 ## Reglas operativas del frontend
 
@@ -210,7 +243,21 @@
 5. `src/features/auth/*`
 6. `src/features/scanner/*`
 7. `src/features/panelControl/*`
-8. `src/features/stock/*`
+8. `src/features/customers/*`
+9. `src/features/stock/*`
+
+## Nota operativa 2026-06-24
+
+- Los cambios publicables actuales se estan haciendo en el arbol limpio:
+  - `LaClaudia-frontend-public`
+- No mezclar esto con el arbol local `frontend/` usado antes como laboratorio interno.
+- Para seguir manana conviene revisar primero:
+  - `src/features/scanner/components/ScannerCheckout.jsx`
+  - `src/features/scanner/model/useScannerController.js`
+  - `src/features/customers/CustomersFeature.jsx`
+- Pendiente funcional proximo:
+  - definir como se cancelara deuda de `Cuenta corriente`.
+  - limpiar ventas de prueba hechas despues de las `22:00` cuando se cierre la ronda de test.
 
 ## Nota de archivo
 

@@ -144,7 +144,18 @@ export function useScannerController({ currentUser } = {}) {
     return true;
   }
 
-  async function chargeCart() {
+  function normalizePaymentMethod(rawValue) {
+    const normalized = String(rawValue || '').trim().toLowerCase();
+    if (normalized === 'efectivo' || normalized === 'tarjeta' || normalized === 'cuenta') {
+      return normalized;
+    }
+    if (normalized === 'debito' || normalized === 'credito') {
+      return 'tarjeta';
+    }
+    return 'efectivo';
+  }
+
+  async function chargeCart(rawChargeOptions = 'efectivo') {
     const snapshotItems = scannerState.cartItems.map((item) => ({
       id: item.id,
       productId: item.isManual ? null : (item.productId ?? item.id),
@@ -162,9 +173,19 @@ export function useScannerController({ currentUser } = {}) {
 
     const chargedAtIso = new Date().toISOString();
     const externalId = `sale-${Date.now()}`;
+    const chargeOptions = typeof rawChargeOptions === 'string'
+      ? { paymentMethod: rawChargeOptions }
+      : (rawChargeOptions || {});
+    const paymentMethod = normalizePaymentMethod(chargeOptions.paymentMethod);
+    const normalizedCustomerId = Number(chargeOptions.customerId);
+    const customerId = Number.isInteger(normalizedCustomerId) && normalizedCustomerId > 0
+      ? normalizedCustomerId
+      : null;
     const payload = {
       externalId,
       userId: currentUser?.id || null,
+      paymentMethod,
+      customerId: paymentMethod === 'cuenta' ? customerId : null,
       items: snapshotItems.map((item) => ({
         id: item.id,
         productId: item.productId,
@@ -188,6 +209,8 @@ export function useScannerController({ currentUser } = {}) {
         externalId,
         chargedAtIso,
         operatorName: currentUser?.display_name || currentUser?.username || 'Operario',
+        paymentMethod,
+        customerId: paymentMethod === 'cuenta' ? customerId : null,
         items: snapshotItems,
         total: snapshotItems.reduce((sum, item) => sum + Number(item.precio_venta || 0) * Number(item.quantity || 1), 0)
       }

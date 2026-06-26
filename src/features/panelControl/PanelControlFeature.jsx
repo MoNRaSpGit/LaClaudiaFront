@@ -344,6 +344,23 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
                   </div>
                 </section>
 
+                <section className="panel-section mb-4">
+                  <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                    <h2 className="h5 mb-0 panel-section-title">Medios de cobro</h2>
+                  </div>
+
+                  <div className="panel-grid-6-v2">
+                    {controller.salePaymentMethodMetrics.map((item) => (
+                      <MetricCard
+                        key={item.title}
+                        title={item.title}
+                        value={item.value}
+                        hint={item.hint}
+                      />
+                    ))}
+                  </div>
+                </section>
+
                 {isMobileLayout ? (
                   <div className="panel-mobile-stack">
                     <section id="panel-section-live">{renderLivePanel()}</section>
