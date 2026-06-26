@@ -39,6 +39,12 @@ function parsePositiveAmount(value) {
   return normalized;
 }
 
+function isRouteUnavailableError(error) {
+  const status = Number(error?.status || 0);
+  const message = String(error?.message || '').trim().toLowerCase();
+  return status === 404 || message.includes('route not found') || message.includes('not found');
+}
+
 function CustomersFeature({ currentUser, onUnauthorized }) {
   const token = String(currentUser?.sessionToken || '').trim();
   const onUnauthorizedRef = useRef(onUnauthorized);
@@ -61,6 +67,7 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
     notes: ''
   });
   const [paymentError, setPaymentError] = useState('');
+  const [isCustomerRoutesUnavailable, setIsCustomerRoutesUnavailable] = useState(false);
 
   useEffect(() => {
     onUnauthorizedRef.current = onUnauthorized;
@@ -68,6 +75,7 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
 
   const loadCustomers = useCallback(async ({ keepSelection = true } = {}) => {
     const nextCustomers = await listCustomers({ token });
+    setIsCustomerRoutesUnavailable(false);
     setCustomers(nextCustomers);
     setSelectedCustomerId((current) => {
       if (keepSelection && current && nextCustomers.some((customer) => customer.id === current)) {
@@ -85,6 +93,7 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
     }
 
     const detail = await getCustomerDetail(customerId, { token });
+    setIsCustomerRoutesUnavailable(false);
     setSelectedCustomerDetail(detail);
     return detail;
   }, [token]);
@@ -104,6 +113,13 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
       } catch (error) {
         if (Number(error?.status || 0) === 401) {
           onUnauthorizedRef.current?.();
+          return;
+        }
+        if (isRouteUnavailableError(error)) {
+          setIsCustomerRoutesUnavailable(true);
+          setCustomers([]);
+          setSelectedCustomerId(null);
+          setSelectedCustomerDetail(null);
           return;
         }
         if (!isCancelled) {
@@ -144,11 +160,17 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
       try {
         const detail = await getCustomerDetail(selectedCustomerId, { token });
         if (!isCancelled) {
+          setIsCustomerRoutesUnavailable(false);
           setSelectedCustomerDetail(detail);
         }
       } catch (error) {
         if (Number(error?.status || 0) === 401) {
           onUnauthorizedRef.current?.();
+          return;
+        }
+        if (isRouteUnavailableError(error)) {
+          setIsCustomerRoutesUnavailable(true);
+          setSelectedCustomerDetail(null);
           return;
         }
         if (!isCancelled) {
@@ -176,13 +198,17 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
 
   async function handleSubmit(event) {
     event.preventDefault();
-    if (isSaving) {
+    if (isSaving || isCustomerRoutesUnavailable) {
+      if (isCustomerRoutesUnavailable) {
+        toast.warn('Clientes no esta disponible en este backend todavia.');
+      }
       return;
     }
 
     setIsSaving(true);
     try {
       const result = await createCustomer(formValues, { token });
+      setIsCustomerRoutesUnavailable(false);
       const createdCustomer = result?.customer;
       await loadCustomers({ keepSelection: false });
       setSelectedCustomerId(createdCustomer?.id || null);
@@ -196,6 +222,11 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
         onUnauthorizedRef.current?.();
         return;
       }
+      if (isRouteUnavailableError(error)) {
+        setIsCustomerRoutesUnavailable(true);
+        toast.error('Este backend todavia no tiene habilitada la ruta de clientes.');
+        return;
+      }
       toast.error(error?.message || 'No se pudo crear el cliente.');
     } finally {
       setIsSaving(false);
@@ -204,7 +235,10 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
 
   async function handleRegisterPayment(event) {
     event.preventDefault();
-    if (!selectedCustomerId || isRegisteringPayment) {
+    if (!selectedCustomerId || isRegisteringPayment || isCustomerRoutesUnavailable) {
+      if (isCustomerRoutesUnavailable) {
+        toast.warn('Los pagos de cuenta no estan disponibles en este backend todavia.');
+      }
       return;
     }
 
@@ -233,6 +267,7 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
         notes: paymentFormValues.notes
       }, { token });
 
+      setIsCustomerRoutesUnavailable(false);
       await loadCustomers();
       setDetailLoading(true);
       await loadCustomerDetail(selectedCustomerId);
@@ -246,6 +281,11 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
     } catch (error) {
       if (Number(error?.status || 0) === 401) {
         onUnauthorizedRef.current?.();
+        return;
+      }
+      if (isRouteUnavailableError(error)) {
+        setIsCustomerRoutesUnavailable(true);
+        toast.error('Este backend todavia no tiene habilitados los pagos de cuenta.');
         return;
       }
       toast.error(error?.message || 'No se pudo registrar el pago.');
@@ -279,6 +319,11 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
           <section className="customers-card h-100">
             <p className="customers-kicker mb-2">Clientes</p>
             <h2 className="h4 mb-3">Alta rapida</h2>
+            {isCustomerRoutesUnavailable ? (
+              <div className="alert alert-warning py-2" role="alert">
+                Este backend todavia no expone la ruta de clientes. La pantalla queda en modo informativo hasta que se despliegue.
+              </div>
+            ) : null}
             <form className="d-grid gap-3" onSubmit={handleSubmit}>
               <div>
                 <label className="form-label" htmlFor="customer-name">Nombre</label>
@@ -289,6 +334,7 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
                   onChange={(event) => setFormValues((current) => ({ ...current, name: event.target.value }))}
                   placeholder="Juan Perez"
                   maxLength={120}
+                  disabled={isCustomerRoutesUnavailable}
                   required
                 />
               </div>
@@ -301,9 +347,10 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
                   onChange={(event) => setFormValues((current) => ({ ...current, phone: event.target.value }))}
                   placeholder="099 000 000"
                   maxLength={40}
+                  disabled={isCustomerRoutesUnavailable}
                 />
               </div>
-              <button type="submit" className="btn btn-dark" disabled={isSaving || !token}>
+              <button type="submit" className="btn btn-dark" disabled={isSaving || !token || isCustomerRoutesUnavailable}>
                 {isSaving ? 'Guardando...' : 'Guardar cliente'}
               </button>
             </form>
@@ -322,6 +369,8 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
 
             {isLoading ? (
               <p className="text-muted mb-0">Cargando clientes...</p>
+            ) : isCustomerRoutesUnavailable ? (
+              <p className="text-muted mb-0">Clientes no disponible en este backend todavia.</p>
             ) : customers.length === 0 ? (
               <p className="text-muted mb-0">Todavia no hay clientes cargados.</p>
             ) : (
@@ -351,6 +400,8 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
 
             {detailLoading ? (
               <p className="text-muted mb-0">Cargando detalle...</p>
+            ) : isCustomerRoutesUnavailable ? (
+              <p className="text-muted mb-0">El detalle de clientes estara disponible cuando el backend publique estas rutas.</p>
             ) : !selectedCustomerDetail?.customer ? (
               <p className="text-muted mb-0">Selecciona un cliente para ver su deuda.</p>
             ) : (
@@ -404,6 +455,7 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
                     <select
                       className="form-select"
                       value={paymentFormValues.paymentMethod}
+                      disabled={isCustomerRoutesUnavailable}
                       onChange={(event) => setPaymentFormValues((current) => ({ ...current, paymentMethod: event.target.value }))}
                     >
                       <option value="efectivo">Efectivo</option>
@@ -414,11 +466,12 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
                       className="form-control"
                       placeholder="Detalle opcional"
                       value={paymentFormValues.notes}
+                      disabled={isCustomerRoutesUnavailable}
                       onChange={(event) => setPaymentFormValues((current) => ({ ...current, notes: event.target.value }))}
                       maxLength={255}
                     />
                     {paymentError ? <p className="app-inline-error mb-0">{paymentError}</p> : null}
-                    <button type="submit" className="btn btn-dark" disabled={isRegisteringPayment || Boolean(paymentError)}>
+                    <button type="submit" className="btn btn-dark" disabled={isRegisteringPayment || Boolean(paymentError) || isCustomerRoutesUnavailable}>
                       {isRegisteringPayment ? 'Registrando...' : 'Registrar pago'}
                     </button>
                   </div>

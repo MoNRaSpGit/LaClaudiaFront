@@ -8,6 +8,7 @@ function ScannerCheckout({
   isChargeBlocked = false,
   chargeBlockMessage = '',
   customerOptions = [],
+  isCustomerAccountsAvailable = true,
   onCharge,
   openConfirmSignal = 0,
   confirmByEnterSignal = 0,
@@ -25,7 +26,7 @@ function ScannerCheckout({
   const paymentMethodOptions = [
     { value: 'efectivo', label: 'Efectivo', className: 'scanner-payment-method-btn-cash' },
     { value: 'tarjeta', label: 'Tarjeta', className: 'scanner-payment-method-btn-card' },
-    { value: 'cuenta', label: 'Cuenta', className: 'scanner-payment-method-btn-account' }
+    { value: 'cuenta', label: 'Cuenta', className: 'scanner-payment-method-btn-account', disabled: !isCustomerAccountsAvailable }
   ];
 
   const handleConfirm = useCallback(async () => {
@@ -80,6 +81,13 @@ function ScannerCheckout({
   useEffect(() => {
     onConfirmModalOpenChange?.(isConfirmOpen);
   }, [isConfirmOpen, onConfirmModalOpenChange]);
+
+  useEffect(() => {
+    if (!isCustomerAccountsAvailable && paymentMethod === 'cuenta') {
+      setPaymentMethod('efectivo');
+      setSelectedCustomerId('');
+    }
+  }, [isCustomerAccountsAvailable, paymentMethod]);
 
   return (
     <>
@@ -141,7 +149,7 @@ function ScannerCheckout({
                 {paymentMethodOptions.map((option) => (
                   <label
                     key={option.value}
-                    className={`scanner-payment-method-btn ${option.className} ${paymentMethod === option.value ? 'scanner-payment-method-btn-active' : ''}`}
+                    className={`scanner-payment-method-btn ${option.className} ${paymentMethod === option.value ? 'scanner-payment-method-btn-active' : ''} ${option.disabled ? 'scanner-payment-method-btn-disabled' : ''}`}
                   >
                     <input
                       type="radio"
@@ -149,6 +157,7 @@ function ScannerCheckout({
                       className="scanner-payment-method-input"
                       value={option.value}
                       checked={paymentMethod === option.value}
+                      disabled={isSubmitting || option.disabled}
                       onChange={(event) => {
                         const nextValue = event.target.value;
                         setPaymentMethod(nextValue);
@@ -156,12 +165,16 @@ function ScannerCheckout({
                           setSelectedCustomerId('');
                         }
                       }}
-                      disabled={isSubmitting}
                     />
                     <span className="scanner-payment-method-label">{option.label}</span>
                   </label>
                 ))}
               </div>
+              {!isCustomerAccountsAvailable ? (
+                <p className="scanner-sync-hint mt-2 mb-0">
+                  Cuenta corriente no disponible: el backend actual todavia no publico la ruta de clientes.
+                </p>
+              ) : null}
             </div>
 
             {isAccountPayment ? (

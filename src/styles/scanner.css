@@ -584,6 +584,18 @@
   box-shadow: 0 10px 20px rgba(15, 23, 42, 0.12);
 }
 
+.scanner-payment-method-btn-disabled {
+  opacity: 0.52;
+  cursor: not-allowed;
+  filter: grayscale(0.12);
+}
+
+.scanner-payment-method-btn-disabled:hover,
+.scanner-payment-method-btn-disabled:focus-within {
+  transform: none;
+  filter: grayscale(0.12);
+}
+
 .scanner-payment-method-input {
   position: absolute;
   inset: 0;

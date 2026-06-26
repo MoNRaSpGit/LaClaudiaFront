@@ -55,6 +55,12 @@ const MANUAL_PRODUCT_OPTIONS = [
   { key: 'otros', label: 'Otros', icon: CircleEllipsis, category: 'otros' }
 ];
 
+function isRouteUnavailableError(error) {
+  const status = Number(error?.status || 0);
+  const message = String(error?.message || '').trim().toLowerCase();
+  return status === 404 || message.includes('route not found') || message.includes('not found');
+}
+
 function ScannerFeature({ currentUser, onUnauthorized }) {
   const { scannerState, totals, actions } = useScannerController({ currentUser });
   const updateLiveEditorDraft = actions.updateLiveEditorDraft;
@@ -71,6 +77,7 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
   });
   const [pendingSalesCount, setPendingSalesCount] = useState(getScannerSalesQueuePendingCount());
   const [customerOptions, setCustomerOptions] = useState([]);
+  const [isCustomerAccountsAvailable, setIsCustomerAccountsAvailable] = useState(true);
   const [currentStoreDateLabel, setCurrentStoreDateLabel] = useState(() => getStoreDateLabel());
   const [isWorkerDayBannerDismissed, setIsWorkerDayBannerDismissed] = useState(false);
   const [workerDayBannerTone] = useState(WORKER_DAY_BANNER_TONES[1].key);
@@ -161,14 +168,19 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
     const token = String(currentUser?.sessionToken || '').trim();
     if (!token) {
       setCustomerOptions([]);
+      setIsCustomerAccountsAvailable(true);
       return;
     }
 
     fetchScannerCustomers({ token })
       .then((data) => {
+        setIsCustomerAccountsAvailable(true);
         setCustomerOptions(Array.isArray(data?.customers) ? data.customers : []);
       })
-      .catch(() => {
+      .catch((error) => {
+        if (isRouteUnavailableError(error)) {
+          setIsCustomerAccountsAvailable(false);
+        }
         setCustomerOptions([]);
       });
   }, [currentUser?.sessionToken]);
@@ -555,14 +567,15 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
             {scannerState.cartItems.length > 0 ? (
               <ScannerCheckout
                 total={totals.total}
-                pendingSalesCount={pendingSalesCount}
-                isChargeBlocked={isChargeBlocked}
-                chargeBlockMessage={chargeBlockMessage}
-                customerOptions={customerOptions}
-                onCharge={executeCharge}
-                openConfirmSignal={openConfirmSignal}
-                confirmByEnterSignal={confirmByEnterSignal}
-                onConfirmModalOpenChange={setIsCheckoutConfirmOpen}
+              pendingSalesCount={pendingSalesCount}
+              isChargeBlocked={isChargeBlocked}
+              chargeBlockMessage={chargeBlockMessage}
+              customerOptions={customerOptions}
+              isCustomerAccountsAvailable={isCustomerAccountsAvailable}
+              onCharge={executeCharge}
+              openConfirmSignal={openConfirmSignal}
+              confirmByEnterSignal={confirmByEnterSignal}
+              onConfirmModalOpenChange={setIsCheckoutConfirmOpen}
               />
             ) : null}
 
