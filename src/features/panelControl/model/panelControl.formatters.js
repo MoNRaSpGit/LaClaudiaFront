@@ -1,4 +1,5 @@
 export const STORE_TIME_ZONE = 'America/Montevideo';
+export const INITIAL_CASH_PRELOAD_OPEN_HOUR = 22;
 
 function getDatePartsInTimeZone(date, timeZone) {
   const formatter = new Intl.DateTimeFormat('en-CA', {
@@ -23,6 +24,10 @@ function getDatePartsInTimeZone(date, timeZone) {
     minute: Number(map.minute),
     second: Number(map.second)
   };
+}
+
+export function getStoreDateParts(date = new Date()) {
+  return getDatePartsInTimeZone(date, STORE_TIME_ZONE);
 }
 
 function getTimeZoneOffsetMs(date, timeZone) {
@@ -75,6 +80,35 @@ export function getMsUntilNextStoreMidnight(now = new Date()) {
   );
 
   return Math.max(1000, nextStoreMidnight.getTime() - now.getTime() + 1000);
+}
+
+export function getStoreDateLabelForDate(date = new Date()) {
+  const parts = getDatePartsInTimeZone(date, STORE_TIME_ZONE);
+  return toDateLabelFromParts(parts.year, parts.month, parts.day);
+}
+
+export function getNextStoreDateLabel(date = new Date()) {
+  const parts = getDatePartsInTimeZone(date, STORE_TIME_ZONE);
+  const tomorrowUtc = new Date(Date.UTC(parts.year, parts.month - 1, parts.day + 1, 0, 0, 0));
+  return toDateLabelFromParts(
+    tomorrowUtc.getUTCFullYear(),
+    tomorrowUtc.getUTCMonth() + 1,
+    tomorrowUtc.getUTCDate()
+  );
+}
+
+export function isInitialCashPreloadWindowOpen(date = new Date()) {
+  return Number(getDatePartsInTimeZone(date, STORE_TIME_ZONE).hour || 0) >= INITIAL_CASH_PRELOAD_OPEN_HOUR;
+}
+
+export function getMsUntilStoreHour(targetHour, now = new Date()) {
+  const parts = getDatePartsInTimeZone(now, STORE_TIME_ZONE);
+  if (Number(parts.hour || 0) >= Number(targetHour || 0)) {
+    return 0;
+  }
+
+  const target = getUtcDateForStoreDateTime(parts.year, parts.month, parts.day, targetHour, 0, 0);
+  return Math.max(0, target.getTime() - now.getTime());
 }
 
 export function money(value) {

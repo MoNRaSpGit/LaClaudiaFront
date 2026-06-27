@@ -22,3 +22,21 @@ export async function updateCashInitialCash(payload, { token } = {}) {
 
   return readJson(response);
 }
+
+export async function fetchCashInitialCashPreload({ token } = {}) {
+  const response = await fetch(`${apiUrl}/api/scanner/dashboard/initial-cash/preload`, {
+    headers: buildHeaders({ token })
+  });
+
+  return readJson(response);
+}
+
+export async function updateCashInitialCashPreload(payload, { token } = {}) {
+  const response = await fetch(`${apiUrl}/api/scanner/dashboard/initial-cash/preload`, {
+    method: 'PUT',
+    headers: buildHeaders({ token, json: true }),
+    body: JSON.stringify(payload)
+  });
+
+  return readJson(response);
+}

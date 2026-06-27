@@ -176,6 +176,37 @@
   padding: 1rem 1.05rem;
 }
 
+.panel-cash-countdown-card {
+  border: 1px solid #d7e2ef;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #f9fbff 0%, #eef4fb 100%);
+  padding: 0.95rem 1rem;
+}
+
+.panel-cash-countdown-value {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #12355a;
+}
+
+.panel-cash-next-day-banner {
+  border: 1px solid #d4dfec;
+  border-radius: 10px;
+  background: #f5f9fd;
+  padding: 0.7rem 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  font-size: 0.82rem;
+  color: #4b6078;
+}
+
+.panel-cash-next-day-banner strong {
+  color: #0f172a;
+  font-size: 0.95rem;
+}
+
 .panel-metric-card-v2 {
   border: 1px solid #dbe2eb;
   border-radius: 12px;
