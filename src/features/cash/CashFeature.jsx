@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
-import { moneyNoDecimals } from '../panelControl/model/panelControl.formatters';
-import { usePanelControlController } from '../panelControl/model/usePanelControlController';
+import {
+  getMsUntilNextStoreMidnight,
+  getStoreDateLabel,
+  moneyNoDecimals
+} from '../panelControl/model/panelControl.formatters';
+import { toUserErrorMessage } from '../../shared/lib/userErrorMessages';
+import { fetchCashInitialCash, updateCashInitialCash } from './services/cash.api';
 
 function CashFeature({ currentUser, onUnauthorized }) {
   const unauthorizedHandledRef = useRef(false);
@@ -23,28 +28,65 @@ function CashFeature({ currentUser, onUnauthorized }) {
     unauthorizedHandledRef.current = false;
   }, [currentUser?.sessionToken]);
 
-  const controller = usePanelControlController({
-    currentUser,
-    onUnauthorized: handleUnauthorized
-  });
-  const isOperario = String(currentUser?.role || 'operario').trim().toLowerCase() === 'operario';
-  const hasExistingInitialCash = Number(controller.initialCashAmount || 0) > 0;
-  const isInitialCashLocked = isOperario && hasExistingInitialCash;
-  const [initialCashDraft, setInitialCashDraft] = useState(() => String(controller.initialCashAmount || 0));
+  const [currentStoreDateLabel, setCurrentStoreDateLabel] = useState(() => getStoreDateLabel());
+  const [initialCashAmount, setInitialCashAmount] = useState(0);
+  const [canUpdate, setCanUpdate] = useState(true);
+  const [dashboardError, setDashboardError] = useState('');
+  const [isSavingInitialCash, setIsSavingInitialCash] = useState(false);
+  const [initialCashDraft, setInitialCashDraft] = useState('0');
 
   useEffect(() => {
-    setInitialCashDraft(String(controller.initialCashAmount || 0));
-  }, [controller.initialCashAmount, isInitialCashLocked]);
+    const timeoutId = window.setTimeout(() => {
+      setCurrentStoreDateLabel(getStoreDateLabel());
+    }, getMsUntilNextStoreMidnight());
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [currentStoreDateLabel]);
 
   useEffect(() => {
-    if (isInitialCashLocked) {
-      return;
+    let isMounted = true;
+
+    async function loadInitialCash() {
+      try {
+        const result = await fetchCashInitialCash({
+          date: currentStoreDateLabel,
+          token: currentUser?.sessionToken || ''
+        });
+
+        if (!isMounted) {
+          return;
+        }
+
+        const settings = result?.settings || {};
+        const nextInitialCash = Number(settings.initialCash || 0);
+        setInitialCashAmount(nextInitialCash);
+        setCanUpdate(Boolean(settings.canUpdate));
+        setDashboardError('');
+        setInitialCashDraft(String(nextInitialCash || 0));
+      } catch (error) {
+        if (!isMounted) {
+          return;
+        }
+
+        if (Number(error?.status || 0) === 401) {
+          handleUnauthorized();
+          return;
+        }
+
+        setDashboardError(toUserErrorMessage(error, { context: 'panel_dashboard' }));
+      }
     }
 
-    if (!initialCashDraft && Number(controller.initialCashAmount || 0) === 0) {
-      setInitialCashDraft('');
-    }
-  }, [controller.initialCashAmount, initialCashDraft, isInitialCashLocked]);
+    loadInitialCash();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentStoreDateLabel, currentUser?.sessionToken, handleUnauthorized]);
+
+  const isInitialCashLocked = !canUpdate;
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -58,20 +100,36 @@ function CashFeature({ currentUser, onUnauthorized }) {
     }
 
     try {
-      const result = await controller.saveInitialCash(initialCashDraft);
-      if (result?.busy) {
-        return;
-      }
+      setIsSavingInitialCash(true);
+      const result = await updateCashInitialCash({
+        date: currentStoreDateLabel,
+        initialCash: initialCashDraft
+      }, {
+        token: currentUser?.sessionToken || ''
+      });
+      const settings = result?.settings || {};
+      const nextInitialCash = Number(settings.initialCash || 0);
+      setInitialCashAmount(nextInitialCash);
+      setCanUpdate(Boolean(settings.canUpdate ?? false));
+      setInitialCashDraft(String(nextInitialCash || 0));
+      setDashboardError('');
 
       toast.success('Caja inicial actualizada.', {
         toastId: 'cash-initial-cash-ok',
         autoClose: 1800
       });
     } catch (error) {
+      if (Number(error?.status || 0) === 401) {
+        handleUnauthorized();
+        return;
+      }
+
       toast.error(error?.message || 'No se pudo guardar la caja inicial.', {
         toastId: 'cash-initial-cash-invalid',
         autoClose: 2200
       });
+    } finally {
+      setIsSavingInitialCash(false);
     }
   }
 
@@ -96,8 +154,8 @@ function CashFeature({ currentUser, onUnauthorized }) {
               <div className="panel-cash-summary-grid">
                 <article className="panel-metric-card-v2 panel-cash-summary-card">
                   <p className="panel-metric-title">Caja inicial actual</p>
-                  <p className="panel-metric-value">{moneyNoDecimals(controller.initialCashAmount)}</p>
-                  <p className="panel-metric-hint">Monto de apertura configurado para {controller.currentStoreDateLabel}.</p>
+                  <p className="panel-metric-value">{moneyNoDecimals(initialCashAmount)}</p>
+                  <p className="panel-metric-hint">Monto de apertura configurado para {currentStoreDateLabel}.</p>
                 </article>
               </div>
             </section>
@@ -120,18 +178,18 @@ function CashFeature({ currentUser, onUnauthorized }) {
                     className="form-control"
                     placeholder="Monto inicial"
                     value={initialCashDraft}
-                    disabled={controller.isSavingInitialCash || isInitialCashLocked}
+                    disabled={isSavingInitialCash || isInitialCashLocked}
                     onChange={(event) => setInitialCashDraft(event.target.value)}
                     autoFocus
                   />
                   {isInitialCashLocked ? (
                     <p className="panel-help mb-0">
-                      Hoy ya existe una caja inicial cargada: <strong>{moneyNoDecimals(controller.initialCashAmount)}</strong>. Ese valor queda vigente hasta la medianoche.
+                      Hoy ya existe una caja inicial cargada: <strong>{moneyNoDecimals(initialCashAmount)}</strong>. Ese valor queda vigente hasta la medianoche.
                     </p>
                   ) : null}
-                  {controller.dashboardError ? <p className="app-inline-error mb-0">{controller.dashboardError}</p> : null}
-                  <button type="submit" className="btn btn-dark" disabled={controller.isSavingInitialCash || isInitialCashLocked}>
-                    {controller.isSavingInitialCash ? 'Guardando...' : 'Guardar caja inicial'}
+                  {dashboardError ? <p className="app-inline-error mb-0">{dashboardError}</p> : null}
+                  <button type="submit" className="btn btn-dark" disabled={isSavingInitialCash || isInitialCashLocked}>
+                    {isSavingInitialCash ? 'Guardando...' : 'Guardar caja inicial'}
                   </button>
                 </form>
               </div>
