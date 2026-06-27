@@ -9,6 +9,7 @@ import PaymentsFeature from './features/payments/PaymentsFeature';
 import ProductsFeature from './features/products/ProductsFeature';
 import CustomersFeature from './features/customers/CustomersFeature';
 import StockFeature from './features/stock/StockFeature';
+import CashFeature from './features/cash/CashFeature';
 import { resetScannerState } from './features/scanner/scannerSlice';
 import {
   checkForAppUpdate,
@@ -28,6 +29,7 @@ function Workspace({ user, onLogout }) {
   const canAccessStock = userRole === 'admin' || userRole === 'operario';
   const canAccessPayments = userRole === 'operario';
   const canAccessCustomers = userRole === 'admin' || userRole === 'operario';
+  const canAccessCash = userRole === 'operario';
   const canAccessScannerTab = userRole !== 'admin';
   const [activeTab, setActiveTab] = useState(canAccessPanel ? 'panel' : 'scanner');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -53,10 +55,13 @@ function Workspace({ user, onLogout }) {
     if (!canAccessPayments && activeTab === 'payments') {
       setActiveTab(canAccessPanel ? 'panel' : 'scanner');
     }
+    if (!canAccessCash && activeTab === 'cash') {
+      setActiveTab(canAccessPanel ? 'panel' : 'scanner');
+    }
     if (!canAccessCustomers && activeTab === 'customers') {
       setActiveTab(canAccessPanel ? 'panel' : 'scanner');
     }
-  }, [activeTab, canAccessCustomers, canAccessMonths, canAccessPanel, canAccessPayments, canAccessProducts, canAccessStock]);
+  }, [activeTab, canAccessCash, canAccessCustomers, canAccessMonths, canAccessPanel, canAccessPayments, canAccessProducts, canAccessStock]);
 
   useEffect(() => {
     function syncUpdateState() {
@@ -241,6 +246,16 @@ function Workspace({ user, onLogout }) {
                   Pagos
                 </button>
               ) : null}
+              {canAccessCash ? (
+                <button
+                  type="button"
+                  className={`btn nav-tab-btn nav-tab-btn-dark ${activeTab === 'cash' ? 'nav-tab-btn-active' : ''}`}
+                  onClick={() => setActiveTab('cash')}
+                  aria-current={activeTab === 'cash' ? 'page' : undefined}
+                >
+                  Caja
+                </button>
+              ) : null}
               {canAccessCustomers ? (
                 <button
                   type="button"
@@ -340,6 +355,18 @@ function Workspace({ user, onLogout }) {
                       <span>Pagos</span>
                     </button>
                   ) : null}
+                  {canAccessCash ? (
+                    <button
+                      type="button"
+                      className={`scanner-user-dropdown-item scanner-user-dropdown-nav-item ${activeTab === 'cash' ? 'scanner-user-dropdown-nav-item-active' : ''}`}
+                      onClick={() => {
+                        setActiveTab('cash');
+                        setIsMenuOpen(false);
+                      }}
+                    >
+                      <span>Caja</span>
+                    </button>
+                  ) : null}
                   {canAccessCustomers ? (
                     <button
                       type="button"
@@ -400,6 +427,9 @@ function Workspace({ user, onLogout }) {
       )}
       {activeTab === 'payments' && canAccessPayments && (
         <PaymentsFeature currentUser={user} onUnauthorized={handleLogout} />
+      )}
+      {activeTab === 'cash' && canAccessCash && (
+        <CashFeature currentUser={user} onUnauthorized={handleLogout} />
       )}
       {activeTab === 'customers' && canAccessCustomers && (
         <CustomersFeature currentUser={user} onUnauthorized={handleLogout} />

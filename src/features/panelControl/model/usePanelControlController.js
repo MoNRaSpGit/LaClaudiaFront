@@ -525,6 +525,7 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
     isLoadingDiagnosticEvents,
     canViewDiagnostics,
     profitRatePercent: Number(((panelMetrics.profitRate ?? profitRate) || 0) * 100),
+    currentStoreDateLabel,
     percent,
     handleRegisterPayment,
     saveInitialCash,

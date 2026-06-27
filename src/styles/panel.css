@@ -165,6 +165,17 @@
   grid-template-columns: repeat(1, minmax(0, 1fr));
 }
 
+.panel-cash-summary-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.panel-cash-summary-card {
+  min-height: 132px;
+  padding: 1rem 1.05rem;
+}
+
 .panel-metric-card-v2 {
   border: 1px solid #dbe2eb;
   border-radius: 12px;
