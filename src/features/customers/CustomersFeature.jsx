@@ -66,6 +66,81 @@ function buildCustomerSaleTicketPayload(sale, currentUser) {
   };
 }
 
+function sortMovementsDesc(left, right) {
+  const leftTime = new Date(left?.createdAt || 0).getTime();
+  const rightTime = new Date(right?.createdAt || 0).getTime();
+  if (leftTime !== rightTime) {
+    return rightTime - leftTime;
+  }
+  return Number(right?.id || 0) - Number(left?.id || 0);
+}
+
+function getActiveCustomerHistory({ accountSales = [], accountPayments = [], debtTotal = 0 }) {
+  const normalizedDebt = parseMoneyValue(debtTotal);
+  if (normalizedDebt <= 0) {
+    return { sales: [], payments: [] };
+  }
+
+  const movements = [
+    ...accountSales.map((sale) => ({ ...sale, movementType: 'sale', amount: Number(sale?.totalAmount || 0) })),
+    ...accountPayments.map((payment) => ({ ...payment, movementType: 'payment', amount: Number(payment?.amount || 0) }))
+  ].sort(sortMovementsDesc);
+
+  let debtCursor = normalizedDebt;
+  const activeSaleIds = new Set();
+  const activePaymentIds = new Set();
+
+  for (const movement of movements) {
+    if (movement.movementType === 'payment') {
+      activePaymentIds.add(Number(movement.id || 0));
+      debtCursor += Number(movement.amount || 0);
+      continue;
+    }
+
+    activeSaleIds.add(Number(movement.id || 0));
+    debtCursor -= Number(movement.amount || 0);
+    if (debtCursor <= 0) {
+      break;
+    }
+  }
+
+  return {
+    sales: accountSales.filter((sale) => activeSaleIds.has(Number(sale.id || 0))),
+    payments: accountPayments.filter((payment) => activePaymentIds.has(Number(payment.id || 0)))
+  };
+}
+
+function buildCustomerHistoryTicketPayload({ customer, accountSales = [], currentUser }) {
+  const sortedSales = accountSales
+    .slice()
+    .sort((left, right) => new Date(left.createdAt || 0).getTime() - new Date(right.createdAt || 0).getTime());
+
+  const ticketItems = sortedSales.flatMap((sale) => (
+    Array.isArray(sale?.items)
+      ? sale.items
+        .filter((item) => String(item?.name || '').trim())
+        .map((item) => ({
+          nombre: String(item.name || '').trim(),
+          quantity: Number(item.quantity || 0) || 1,
+          precio_venta: Number(item.unitPrice || 0)
+        }))
+      : []
+  ));
+
+  return {
+    hasSales: sortedSales.length > 0 && ticketItems.length > 0,
+    salesCount: sortedSales.length,
+    ticket: {
+      storeName: 'Super Nova',
+      externalId: `CTA-${customer?.id || '-'}`,
+      chargedAtIso: sortedSales.at(-1)?.createdAt || new Date().toISOString(),
+      operatorName: currentUser?.name || currentUser?.username || 'Operario',
+      items: ticketItems,
+      total: sortedSales.reduce((sum, sale) => sum + Number(sale?.totalAmount || 0), 0)
+    }
+  };
+}
+
 function parsePositiveAmount(value) {
   const normalized = Number(String(value || '').replace(',', '.'));
   if (!Number.isFinite(normalized) || normalized <= 0) {
@@ -280,6 +355,14 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
 
     const parsedAmount = parsePositiveAmount(paymentFormValues.amount);
     const debtTotal = parseMoneyValue(selectedCustomerDetail?.customer?.debtTotal);
+    const isClosingPayment = Math.abs((parsedAmount || 0) - debtTotal) < 0.0001;
+    const closingTicketPayload = isClosingPayment
+      ? buildCustomerHistoryTicketPayload({
+        customer: selectedCustomerDetail?.customer,
+        accountSales: activeAccountSales,
+        currentUser
+      })
+      : null;
 
     if (!parsedAmount) {
       setPaymentError('Ingresa un monto valido.');
@@ -314,6 +397,32 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
       });
       setPaymentError('');
       toast.success('Pago de cuenta registrado.');
+
+      if (isClosingPayment && closingTicketPayload?.hasSales) {
+        setPrintingSaleId('history');
+        try {
+          await printSaleTicketByQz(closingTicketPayload.ticket);
+          toast.success('Ticket enviado a impresora.', {
+            toastId: 'customer-payment-print-ok-history',
+            autoClose: 1800
+          });
+        } catch (error) {
+          try {
+            await printSaleTicket(closingTicketPayload.ticket);
+            toast.warn('QZ fallo, se abrio impresion del navegador como respaldo.', {
+              toastId: 'customer-payment-print-fallback-history',
+              autoClose: 2600
+            });
+          } catch {
+            toast.error(`No se pudo imprimir el ticket: ${error?.message || 'Error de QZ.'}`, {
+              toastId: 'customer-payment-print-fail-history',
+              autoClose: 3200
+            });
+          }
+        } finally {
+          setPrintingSaleId(null);
+        }
+      }
     } catch (error) {
       if (Number(error?.status || 0) === 401) {
         onUnauthorizedRef.current?.();
@@ -331,32 +440,41 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
     }
   }
 
-  async function handlePrintSale(sale) {
-    const saleId = Number(sale?.id || 0);
-    if (!saleId || printingSaleId === saleId) {
+  async function handlePrintHistoryTicket() {
+    if (printingSaleId === 'history' || !selectedCustomerDetail?.customer) {
       return;
     }
 
-    const ticketPayload = buildCustomerSaleTicketPayload(sale, currentUser);
+    const result = buildCustomerHistoryTicketPayload({
+      customer: selectedCustomerDetail.customer,
+      accountSales: activeAccountSales,
+      currentUser
+    });
 
-    setPrintingSaleId(saleId);
+    if (!result.hasSales) {
+      toast.info('No hay ventas pendientes para imprimir en el historial activo.');
+      return;
+    }
+
+    const ticketPayload = result.ticket;
+    setPrintingSaleId('history');
 
     try {
       await printSaleTicketByQz(ticketPayload);
       toast.success('Ticket enviado a impresora.', {
-        toastId: `customer-sale-print-ok-${saleId}`,
+        toastId: `customer-sale-print-ok-history`,
         autoClose: 1800
       });
     } catch (error) {
       try {
         await printSaleTicket(ticketPayload);
         toast.warn('QZ fallo, se abrio impresion del navegador como respaldo.', {
-          toastId: `customer-sale-print-fallback-${saleId}`,
+          toastId: `customer-sale-print-fallback-history`,
           autoClose: 2600
         });
       } catch {
         toast.error(`No se pudo imprimir el ticket: ${error?.message || 'Error de QZ.'}`, {
-          toastId: `customer-sale-print-fail-${saleId}`,
+          toastId: `customer-sale-print-fail-history`,
           autoClose: 3200
         });
       }
@@ -377,10 +495,22 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
 
   const accountSales = Array.isArray(selectedCustomerDetail?.accountSales) ? selectedCustomerDetail.accountSales : [];
   const accountPayments = Array.isArray(selectedCustomerDetail?.accountPayments) ? selectedCustomerDetail.accountPayments : [];
-  const visibleSales = accountSales.slice(0, visibleSalesCount);
-  const visiblePayments = accountPayments.slice(0, visiblePaymentsCount);
-  const canExpandSales = accountSales.length > 3;
-  const canExpandPayments = accountPayments.length > 3;
+  const activeHistory = getActiveCustomerHistory({
+    accountSales,
+    accountPayments,
+    debtTotal: selectedCustomerDetail?.customer?.debtTotal
+  });
+  const activeAccountSales = activeHistory.sales;
+  const activeAccountPayments = activeHistory.payments;
+  const printableHistoryTicket = buildCustomerHistoryTicketPayload({
+    customer: selectedCustomerDetail?.customer,
+    accountSales: activeAccountSales,
+    currentUser
+  });
+  const visibleSales = activeAccountSales.slice(0, visibleSalesCount);
+  const visiblePayments = activeAccountPayments.slice(0, visiblePaymentsCount);
+  const canExpandSales = activeAccountSales.length > 3;
+  const canExpandPayments = activeAccountPayments.length > 3;
 
   return (
     <div className="container py-4">
@@ -548,32 +678,32 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
                 </form>
 
                 <div className="mb-3">
-                  <div className="customers-history-head mb-2">
-                    <p className="customers-detail-label mb-0">Historial de ventas</p>
-                    <div className="customers-history-actions">
-                      <span className="customers-history-count">{accountSales.length}</span>
-                      {canExpandSales ? (
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-outline-secondary"
-                          onClick={() => {
-                            if (visibleSalesCount >= accountSales.length) {
-                              setVisibleSalesCount(3);
-                              return;
-                            }
-                            if (visibleSalesCount <= 3) {
-                              setVisibleSalesCount(Math.min(6, accountSales.length));
-                              return;
-                            }
-                            setVisibleSalesCount(accountSales.length);
-                          }}
-                        >
-                          {resolveExpandLabel(visibleSalesCount, accountSales.length, 3)}
-                        </button>
-                      ) : null}
+                    <div className="customers-history-head mb-2">
+                      <p className="customers-detail-label mb-0">Historial de ventas</p>
+                      <div className="customers-history-actions">
+                        <span className="customers-history-count">{activeAccountSales.length}</span>
+                        {canExpandSales ? (
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-secondary"
+                            onClick={() => {
+                              if (visibleSalesCount >= activeAccountSales.length) {
+                                setVisibleSalesCount(3);
+                                return;
+                              }
+                              if (visibleSalesCount <= 3) {
+                                setVisibleSalesCount(Math.min(6, activeAccountSales.length));
+                                return;
+                              }
+                              setVisibleSalesCount(activeAccountSales.length);
+                            }}
+                          >
+                            {resolveExpandLabel(visibleSalesCount, activeAccountSales.length, 3)}
+                          </button>
+                        ) : null}
+                      </div>
                     </div>
-                  </div>
-                  {accountSales.length ? (
+                  {activeAccountSales.length ? (
                       <div className="customers-sales-list">
                         {visibleSales.map((sale) => (
                           <div key={sale.id} className="customers-sale-row">
@@ -594,14 +724,6 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
                             </div>
                             <div className="customers-sale-side">
                               <span className="customers-sale-meta customers-sale-date">{formatDateTime(sale.createdAt)}</span>
-                              <button
-                                type="button"
-                                className="btn btn-sm btn-outline-dark"
-                                onClick={() => handlePrintSale(sale)}
-                                disabled={printingSaleId === sale.id}
-                              >
-                                {printingSaleId === sale.id ? 'Imprimiendo...' : 'Imprimir ticket'}
-                              </button>
                             </div>
                         </div>
                       ))}
@@ -612,32 +734,32 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
                 </div>
 
                 <div>
-                  <div className="customers-history-head mb-2">
-                    <p className="customers-detail-label mb-0">Historial de pagos</p>
-                    <div className="customers-history-actions">
-                      <span className="customers-history-count">{accountPayments.length}</span>
-                      {canExpandPayments ? (
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-outline-secondary"
-                          onClick={() => {
-                            if (visiblePaymentsCount >= accountPayments.length) {
-                              setVisiblePaymentsCount(3);
-                              return;
-                            }
-                            if (visiblePaymentsCount <= 3) {
-                              setVisiblePaymentsCount(Math.min(6, accountPayments.length));
-                              return;
-                            }
-                            setVisiblePaymentsCount(accountPayments.length);
-                          }}
-                        >
-                          {resolveExpandLabel(visiblePaymentsCount, accountPayments.length, 3)}
-                        </button>
-                      ) : null}
+                    <div className="customers-history-head mb-2">
+                      <p className="customers-detail-label mb-0">Historial de pagos</p>
+                      <div className="customers-history-actions">
+                        <span className="customers-history-count">{activeAccountPayments.length}</span>
+                        {canExpandPayments ? (
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-secondary"
+                            onClick={() => {
+                              if (visiblePaymentsCount >= activeAccountPayments.length) {
+                                setVisiblePaymentsCount(3);
+                                return;
+                              }
+                              if (visiblePaymentsCount <= 3) {
+                                setVisiblePaymentsCount(Math.min(6, activeAccountPayments.length));
+                                return;
+                              }
+                              setVisiblePaymentsCount(activeAccountPayments.length);
+                            }}
+                          >
+                            {resolveExpandLabel(visiblePaymentsCount, activeAccountPayments.length, 3)}
+                          </button>
+                        ) : null}
+                      </div>
                     </div>
-                  </div>
-                  {accountPayments.length ? (
+                  {activeAccountPayments.length ? (
                       <div className="customers-sales-list">
                         {visiblePayments.map((payment) => (
                           <div key={payment.id} className="customers-sale-row customers-sale-row-payment">
