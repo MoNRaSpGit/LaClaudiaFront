@@ -1,6 +1,7 @@
 import {
   createScannerCustomerAccountPayment,
   createScannerCustomer,
+  deleteScannerCustomer,
   fetchScannerCustomerDetail,
   fetchScannerCustomers
 } from '../../scanner/services/scanner.api';
@@ -78,4 +79,8 @@ export async function createCustomer(payload, { token } = {}) {
 
 export async function createCustomerPayment(customerId, payload, { token } = {}) {
   return createScannerCustomerAccountPayment(customerId, payload, { token });
+}
+
+export async function removeCustomer(customerId, { token } = {}) {
+  return deleteScannerCustomer(customerId, { token });
 }

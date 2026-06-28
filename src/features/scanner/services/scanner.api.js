@@ -122,6 +122,19 @@ export async function createScannerCustomer(payload, { token } = {}) {
   return readJson(response);
 }
 
+export async function deleteScannerCustomer(customerId, { token } = {}) {
+  const normalizedId = Number(customerId);
+  if (!Number.isInteger(normalizedId) || normalizedId <= 0) {
+    throw new Error('customerId invalido');
+  }
+
+  const response = await fetch(`${apiUrl}/api/scanner/customers/${normalizedId}`, {
+    method: 'DELETE',
+    headers: buildHeaders({ token })
+  });
+  return readJson(response);
+}
+
 export async function createScannerCustomerAccountPayment(customerId, payload, { token } = {}) {
   const normalizedId = Number(customerId);
   if (!Number.isInteger(normalizedId) || normalizedId <= 0) {

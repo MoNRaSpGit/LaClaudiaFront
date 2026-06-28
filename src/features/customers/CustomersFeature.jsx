@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
-import { createCustomer, createCustomerPayment, getCustomerDetail, listCustomers } from './services/customers.api';
+import { createCustomer, createCustomerPayment, getCustomerDetail, listCustomers, removeCustomer } from './services/customers.api';
 import { printSaleTicket } from '../scanner/services/scanner.print';
 import { printSaleTicketByQz } from '../scanner/services/scanner.qzPrint';
 
@@ -157,6 +157,8 @@ function isRouteUnavailableError(error) {
 
 function CustomersFeature({ currentUser, onUnauthorized }) {
   const token = String(currentUser?.sessionToken || '').trim();
+  const userRole = String(currentUser?.role || 'operario').trim().toLowerCase();
+  const isAdmin = userRole === 'admin';
   const onUnauthorizedRef = useRef(onUnauthorized);
   const [customers, setCustomers] = useState([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState(null);
@@ -165,6 +167,7 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
   const [isSaving, setIsSaving] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [isRegisteringPayment, setIsRegisteringPayment] = useState(false);
+  const [deletingCustomerId, setDeletingCustomerId] = useState(null);
   const [printingSaleId, setPrintingSaleId] = useState(null);
   const [visibleSalesCount, setVisibleSalesCount] = useState(3);
   const [visiblePaymentsCount, setVisiblePaymentsCount] = useState(3);
@@ -440,6 +443,50 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
     }
   }
 
+  async function handleDeleteCustomer(customer) {
+    const customerId = Number(customer?.id || 0);
+    if (!isAdmin || !customerId || deletingCustomerId === customerId) {
+      return;
+    }
+
+      const customerName = String(customer?.name || 'este cliente').trim();
+      const debtTotal = parseMoneyValue(customer?.debtTotal);
+      if (debtTotal > 0) {
+        const message = `No se puede eliminar a ${customerName} porque tiene saldo pendiente (${formatMoney(debtTotal)}).`;
+        toast.error(message);
+        return;
+      }
+
+    const confirmed = window.confirm(`¿Eliminar a ${customerName}? Esta accion ocultara al cliente de la lista.`);
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingCustomerId(customerId);
+    try {
+      await removeCustomer(customerId, { token });
+      setIsCustomerRoutesUnavailable(false);
+      await loadCustomers({ keepSelection: true });
+      if (selectedCustomerId === customerId) {
+        setSelectedCustomerDetail(null);
+      }
+      toast.success('Cliente eliminado.');
+    } catch (error) {
+      if (Number(error?.status || 0) === 401) {
+        onUnauthorizedRef.current?.();
+        return;
+      }
+      if (isRouteUnavailableError(error)) {
+        setIsCustomerRoutesUnavailable(true);
+        toast.error('Este backend todavia no tiene habilitada la eliminacion de clientes.');
+        return;
+      }
+      toast.error(error?.message || 'No se pudo eliminar el cliente.');
+    } finally {
+      setDeletingCustomerId(null);
+    }
+  }
+
   async function handlePrintHistoryTicket() {
     if (printingSaleId === 'history' || !selectedCustomerDetail?.customer) {
       return;
@@ -576,17 +623,31 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
             ) : (
               <div className="customers-list">
                 {customers.map((customer) => (
-                  <button
+                  <div
                     key={customer.id}
-                    type="button"
-                    className={`customers-list-item ${selectedCustomerId === customer.id ? 'customers-list-item-active' : ''}`}
-                    onClick={() => setSelectedCustomerId(customer.id)}
+                    className={`customers-list-item-shell ${selectedCustomerId === customer.id ? 'customers-list-item-shell-active' : ''}`}
                   >
-                    <span className="customers-list-name">{customer.name}</span>
-                    <span className="customers-list-meta">
-                      Deuda {formatMoney(customer.debtTotal)}
-                    </span>
-                  </button>
+                    <button
+                      type="button"
+                      className={`customers-list-item ${selectedCustomerId === customer.id ? 'customers-list-item-active' : ''}`}
+                      onClick={() => setSelectedCustomerId(customer.id)}
+                    >
+                      <span className="customers-list-name">{customer.name}</span>
+                      <span className="customers-list-meta">
+                        Deuda {formatMoney(customer.debtTotal)}
+                      </span>
+                    </button>
+                    {isAdmin ? (
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-outline-danger customers-delete-btn"
+                        onClick={() => handleDeleteCustomer(customer)}
+                        disabled={deletingCustomerId === customer.id}
+                      >
+                        {deletingCustomerId === customer.id ? 'Eliminando...' : 'Eliminar'}
+                      </button>
+                    ) : null}
+                  </div>
                 ))}
               </div>
             )}

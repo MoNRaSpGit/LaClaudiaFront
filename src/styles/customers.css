@@ -35,6 +35,17 @@
   gap: 0.7rem;
 }
 
+.customers-list-item-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.65rem;
+  align-items: stretch;
+}
+
+.customers-list-item-shell-active .customers-delete-btn {
+  border-color: #dc3545;
+}
+
 .customers-list-item {
   width: 100%;
   padding: 0.8rem 0.9rem;
@@ -43,6 +54,13 @@
   background: #fff;
   text-align: left;
   transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.customers-delete-btn {
+  align-self: center;
+  min-width: 92px;
+  border-radius: 14px;
+  font-weight: 700;
 }
 
 .customers-list-item:hover,
@@ -174,6 +192,14 @@
 }
 
 @media (max-width: 640px) {
+  .customers-list-item-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .customers-delete-btn {
+    width: 100%;
+  }
+
   .customers-detail-hero,
   .customers-sale-row {
     flex-direction: column;
