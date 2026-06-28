@@ -168,6 +168,7 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
   const [detailLoading, setDetailLoading] = useState(false);
   const [isRegisteringPayment, setIsRegisteringPayment] = useState(false);
   const [deletingCustomerId, setDeletingCustomerId] = useState(null);
+  const [deleteConfirmCustomer, setDeleteConfirmCustomer] = useState(null);
   const [printingSaleId, setPrintingSaleId] = useState(null);
   const [visibleSalesCount, setVisibleSalesCount] = useState(3);
   const [visiblePaymentsCount, setVisiblePaymentsCount] = useState(3);
@@ -461,6 +462,9 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
         return;
       }
 
+      setDeleteConfirmCustomer(customer);
+      return;
+
     const confirmed = window.confirm(`¿Eliminar a ${customerName}? Esta accion ocultara al cliente de la lista.`);
     if (!confirmed) {
       return;
@@ -474,6 +478,40 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
       if (selectedCustomerId === customerId) {
         setSelectedCustomerDetail(null);
       }
+      toast.success('Cliente eliminado.');
+    } catch (error) {
+      if (Number(error?.status || 0) === 401) {
+        onUnauthorizedRef.current?.();
+        return;
+      }
+      if (isRouteUnavailableError(error)) {
+        setIsCustomerRoutesUnavailable(true);
+        toast.error('Este backend todavia no tiene habilitada la eliminacion de clientes.');
+        return;
+      }
+      toast.error(error?.message || 'No se pudo eliminar el cliente.');
+      } finally {
+        setDeletingCustomerId(null);
+      }
+    }
+
+  async function confirmDeleteCustomer() {
+    const customer = deleteConfirmCustomer;
+    const customerId = Number(customer?.id || 0);
+    if (!customerId) {
+      setDeleteConfirmCustomer(null);
+      return;
+    }
+
+    setDeletingCustomerId(customerId);
+    try {
+      await removeCustomer(customerId, { token });
+      setIsCustomerRoutesUnavailable(false);
+      await loadCustomers({ keepSelection: true });
+      if (selectedCustomerId === customerId) {
+        setSelectedCustomerDetail(null);
+      }
+      setDeleteConfirmCustomer(null);
       toast.success('Cliente eliminado.');
     } catch (error) {
       if (Number(error?.status || 0) === 401) {
@@ -574,6 +612,36 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
         theme="light"
         style={{ zIndex: 2000, top: '4.5rem' }}
       />
+      {deleteConfirmCustomer ? (
+        <div className="customers-delete-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="customers-delete-title">
+          <div className="customers-delete-modal-card">
+            <p className="customers-kicker mb-2">Confirmacion</p>
+            <h3 id="customers-delete-title" className="h5 mb-2">Eliminar cliente</h3>
+            <p className="text-muted mb-3">
+              Vas a ocultar a <strong>{deleteConfirmCustomer.name}</strong> de la lista de clientes.
+            </p>
+            <p className="text-muted mb-4">Su historial queda guardado, pero ya no aparecera como cliente activo.</p>
+            <div className="customers-delete-modal-actions">
+              <button
+                type="button"
+                className="btn btn-outline-secondary"
+                onClick={() => setDeleteConfirmCustomer(null)}
+                disabled={Boolean(deletingCustomerId)}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger"
+                onClick={confirmDeleteCustomer}
+                disabled={Boolean(deletingCustomerId)}
+              >
+                {deletingCustomerId === deleteConfirmCustomer.id ? 'Eliminando...' : 'Confirmar eliminacion'}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
       <div className="container py-4">
         <div className="row g-4">
         <div className="col-lg-4">
