@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import { createCustomer, createCustomerPayment, getCustomerDetail, listCustomers } from './services/customers.api';
+import { printCustomerStatement } from './services/customers.print';
+import { printCustomerStatementByQz } from './services/customers.qzPrint';
 
 function parseMoneyValue(value) {
   if (typeof value === 'number') {
@@ -31,6 +33,18 @@ function formatDateTime(value) {
   }).format(parsed);
 }
 
+function formatSaleItems(items = []) {
+  return items
+    .filter((item) => String(item?.name || '').trim())
+    .map((item) => {
+      const itemName = String(item.name || '').trim();
+      const quantity = Number(item.quantity || 0);
+      const lineTotal = formatMoney(item.lineTotal || 0);
+      const unitPrice = Number(item.unitPrice || 0) > 0 ? ` x ${formatMoney(item.unitPrice)}` : '';
+      return `${itemName}${quantity > 0 ? ` x${quantity}` : ''}${unitPrice} - ${lineTotal}`;
+    });
+}
+
 function parsePositiveAmount(value) {
   const normalized = Number(String(value || '').replace(',', '.'));
   if (!Number.isFinite(normalized) || normalized <= 0) {
@@ -55,6 +69,7 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
   const [isSaving, setIsSaving] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [isRegisteringPayment, setIsRegisteringPayment] = useState(false);
+  const [isPrintingStatement, setIsPrintingStatement] = useState(false);
   const [visibleSalesCount, setVisibleSalesCount] = useState(3);
   const [visiblePaymentsCount, setVisiblePaymentsCount] = useState(3);
   const [formValues, setFormValues] = useState({
@@ -295,6 +310,47 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
     }
   }
 
+  async function handlePrintStatement() {
+    if (!selectedCustomerDetail?.customer || isPrintingStatement) {
+      return;
+    }
+
+    const statementPayload = {
+      storeName: 'Super Nova',
+      customerName: selectedCustomerDetail.customer.name,
+      operatorName: currentUser?.name || currentUser?.username || 'Operario',
+      printedAtIso: new Date().toISOString(),
+      debtTotal: selectedCustomerDetail.customer.debtTotal,
+      accountSales,
+      accountPayments
+    };
+
+    setIsPrintingStatement(true);
+
+    try {
+      await printCustomerStatementByQz(statementPayload);
+      toast.success('Estado de cuenta enviado a impresora.', {
+        toastId: `customer-statement-print-ok-${Date.now()}`,
+        autoClose: 1800
+      });
+    } catch (error) {
+      try {
+        await printCustomerStatement(statementPayload);
+        toast.warn('QZ fallo, se abrio impresion del navegador como respaldo.', {
+          toastId: `customer-statement-print-fallback-${Date.now()}`,
+          autoClose: 2600
+        });
+      } catch {
+        toast.error(`No se pudo imprimir: ${error?.message || 'Error de QZ.'}`, {
+          toastId: `customer-statement-print-fail-${Date.now()}`,
+          autoClose: 3200
+        });
+      }
+    } finally {
+      setIsPrintingStatement(false);
+    }
+  }
+
   function resolveExpandLabel(visibleCount, totalCount, step) {
     if (visibleCount >= totalCount) {
       return 'Ver menos';
@@ -414,6 +470,17 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
                   <span className="customers-detail-debt">{formatMoney(selectedCustomerDetail.customer.debtTotal)}</span>
                 </div>
 
+                <div className="d-grid mb-3">
+                  <button
+                    type="button"
+                    className="btn btn-outline-dark"
+                    onClick={handlePrintStatement}
+                    disabled={isPrintingStatement}
+                  >
+                    {isPrintingStatement ? 'Imprimiendo...' : 'Imprimir estado de cuenta'}
+                  </button>
+                </div>
+
                 <form className="customers-payment-box mb-3" onSubmit={handleRegisterPayment}>
                   <div className="d-flex align-items-center justify-content-between gap-2 mb-2">
                     <div>
@@ -510,6 +577,15 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
                           <div>
                             <strong>{formatMoney(sale.totalAmount)}</strong>
                             <div className="customers-sale-meta">{sale.itemsCount} items</div>
+                            {Array.isArray(sale.items) && sale.items.length ? (
+                              <div className="customers-sale-items mt-2">
+                                {formatSaleItems(sale.items).map((label) => (
+                                  <div key={`${sale.id}-${label}`} className="customers-sale-item-line">
+                                    {label}
+                                  </div>
+                                ))}
+                              </div>
+                            ) : null}
                           </div>
                           <span className="customers-sale-meta">{formatDateTime(sale.createdAt)}</span>
                         </div>

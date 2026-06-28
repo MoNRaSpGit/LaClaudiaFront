@@ -157,6 +157,17 @@ body {
   background: #fff;
 }
 
+.customers-sale-items {
+  display: grid;
+  gap: 0.28rem;
+}
+
+.customers-sale-item-line {
+  color: #334155;
+  font-size: 0.84rem;
+  line-height: 1.35;
+}
+
 .customers-sale-row-payment {
   background: linear-gradient(180deg, #f4fbf6 0%, #edf8f0 100%);
 }
