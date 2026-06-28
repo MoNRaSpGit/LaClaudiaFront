@@ -32,6 +32,25 @@
 
 ## Changelog reciente
 
+### 2026-06-25
+
+- `Clientes` suma impresion de `Estado de cuenta` desde el detalle del cliente.
+- El comprobante nuevo incluye:
+  - nombre del cliente.
+  - saldo actual.
+  - ultimas ventas en cuenta.
+  - ultimos pagos registrados.
+  - operador y fecha/hora de impresion.
+- Estrategia de impresion alineada con `Scanner`:
+  - primer canal `QZ Tray`.
+  - fallback a impresion del navegador si falla QZ.
+- Punto de entrada UI:
+  - boton `Imprimir estado de cuenta` dentro de `Clientes > Detalle`.
+- Estado actual:
+  - implementado localmente.
+  - validado con `npm run test` y `npm run build`.
+  - todavia no publicado por pedido explicito de la clienta/equipo.
+
 ### 2026-06-24
 
 - Cobro del scanner actualizado para trabajar con tres medios operativos:
@@ -220,6 +239,9 @@
 - Alta rapida desde frontend.
 - Lista con deuda total por cliente.
 - Detalle con historial reciente de ventas en cuenta.
+- Soporta impresion de `Estado de cuenta` desde el detalle:
+  - usa `QZ Tray` si esta disponible.
+  - cae a impresion navegador si QZ falla.
 
 ## Reglas operativas del frontend
 

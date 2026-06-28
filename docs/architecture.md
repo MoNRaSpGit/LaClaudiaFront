@@ -34,6 +34,7 @@
 - `src/features/auth`: boot + login conectado a backend.
 - `src/features/scanner`: flujo scanner completo.
 - `src/features/panelControl`: caja, movimientos, ranking y pagos (desde backend).
+- `src/features/customers`: cuenta corriente, historial e impresion de estado de cuenta.
 - `src/features/payments`: pagina operativa de pagos para rol `operario`.
 - `src/features/products`: consulta admin de catalogo por nombre.
 - `src/features/stock`: pedido simple de stock entre operario y admin.
@@ -127,6 +128,19 @@
   - severidad.
   - etiquetas de tiempo.
   - filtros por familia visible.
+
+### Customers feature
+
+- `CustomersFeature.jsx`: alta, listado, detalle y acciones de cuenta corriente.
+- `services/customers.api.js`: acceso API del feature.
+- `services/customers.qzPrint.js`: impresion termica RAW del estado de cuenta via `QZ Tray`.
+- `services/customers.print.js`: fallback HTML/browser print del estado de cuenta.
+- comportamiento actual:
+  - alta rapida de cliente.
+  - detalle de deuda.
+  - historial de ventas en cuenta.
+  - historial de pagos.
+  - impresion de `Estado de cuenta` desde el detalle del cliente.
 
 ## Boundary API por feature
 
@@ -229,6 +243,19 @@
 - Formato operativo:
   - encabezado/pie centrado.
   - detalle en 3 columnas fijas: `Produc.` / `Cant.` / `Subtotal`.
+
+## Impresion de estado de cuenta (clientes)
+
+- Estrategia primaria:
+  - RAW `ESC/POS` usando `qz-tray`.
+- Estrategia fallback:
+  - render HTML 80mm e impresion por navegador.
+- Contenido actual del comprobante:
+  - cliente.
+  - saldo actual.
+  - ultimas ventas en cuenta.
+  - ultimos pagos.
+  - operador y fecha/hora.
 
 ## Fuente de verdad de tiempo
 

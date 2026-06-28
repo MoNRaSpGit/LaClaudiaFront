@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import { createCustomer, createCustomerPayment, getCustomerDetail, listCustomers } from './services/customers.api';
-import { printCustomerStatement } from './services/customers.print';
-import { printCustomerStatementByQz } from './services/customers.qzPrint';
+import { printSaleTicket } from '../scanner/services/scanner.print';
+import { printSaleTicketByQz } from '../scanner/services/scanner.qzPrint';
 
 function parseMoneyValue(value) {
   if (typeof value === 'number') {
@@ -45,6 +45,27 @@ function formatSaleItems(items = []) {
     });
 }
 
+function buildCustomerSaleTicketPayload(sale, currentUser) {
+  const ticketItems = Array.isArray(sale?.items)
+    ? sale.items
+      .filter((item) => String(item?.name || '').trim())
+      .map((item) => ({
+        nombre: String(item.name || '').trim(),
+        quantity: Number(item.quantity || 0) || 1,
+        precio_venta: Number(item.unitPrice || 0)
+      }))
+    : [];
+
+  return {
+    storeName: 'Super Nova',
+    externalId: String(sale?.externalId || '').trim() || `CTA-${sale?.id || '-'}`,
+    chargedAtIso: sale?.createdAt || new Date().toISOString(),
+    operatorName: currentUser?.name || currentUser?.username || 'Operario',
+    items: ticketItems,
+    total: Number(sale?.totalAmount || 0)
+  };
+}
+
 function parsePositiveAmount(value) {
   const normalized = Number(String(value || '').replace(',', '.'));
   if (!Number.isFinite(normalized) || normalized <= 0) {
@@ -69,7 +90,7 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
   const [isSaving, setIsSaving] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [isRegisteringPayment, setIsRegisteringPayment] = useState(false);
-  const [isPrintingStatement, setIsPrintingStatement] = useState(false);
+  const [printingSaleId, setPrintingSaleId] = useState(null);
   const [visibleSalesCount, setVisibleSalesCount] = useState(3);
   const [visiblePaymentsCount, setVisiblePaymentsCount] = useState(3);
   const [formValues, setFormValues] = useState({
@@ -310,44 +331,37 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
     }
   }
 
-  async function handlePrintStatement() {
-    if (!selectedCustomerDetail?.customer || isPrintingStatement) {
+  async function handlePrintSale(sale) {
+    const saleId = Number(sale?.id || 0);
+    if (!saleId || printingSaleId === saleId) {
       return;
     }
 
-    const statementPayload = {
-      storeName: 'Super Nova',
-      customerName: selectedCustomerDetail.customer.name,
-      operatorName: currentUser?.name || currentUser?.username || 'Operario',
-      printedAtIso: new Date().toISOString(),
-      debtTotal: selectedCustomerDetail.customer.debtTotal,
-      accountSales,
-      accountPayments
-    };
+    const ticketPayload = buildCustomerSaleTicketPayload(sale, currentUser);
 
-    setIsPrintingStatement(true);
+    setPrintingSaleId(saleId);
 
     try {
-      await printCustomerStatementByQz(statementPayload);
-      toast.success('Estado de cuenta enviado a impresora.', {
-        toastId: `customer-statement-print-ok-${Date.now()}`,
+      await printSaleTicketByQz(ticketPayload);
+      toast.success('Ticket enviado a impresora.', {
+        toastId: `customer-sale-print-ok-${saleId}`,
         autoClose: 1800
       });
     } catch (error) {
       try {
-        await printCustomerStatement(statementPayload);
+        await printSaleTicket(ticketPayload);
         toast.warn('QZ fallo, se abrio impresion del navegador como respaldo.', {
-          toastId: `customer-statement-print-fallback-${Date.now()}`,
+          toastId: `customer-sale-print-fallback-${saleId}`,
           autoClose: 2600
         });
       } catch {
-        toast.error(`No se pudo imprimir: ${error?.message || 'Error de QZ.'}`, {
-          toastId: `customer-statement-print-fail-${Date.now()}`,
+        toast.error(`No se pudo imprimir el ticket: ${error?.message || 'Error de QZ.'}`, {
+          toastId: `customer-sale-print-fail-${saleId}`,
           autoClose: 3200
         });
       }
     } finally {
-      setIsPrintingStatement(false);
+      setPrintingSaleId(null);
     }
   }
 
@@ -470,17 +484,6 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
                   <span className="customers-detail-debt">{formatMoney(selectedCustomerDetail.customer.debtTotal)}</span>
                 </div>
 
-                <div className="d-grid mb-3">
-                  <button
-                    type="button"
-                    className="btn btn-outline-dark"
-                    onClick={handlePrintStatement}
-                    disabled={isPrintingStatement}
-                  >
-                    {isPrintingStatement ? 'Imprimiendo...' : 'Imprimir estado de cuenta'}
-                  </button>
-                </div>
-
                 <form className="customers-payment-box mb-3" onSubmit={handleRegisterPayment}>
                   <div className="d-flex align-items-center justify-content-between gap-2 mb-2">
                     <div>
@@ -571,23 +574,35 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
                     </div>
                   </div>
                   {accountSales.length ? (
-                    <div className="customers-sales-list">
-                      {visibleSales.map((sale) => (
-                        <div key={sale.id} className="customers-sale-row">
-                          <div>
-                            <strong>{formatMoney(sale.totalAmount)}</strong>
-                            <div className="customers-sale-meta">{sale.itemsCount} items</div>
-                            {Array.isArray(sale.items) && sale.items.length ? (
-                              <div className="customers-sale-items mt-2">
-                                {formatSaleItems(sale.items).map((label) => (
-                                  <div key={`${sale.id}-${label}`} className="customers-sale-item-line">
-                                    {label}
+                      <div className="customers-sales-list">
+                        {visibleSales.map((sale) => (
+                          <div key={sale.id} className="customers-sale-row">
+                            <div className="customers-sale-main">
+                              <div className="customers-sale-head">
+                                <strong className="customers-sale-amount">{formatMoney(sale.totalAmount)}</strong>
+                                <div className="customers-sale-meta">{sale.itemsCount} items</div>
+                              </div>
+                              {Array.isArray(sale.items) && sale.items.length ? (
+                                <div className="customers-sale-items">
+                                  {formatSaleItems(sale.items).map((label) => (
+                                    <div key={`${sale.id}-${label}`} className="customers-sale-item-line">
+                                      {label}
                                   </div>
                                 ))}
-                              </div>
-                            ) : null}
-                          </div>
-                          <span className="customers-sale-meta">{formatDateTime(sale.createdAt)}</span>
+                                </div>
+                              ) : null}
+                            </div>
+                            <div className="customers-sale-side">
+                              <span className="customers-sale-meta customers-sale-date">{formatDateTime(sale.createdAt)}</span>
+                              <button
+                                type="button"
+                                className="btn btn-sm btn-outline-dark"
+                                onClick={() => handlePrintSale(sale)}
+                                disabled={printingSaleId === sale.id}
+                              >
+                                {printingSaleId === sale.id ? 'Imprimiendo...' : 'Imprimir ticket'}
+                              </button>
+                            </div>
                         </div>
                       ))}
                     </div>
@@ -623,20 +638,22 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
                     </div>
                   </div>
                   {accountPayments.length ? (
-                    <div className="customers-sales-list">
-                      {visiblePayments.map((payment) => (
-                        <div key={payment.id} className="customers-sale-row customers-sale-row-payment">
-                          <div>
-                            <strong>{formatMoney(payment.amount)}</strong>
-                            <div className="customers-sale-meta">
-                              {payment.paymentMethod === 'tarjeta' ? 'Tarjeta' : 'Efectivo'}
-                              {payment.notes ? ` - ${payment.notes}` : ''}
+                      <div className="customers-sales-list">
+                        {visiblePayments.map((payment) => (
+                          <div key={payment.id} className="customers-sale-row customers-sale-row-payment">
+                            <div className="customers-sale-main">
+                              <div className="customers-sale-head">
+                                <strong className="customers-sale-amount">{formatMoney(payment.amount)}</strong>
+                              </div>
+                              <div className="customers-sale-meta">
+                                {payment.paymentMethod === 'tarjeta' ? 'Tarjeta' : 'Efectivo'}
+                                {payment.notes ? ` - ${payment.notes}` : ''}
+                              </div>
                             </div>
+                            <span className="customers-sale-meta customers-sale-date">{formatDateTime(payment.createdAt)}</span>
                           </div>
-                          <span className="customers-sale-meta">{formatDateTime(payment.createdAt)}</span>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
                   ) : (
                     <p className="text-muted mb-0">Sin pagos registrados todavia.</p>
                   )}
