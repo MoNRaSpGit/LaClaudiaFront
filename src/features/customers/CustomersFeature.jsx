@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { toast } from 'react-toastify';
+import { ToastContainer, toast } from 'react-toastify';
 import { createCustomer, createCustomerPayment, getCustomerDetail, listCustomers, removeCustomer } from './services/customers.api';
 import { printSaleTicket } from '../scanner/services/scanner.print';
 import { printSaleTicketByQz } from '../scanner/services/scanner.qzPrint';
@@ -453,7 +453,11 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
       const debtTotal = parseMoneyValue(customer?.debtTotal);
       if (debtTotal > 0) {
         const message = `No se puede eliminar a ${customerName} porque tiene saldo pendiente (${formatMoney(debtTotal)}).`;
-        toast.error(message);
+        toast.error(message, {
+          containerId: 'customers-toast',
+          toastId: `customer-delete-blocked-${customerId}`,
+          autoClose: 3200
+        });
         return;
       }
 
@@ -560,8 +564,18 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
   const canExpandPayments = activeAccountPayments.length > 3;
 
   return (
-    <div className="container py-4">
-      <div className="row g-4">
+    <>
+      <ToastContainer
+        containerId="customers-toast"
+        position="top-right"
+        newestOnTop
+        closeOnClick
+        pauseOnFocusLoss={false}
+        theme="light"
+        style={{ zIndex: 2000, top: '4.5rem' }}
+      />
+      <div className="container py-4">
+        <div className="row g-4">
         <div className="col-lg-4">
           <section className="customers-card h-100">
             <p className="customers-kicker mb-2">Clientes</p>
@@ -845,8 +859,9 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
             )}
           </section>
         </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
