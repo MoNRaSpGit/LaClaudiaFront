@@ -578,10 +578,9 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
               shiftLockMessage={shiftLockMessage}
             />
 
-            <div className={`scanner-shift-banner mt-3 ${isScannerLocked ? 'scanner-shift-banner-locked' : 'scanner-shift-banner-open'}`}>
+            <div className={`scanner-shift-banner mt-3 ${isScannerLocked ? 'scanner-shift-banner-locked' : 'scanner-shift-banner-open'} ${isShiftOpen && !isShiftDetailsExpanded ? 'scanner-shift-banner-open-compact' : ''}`}>
               <div className="scanner-shift-banner-main">
                 <div className="scanner-shift-banner-copy">
-                  <p className="scanner-shift-banner-kicker mb-1">Turno</p>
                   {isShiftLoading ? (
                     <p className="scanner-shift-banner-title mb-0">Cargando estado...</p>
                   ) : isShiftOpen ? (
