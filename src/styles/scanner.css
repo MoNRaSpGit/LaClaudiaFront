@@ -702,6 +702,10 @@
   max-width: 420px;
 }
 
+.scanner-shift-close-modal-card {
+  max-width: 420px;
+}
+
 .scanner-payment-method-grid {
   display: grid;
   gap: 0.65rem;

@@ -7,6 +7,7 @@ import ScannerCart from './components/ScannerCart';
 import ScannerCheckout from './components/ScannerCheckout';
 import ScannerManualModal from './components/ScannerManualModal';
 import ScannerQuickAddModal from './components/ScannerQuickAddModal';
+import ScannerShiftCloseConfirmModal from './components/ScannerShiftCloseConfirmModal';
 import ScannerShiftOpeningCashModal from './components/ScannerShiftOpeningCashModal';
 import { fetchScannerCustomers, publishScannerLiveState } from './services/scanner.api';
 import {
@@ -107,6 +108,7 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
   const [openConfirmSignal, setOpenConfirmSignal] = useState(0);
   const [confirmByEnterSignal, setConfirmByEnterSignal] = useState(0);
   const [isShiftDetailsExpanded, setIsShiftDetailsExpanded] = useState(false);
+  const [isShiftCloseConfirmOpen, setIsShiftCloseConfirmOpen] = useState(false);
   const scannerInputRef = useRef(null);
   const lastSyncErrorToastAtRef = useRef(0);
   const syncErrorCountRef = useRef(0);
@@ -192,6 +194,13 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
         autoClose: 2200
       });
     }
+  }
+
+  function openCloseShiftConfirm() {
+    if (!shiftState.activeShift?.id || !canCloseActiveShift) {
+      return;
+    }
+    setIsShiftCloseConfirmOpen(true);
   }
 
   useEffect(() => {
@@ -646,7 +655,7 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
                             <button
                               type="button"
                               className="btn btn-sm btn-outline-dark scanner-shift-close-btn"
-                              onClick={handleCloseShift}
+                              onClick={openCloseShiftConfirm}
                             >
                               Cerrar turno
                             </button>
@@ -726,6 +735,15 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
                 setOpeningShiftTarget('');
               }}
               onConfirm={confirmOpenShift}
+            />
+            <ScannerShiftCloseConfirmModal
+              isOpen={isShiftCloseConfirmOpen}
+              shiftLabel={activeShiftLabel}
+              onClose={() => setIsShiftCloseConfirmOpen(false)}
+              onConfirm={async () => {
+                setIsShiftCloseConfirmOpen(false);
+                await handleCloseShift();
+              }}
             />
 
             <div className="text-center mt-4">

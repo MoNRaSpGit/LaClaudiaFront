@@ -8,6 +8,7 @@ import MovementsPanel from './components/MovementsPanel';
 import RankingPanel from './components/RankingPanel';
 import PaymentFormPanel from './components/PaymentFormPanel';
 import DiagnosticEventsPanel from './components/DiagnosticEventsPanel';
+import ScannerShiftCloseConfirmModal from '../scanner/components/ScannerShiftCloseConfirmModal';
 import ScannerShiftOpeningCashModal from '../scanner/components/ScannerShiftOpeningCashModal';
 import { moneyNoDecimals } from './model/panelControl.formatters';
 import { usePanelControlController } from './model/usePanelControlController';
@@ -45,6 +46,8 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
   const [profitRateDraft, setProfitRateDraft] = useState(() => String(controller.profitRatePercent || 30));
   const [isOpeningShiftCashModalOpen, setIsOpeningShiftCashModalOpen] = useState(false);
   const [openingShiftTarget, setOpeningShiftTarget] = useState('');
+  const [isCloseShiftConfirmOpen, setIsCloseShiftConfirmOpen] = useState(false);
+  const [closingShiftTarget, setClosingShiftTarget] = useState(null);
 
   useEffect(() => {
     function syncMobileLayout() {
@@ -100,6 +103,11 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
     setOpeningShiftTarget('');
   }
 
+  function closeShiftConfirmModal() {
+    setIsCloseShiftConfirmOpen(false);
+    setClosingShiftTarget(null);
+  }
+
   function openShiftOpeningModal(shiftType) {
     const normalizedShiftType = String(shiftType || '').trim().toLowerCase();
     if (!normalizedShiftType) {
@@ -107,6 +115,14 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
     }
     setOpeningShiftTarget(normalizedShiftType);
     setIsOpeningShiftCashModalOpen(true);
+  }
+
+  function openShiftCloseConfirmModal(shift) {
+    if (!shift?.id) {
+      return;
+    }
+    setClosingShiftTarget(shift);
+    setIsCloseShiftConfirmOpen(true);
   }
 
   async function saveInitialCash() {
@@ -209,6 +225,27 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
         autoClose: 2200
       });
       return false;
+    }
+  }
+
+  async function confirmCloseShift() {
+    const targetShift = closingShiftTarget;
+    if (!targetShift?.id) {
+      return;
+    }
+
+    try {
+      await controller.closeShift(targetShift.id);
+      closeShiftConfirmModal();
+      toast.success('Turno cerrado correctamente.', {
+        toastId: `panel-close-shift-${targetShift.shiftType}`,
+        autoClose: 1800
+      });
+    } catch (error) {
+      toast.error(error?.message || 'No se pudo cerrar el turno.', {
+        toastId: `panel-close-shift-error-${targetShift.shiftType}`,
+        autoClose: 2200
+      });
     }
   }
 
@@ -344,12 +381,7 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
                       className="btn btn-sm btn-dark"
                       disabled={controller.isSavingShift}
                       onClick={() => {
-                        controller.closeShift(shift.id).catch((error) => {
-                          toast.error(error?.message || 'No se pudo cerrar el turno.', {
-                            toastId: `panel-close-shift-${shift.shiftType}`,
-                            autoClose: 2200
-                          });
-                        });
+                        openShiftCloseConfirmModal(shift);
                       }}
                     >
                       {controller.isSavingShift ? 'Cerrando...' : 'Cerrar turno'}
@@ -396,6 +428,12 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
                     : openingShiftTarget}
               onClose={closeShiftOpeningModal}
               onConfirm={confirmOpenShift}
+            />
+            <ScannerShiftCloseConfirmModal
+              isOpen={isCloseShiftConfirmOpen}
+              shiftLabel={closingShiftTarget?.shiftLabel || ''}
+              onClose={closeShiftConfirmModal}
+              onConfirm={confirmCloseShift}
             />
             <button
               type="button"
