@@ -698,6 +698,10 @@
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
 }
 
+.scanner-shift-open-modal-card {
+  max-width: 420px;
+}
+
 .scanner-payment-method-grid {
   display: grid;
   gap: 0.65rem;

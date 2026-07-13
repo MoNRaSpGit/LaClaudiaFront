@@ -8,6 +8,7 @@ import MovementsPanel from './components/MovementsPanel';
 import RankingPanel from './components/RankingPanel';
 import PaymentFormPanel from './components/PaymentFormPanel';
 import DiagnosticEventsPanel from './components/DiagnosticEventsPanel';
+import ScannerShiftOpeningCashModal from '../scanner/components/ScannerShiftOpeningCashModal';
 import { moneyNoDecimals } from './model/panelControl.formatters';
 import { usePanelControlController } from './model/usePanelControlController';
 
@@ -42,6 +43,8 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
   const [initialCashDraft, setInitialCashDraft] = useState(() => String(controller.initialCashAmount || 0));
   const [isProfitRateModalOpen, setIsProfitRateModalOpen] = useState(false);
   const [profitRateDraft, setProfitRateDraft] = useState(() => String(controller.profitRatePercent || 30));
+  const [isOpeningShiftCashModalOpen, setIsOpeningShiftCashModalOpen] = useState(false);
+  const [openingShiftTarget, setOpeningShiftTarget] = useState('');
 
   useEffect(() => {
     function syncMobileLayout() {
@@ -90,6 +93,20 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
   function closeProfitRateModal() {
     setIsProfitRateModalOpen(false);
     setProfitRateDraft(String(controller.profitRatePercent || 30));
+  }
+
+  function closeShiftOpeningModal() {
+    setIsOpeningShiftCashModalOpen(false);
+    setOpeningShiftTarget('');
+  }
+
+  function openShiftOpeningModal(shiftType) {
+    const normalizedShiftType = String(shiftType || '').trim().toLowerCase();
+    if (!normalizedShiftType) {
+      return;
+    }
+    setOpeningShiftTarget(normalizedShiftType);
+    setIsOpeningShiftCashModalOpen(true);
   }
 
   async function saveInitialCash() {
@@ -168,6 +185,31 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
   function handleProfitRateSubmit(event) {
     event.preventDefault();
     saveProfitRate();
+  }
+
+  async function confirmOpenShift(openingCash) {
+    if (!openingShiftTarget) {
+      return false;
+    }
+
+    try {
+      const result = await controller.openShift(openingShiftTarget, { openingCash });
+      if (result?.busy) {
+        return false;
+      }
+      closeShiftOpeningModal();
+      toast.success('Turno abierto correctamente.', {
+        toastId: `panel-open-shift-${openingShiftTarget}`,
+        autoClose: 1800
+      });
+      return true;
+    } catch (error) {
+      toast.error(error?.message || 'No se pudo abrir el turno.', {
+        toastId: `panel-open-shift-error-${openingShiftTarget}`,
+        autoClose: 2200
+      });
+      return false;
+    }
   }
 
   function scrollToSection(sectionKey) {
@@ -254,6 +296,8 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
     const shiftState = controller.shiftState || { shifts: [], activeShift: null, isLoading: false, error: '' };
     const shifts = Array.isArray(shiftState.shifts) ? shiftState.shifts : [];
     const activeShift = shiftState.activeShift || null;
+    const currentUserId = Number(currentUser?.id || 0);
+    const isAdminUser = String(currentUser?.role || '').trim().toLowerCase() === 'admin';
 
     return (
       <section className="panel-section mb-4" id="panel-section-shifts">
@@ -275,7 +319,9 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
                 <strong>{shift.isOpen ? 'Abierto' : 'Cerrado'}</strong>
                 <span className="small text-muted">{shift.salesCount} ventas</span>
               </div>
-              <p className="mb-2 small text-muted">Total: {moneyNoDecimals(shift.salesTotal)}</p>
+              <p className="mb-1 small text-muted">Caja apertura turno: {moneyNoDecimals(shift.shiftOpeningCash ?? shift.openingCash ?? 0)}</p>
+              <p className="mb-1 small text-muted">Ventas en efectivo: {moneyNoDecimals(shift.cashSalesTotal || 0)}</p>
+              <p className="mb-2 small text-muted">Caja total: {moneyNoDecimals(shift.cashTotal || 0)}</p>
               <div className="panel-shift-breakdown mb-2">
                 <div className="panel-shift-breakdown-row">
                   <span>Efectivo</span>
@@ -292,33 +338,32 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
               </div>
               <div className="d-flex gap-2 flex-wrap">
                 {shift.isOpen ? (
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-dark"
-                    disabled={controller.isSavingShift}
-                    onClick={() => {
-                      controller.closeShift(shift.id).catch((error) => {
-                        toast.error(error?.message || 'No se pudo cerrar el turno.', {
-                          toastId: `panel-close-shift-${shift.shiftType}`,
-                          autoClose: 2200
+                  isAdminUser || Number(shift.openedBy?.id || 0) === currentUserId ? (
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-dark"
+                      disabled={controller.isSavingShift}
+                      onClick={() => {
+                        controller.closeShift(shift.id).catch((error) => {
+                          toast.error(error?.message || 'No se pudo cerrar el turno.', {
+                            toastId: `panel-close-shift-${shift.shiftType}`,
+                            autoClose: 2200
+                          });
                         });
-                      });
-                    }}
-                  >
-                    {controller.isSavingShift ? 'Cerrando...' : 'Cerrar turno'}
-                  </button>
+                      }}
+                    >
+                      {controller.isSavingShift ? 'Cerrando...' : 'Cerrar turno'}
+                    </button>
+                  ) : (
+                    <span className="small text-muted align-self-center">Solo lo puede cerrar quien lo abrió.</span>
+                  )
                 ) : (
                   <button
                     type="button"
                     className="btn btn-sm btn-outline-dark"
                     disabled={controller.isSavingShift || Boolean(activeShift)}
                     onClick={() => {
-                      controller.openShift(shift.shiftType).catch((error) => {
-                        toast.error(error?.message || 'No se pudo abrir el turno.', {
-                          toastId: `panel-open-shift-${shift.shiftType}`,
-                          autoClose: 2200
-                        });
-                      });
+                      openShiftOpeningModal(shift.shiftType);
                     }}
                   >
                     {controller.isSavingShift ? 'Abriendo...' : 'Abrir turno'}
@@ -340,6 +385,18 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
                 ? `Abierto por ${activeShift.openedBy?.displayName || activeShift.openedBy?.username || 'usuario'}`
                 : 'Abrir un turno para habilitar ventas.'}
             </div>
+            <ScannerShiftOpeningCashModal
+              isOpen={isOpeningShiftCashModalOpen}
+              shiftLabel={String(openingShiftTarget || '').toLowerCase() === 'manana'
+                ? 'Mañana'
+                : String(openingShiftTarget || '').toLowerCase() === 'tarde'
+                  ? 'Tarde'
+                  : String(openingShiftTarget || '').toLowerCase() === 'noche'
+                    ? 'Noche'
+                    : openingShiftTarget}
+              onClose={closeShiftOpeningModal}
+              onConfirm={confirmOpenShift}
+            />
             <button
               type="button"
               className="btn btn-sm btn-outline-danger"

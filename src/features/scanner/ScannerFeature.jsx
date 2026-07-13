@@ -7,6 +7,7 @@ import ScannerCart from './components/ScannerCart';
 import ScannerCheckout from './components/ScannerCheckout';
 import ScannerManualModal from './components/ScannerManualModal';
 import ScannerQuickAddModal from './components/ScannerQuickAddModal';
+import ScannerShiftOpeningCashModal from './components/ScannerShiftOpeningCashModal';
 import { fetchScannerCustomers, publishScannerLiveState } from './services/scanner.api';
 import {
   classifyDiagnosticError,
@@ -15,7 +16,7 @@ import {
 } from './services/scanner.diagnostics';
 import { printSaleTicket } from './services/scanner.print';
 import { printSaleTicketByQz } from './services/scanner.qzPrint';
-import { openScannerShift } from './services/scanner.shifts.api';
+import { closeScannerShift, openScannerShift } from './services/scanner.shifts.api';
 import {
   flushScannerSalesQueue,
   getScannerSalesQueueDebugSnapshot,
@@ -84,6 +85,8 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
     isOpen: false,
     barcode: ''
   });
+  const [isOpeningShiftCashModalOpen, setIsOpeningShiftCashModalOpen] = useState(false);
+  const [openingShiftTarget, setOpeningShiftTarget] = useState('');
   const [pendingSalesCount, setPendingSalesCount] = useState(getScannerSalesQueuePendingCount());
   const [customerOptions, setCustomerOptions] = useState([]);
   const [isCustomerAccountsAvailable, setIsCustomerAccountsAvailable] = useState(true);
@@ -116,7 +119,13 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
   const activeShiftLabel = shiftState.activeShift?.shiftLabel || '';
   const activeShiftSales = Number(shiftState.activeShift?.salesTotal || 0);
   const activeShiftCount = Number(shiftState.activeShift?.salesCount || 0);
+  const activeShiftOpeningCash = Number(shiftState.activeShift?.shiftOpeningCash ?? shiftState.activeShift?.openingCash ?? 0);
+  const activeShiftCashSales = Number(shiftState.activeShift?.cashSalesTotal || 0);
+  const activeShiftCashTotal = Number(shiftState.activeShift?.cashTotal || 0);
   const activeShiftPaymentSummary = shiftState.activeShift?.paymentSummary || { efectivo: 0, tarjeta: 0, credito: 0 };
+  const activeShiftOpenedById = Number(shiftState.activeShift?.openedBy?.id || shiftState.activeShift?.openedByUserId || 0);
+  const currentUserId = Number(currentUser?.id || 0);
+  const canCloseActiveShift = Boolean(isShiftOpen) && (String(currentUser?.role || '').trim().toLowerCase() === 'admin' || (activeShiftOpenedById > 0 && activeShiftOpenedById === currentUserId));
   const shiftTypeLabels = {
     manana: 'Mañana',
     tarde: 'Tarde',
@@ -128,20 +137,58 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
     if (!normalizedShiftType) {
       return;
     }
+    setOpeningShiftTarget(normalizedShiftType);
+    setIsOpeningShiftCashModalOpen(true);
+  }
+
+  async function confirmOpenShift(openingCash) {
+    if (!openingShiftTarget) {
+      return false;
+    }
+
+    const normalizedShiftType = String(openingShiftTarget || '').trim().toLowerCase();
+    const shiftLabel = shiftTypeLabels[normalizedShiftType] || normalizedShiftType;
 
     try {
       await openScannerShift(normalizedShiftType, {
         token: currentUser?.sessionToken || '',
-        date: currentStoreDateLabel
+        date: currentStoreDateLabel,
+        openingCash
       });
-      await refreshShiftState({ silent: true });
-      toast.success(`Turno ${shiftTypeLabels[normalizedShiftType] || normalizedShiftType} abierto.`, {
+      refreshShiftState({ silent: true }).catch(() => {});
+      toast.success(`Turno ${shiftLabel} abierto.`, {
         toastId: `scanner-open-shift-${normalizedShiftType}`,
         autoClose: 1800
       });
+      setIsOpeningShiftCashModalOpen(false);
+      setOpeningShiftTarget('');
+      return true;
     } catch (error) {
       toast.error(error?.message || 'No se pudo abrir el turno.', {
         toastId: `scanner-open-shift-error-${normalizedShiftType}`,
+        autoClose: 2200
+      });
+      return false;
+    }
+  }
+
+  async function handleCloseShift() {
+    if (!shiftState.activeShift?.id || !canCloseActiveShift) {
+      return;
+    }
+
+    try {
+      await closeScannerShift(shiftState.activeShift.id, {
+        token: currentUser?.sessionToken || ''
+      });
+      await refreshShiftState({ silent: true });
+      toast.success('Turno cerrado.', {
+        toastId: `scanner-close-shift-${shiftState.activeShift.id}`,
+        autoClose: 1800
+      });
+    } catch (error) {
+      toast.error(error?.message || 'No se pudo cerrar el turno.', {
+        toastId: `scanner-close-shift-error-${shiftState.activeShift.id}`,
         autoClose: 2200
       });
     }
@@ -150,6 +197,13 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
   useEffect(() => {
     if (!isShiftOpen) {
       setIsShiftDetailsExpanded(false);
+    }
+  }, [isShiftOpen]);
+
+  useEffect(() => {
+    if (isShiftOpen) {
+      setIsOpeningShiftCashModalOpen(false);
+      setOpeningShiftTarget('');
     }
   }, [isShiftOpen]);
 
@@ -587,17 +641,31 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
                     <>
                       <div className="scanner-shift-banner-open-head">
                         <p className="scanner-shift-banner-title mb-0">Turno {activeShiftLabel}</p>
-                        <button
-                          type="button"
-                          className={`scanner-shift-banner-toggle ${isShiftDetailsExpanded ? 'scanner-shift-banner-toggle-open' : ''}`}
-                          aria-label={isShiftDetailsExpanded ? 'Contraer turno' : 'Expandir turno'}
-                          onClick={() => setIsShiftDetailsExpanded((current) => !current)}
-                        >
-                          <ChevronDown size={16} />
-                        </button>
+                        <div className="d-flex align-items-center gap-2">
+                          {canCloseActiveShift ? (
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-outline-dark scanner-shift-close-btn"
+                              onClick={handleCloseShift}
+                            >
+                              Cerrar turno
+                            </button>
+                          ) : null}
+                          <button
+                            type="button"
+                            className={`scanner-shift-banner-toggle ${isShiftDetailsExpanded ? 'scanner-shift-banner-toggle-open' : ''}`}
+                            aria-label={isShiftDetailsExpanded ? 'Contraer turno' : 'Expandir turno'}
+                            onClick={() => setIsShiftDetailsExpanded((current) => !current)}
+                          >
+                            <ChevronDown size={16} />
+                          </button>
+                        </div>
                       </div>
                       {isShiftDetailsExpanded ? (
                         <>
+                          <p className="scanner-shift-banner-subtitle mb-0">
+                            Caja apertura turno: ${activeShiftOpeningCash.toFixed(2)} | Efectivo: ${activeShiftCashSales.toFixed(2)} | Caja total: ${activeShiftCashTotal.toFixed(2)}
+                          </p>
                           <p className="scanner-shift-banner-subtitle mb-0">
                             Ventas: ${activeShiftSales.toFixed(2)} | Tickets: {activeShiftCount}
                           </p>
@@ -649,6 +717,16 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
                 ) : null}
               </div>
             </div>
+
+            <ScannerShiftOpeningCashModal
+              isOpen={isOpeningShiftCashModalOpen}
+              shiftLabel={shiftTypeLabels[openingShiftTarget] || openingShiftTarget}
+              onClose={() => {
+                setIsOpeningShiftCashModalOpen(false);
+                setOpeningShiftTarget('');
+              }}
+              onConfirm={confirmOpenShift}
+            />
 
             <div className="text-center mt-4">
               <div className="scanner-manual-grid scanner-manual-grid--fuerte" role="group" aria-label="Productos manuales rápidos">

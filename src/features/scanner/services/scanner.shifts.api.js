@@ -13,13 +13,14 @@ export async function fetchScannerShiftState({ token, date } = {}) {
   return readJson(response);
 }
 
-export async function openScannerShift(shiftType, { token, date } = {}) {
+export async function openScannerShift(shiftType, { token, date, openingCash } = {}) {
   const response = await fetch(`${apiUrl}/api/scanner/shifts/open`, {
     method: 'POST',
     headers: buildHeaders({ token, json: true }),
     body: JSON.stringify({
       shiftType,
-      date
+      date,
+      openingCash
     })
   });
   return readJson(response);

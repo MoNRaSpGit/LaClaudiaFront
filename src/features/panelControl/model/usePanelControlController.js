@@ -223,7 +223,7 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
     return undefined;
   }, [currentStoreDateLabel, loadShiftState]);
 
-  async function openShift(shiftType) {
+  async function openShift(shiftType, { openingCash } = {}) {
     if (isSavingShift) {
       return { ok: false, busy: true };
     }
@@ -237,12 +237,35 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
     try {
       const result = await openScannerShift(normalizedShiftType, {
         token: currentUser?.sessionToken || '',
-        date: currentStoreDateLabel
+        date: currentStoreDateLabel,
+        openingCash
       });
-      await loadShiftState({ silent: true });
+      const openedShift = result?.shift || null;
+      if (openedShift?.shiftType) {
+        setShiftState((current) => {
+          const nextShifts = Array.isArray(current.shifts)
+            ? current.shifts.map((shift) => (
+                shift.shiftType === openedShift.shiftType
+                  ? {
+                      ...shift,
+                      ...openedShift
+                    }
+                  : shift
+              ))
+            : [];
+          const hasShift = nextShifts.some((shift) => shift.shiftType === openedShift.shiftType);
+          return {
+            ...current,
+            shifts: hasShift ? nextShifts : [...nextShifts, openedShift],
+            activeShift: openedShift
+          };
+        });
+      }
+
+      loadShiftState({ silent: true }).catch(() => {});
       return {
         ok: true,
-        shift: result?.shift || null
+        shift: openedShift
       };
     } catch (error) {
       const message = toUserErrorMessage(error, { context: 'panel_dashboard' });
