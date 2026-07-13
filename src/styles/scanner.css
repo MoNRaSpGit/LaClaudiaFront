@@ -206,6 +206,52 @@
   background: linear-gradient(135deg, #f8fbff 0%, #f3f7fb 100%);
 }
 
+.scanner-shift-banner-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.scanner-shift-banner-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.scanner-shift-banner-open-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.scanner-shift-banner-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid #cfd8e3;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #35506f;
+  transition: transform 140ms ease, background-color 140ms ease, border-color 140ms ease;
+}
+
+.scanner-shift-banner-toggle svg {
+  transition: transform 140ms ease;
+}
+
+.scanner-shift-banner-toggle-open svg {
+  transform: rotate(180deg);
+}
+
+.scanner-shift-banner-toggle:hover {
+  background: #ffffff;
+  border-color: #aebfd3;
+}
+
 .scanner-shift-banner-locked {
   border-color: #f1b5b5;
   background: linear-gradient(135deg, #fff5f5 0%, #ffe8e8 100%);
@@ -268,6 +314,20 @@
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.84);
   border: 1px solid #d2dbe7;
+}
+
+@media (max-width: 575.98px) {
+  .scanner-shift-banner {
+    flex-direction: column;
+  }
+
+  .scanner-shift-banner-open-head {
+    align-items: flex-start;
+  }
+
+  .scanner-shift-banner-badges {
+    justify-content: flex-start;
+  }
 }
 
 .scanner-shift-pill {

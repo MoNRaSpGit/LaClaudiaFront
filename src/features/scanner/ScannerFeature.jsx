@@ -1,5 +1,5 @@
 ﻿import { useCallback, useEffect, useRef, useState } from 'react';
-import { Apple, Beef, CircleEllipsis, Cog, Scale, Wheat, X } from 'lucide-react';
+import { Apple, Beef, ChevronDown, CircleEllipsis, Cog, Scale, Wheat, X } from 'lucide-react';
 import { ToastContainer, toast } from 'react-toastify';
 import { useScannerController } from './model/useScannerController';
 import ScannerInput from './components/ScannerInput';
@@ -103,6 +103,7 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
   const [isCheckoutConfirmOpen, setIsCheckoutConfirmOpen] = useState(false);
   const [openConfirmSignal, setOpenConfirmSignal] = useState(0);
   const [confirmByEnterSignal, setConfirmByEnterSignal] = useState(0);
+  const [isShiftDetailsExpanded, setIsShiftDetailsExpanded] = useState(false);
   const scannerInputRef = useRef(null);
   const lastSyncErrorToastAtRef = useRef(0);
   const syncErrorCountRef = useRef(0);
@@ -145,6 +146,12 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
       });
     }
   }
+
+  useEffect(() => {
+    if (!isShiftOpen) {
+      setIsShiftDetailsExpanded(false);
+    }
+  }, [isShiftOpen]);
 
   const focusScannerInput = useCallback(() => {
     setTimeout(() => {
@@ -572,27 +579,42 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
             />
 
             <div className={`scanner-shift-banner mt-3 ${isScannerLocked ? 'scanner-shift-banner-locked' : 'scanner-shift-banner-open'}`}>
-              <div>
-                <p className="scanner-shift-banner-kicker mb-1">Turno</p>
-                {isShiftLoading ? (
-                  <p className="scanner-shift-banner-title mb-0">Cargando estado...</p>
-                ) : isShiftOpen ? (
-                  <>
-                    <p className="scanner-shift-banner-title mb-0">Turno {activeShiftLabel}</p>
-                    <p className="scanner-shift-banner-subtitle mb-0">
-                      Ventas: ${activeShiftSales.toFixed(2)} | Tickets: {activeShiftCount}
-                    </p>
-                    <div className="scanner-shift-payment-summary mt-2">
-                      <span>Efectivo {Number(activeShiftPaymentSummary.efectivo || 0).toFixed(2)}</span>
-                      <span>Tarjeta {Number(activeShiftPaymentSummary.tarjeta || 0).toFixed(2)}</span>
-                      <span>Crédito {Number(activeShiftPaymentSummary.credito || 0).toFixed(2)}</span>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <p className="scanner-shift-banner-title scanner-shift-banner-title-danger mb-0">Abrir turno</p>
-                    <p className="scanner-shift-banner-subtitle mb-0">No se puede vender hasta que se abra un turno.</p>
-                    <div className="scanner-shift-banner-actions mt-3">
+              <div className="scanner-shift-banner-main">
+                <div className="scanner-shift-banner-copy">
+                  <p className="scanner-shift-banner-kicker mb-1">Turno</p>
+                  {isShiftLoading ? (
+                    <p className="scanner-shift-banner-title mb-0">Cargando estado...</p>
+                  ) : isShiftOpen ? (
+                    <>
+                      <div className="scanner-shift-banner-open-head">
+                        <p className="scanner-shift-banner-title mb-0">Turno {activeShiftLabel}</p>
+                        <button
+                          type="button"
+                          className={`scanner-shift-banner-toggle ${isShiftDetailsExpanded ? 'scanner-shift-banner-toggle-open' : ''}`}
+                          aria-label={isShiftDetailsExpanded ? 'Contraer turno' : 'Expandir turno'}
+                          onClick={() => setIsShiftDetailsExpanded((current) => !current)}
+                        >
+                          <ChevronDown size={16} />
+                        </button>
+                      </div>
+                      {isShiftDetailsExpanded ? (
+                        <>
+                          <p className="scanner-shift-banner-subtitle mb-0">
+                            Ventas: ${activeShiftSales.toFixed(2)} | Tickets: {activeShiftCount}
+                          </p>
+                          <div className="scanner-shift-payment-summary mt-2">
+                            <span>Efectivo {Number(activeShiftPaymentSummary.efectivo || 0).toFixed(2)}</span>
+                            <span>Tarjeta {Number(activeShiftPaymentSummary.tarjeta || 0).toFixed(2)}</span>
+                            <span>Crédito {Number(activeShiftPaymentSummary.credito || 0).toFixed(2)}</span>
+                          </div>
+                        </>
+                      ) : null}
+                    </>
+                  ) : (
+                    <>
+                      <p className="scanner-shift-banner-title scanner-shift-banner-title-danger mb-0">Abrir turno</p>
+                      <p className="scanner-shift-banner-subtitle mb-0">No se puede vender hasta que se abra un turno.</p>
+                      <div className="scanner-shift-banner-actions mt-3">
                       {['manana', 'tarde', 'noche'].map((shiftType) => {
                         const shift = shiftState.shifts.find((item) => item.shiftType === shiftType);
                         const isOpen = Boolean(shift?.isOpen);
@@ -613,16 +635,19 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
                     </div>
                   </>
                 )}
-              </div>
-              <div className="scanner-shift-banner-badges">
-                {shiftState.shifts.map((shift) => (
-                  <span
-                    key={shift.shiftType}
-                    className={`scanner-shift-pill ${shift.isOpen ? 'scanner-shift-pill-open' : ''}`}
-                  >
-                    {shift.shiftLabel}
-                  </span>
-                ))}
+                </div>
+                {isShiftOpen && isShiftDetailsExpanded ? (
+                  <div className="scanner-shift-banner-badges">
+                    {shiftState.shifts.map((shift) => (
+                      <span
+                        key={shift.shiftType}
+                        className={`scanner-shift-pill ${shift.isOpen ? 'scanner-shift-pill-open' : ''}`}
+                      >
+                        {shift.shiftLabel}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
               </div>
             </div>
 
