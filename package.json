@@ -4,9 +4,9 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "build:gh": "vite build --base=/LaClaudiaFront/",
+    "dev": "vite --configLoader runner",
+    "build": "vite build --configLoader runner",
+    "build:gh": "vite build --configLoader runner --base=/LaClaudiaFront/",
     "build:gh:prod": "node ./scripts/build-gh-prod.mjs",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives",
     "preview": "vite preview",

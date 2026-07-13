@@ -218,6 +218,35 @@
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
 }
 
+.panel-shift-card-open {
+  border-color: #b7dfc2;
+  background: linear-gradient(180deg, #f4fff6 0%, #e7f8ec 100%);
+}
+
+.panel-shift-summary {
+  border: 1px solid #dbe2eb;
+  border-radius: 12px;
+  background: #fff;
+  padding: 0.85rem 0.95rem;
+}
+
+.panel-shift-breakdown {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.panel-shift-breakdown-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+}
+
 .panel-metric-card-highlight-sales {
   border-color: #5f95cf;
   background: linear-gradient(180deg, #d8ebff 0%, #bfdfff 100%);
@@ -1492,6 +1521,7 @@
   #panel-section-ranking,
   #panel-section-movements,
   #panel-section-payments,
+  #panel-section-shifts,
   #panel-section-diagnostics {
     scroll-margin-top: 86px;
   }

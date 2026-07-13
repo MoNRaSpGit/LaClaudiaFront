@@ -181,6 +181,7 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
       ranking: 'panel-section-ranking',
       movements: 'panel-section-movements',
       payments: 'panel-section-payments',
+      shifts: 'panel-section-shifts',
       diagnostics: 'panel-section-diagnostics'
     };
     const targetId = sectionIdByKey[sectionKey];
@@ -246,6 +247,119 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
         onChangeDescription={controller.setPaymentDescription}
         onSubmit={handlePaymentSubmit}
       />
+    );
+  }
+
+  function renderShiftsPanel() {
+    const shiftState = controller.shiftState || { shifts: [], activeShift: null, isLoading: false, error: '' };
+    const shifts = Array.isArray(shiftState.shifts) ? shiftState.shifts : [];
+    const activeShift = shiftState.activeShift || null;
+
+    return (
+      <section className="panel-section mb-4" id="panel-section-shifts">
+        <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+          <div>
+            <h2 className="h5 mb-1 panel-section-title">Turnos</h2>
+            <p className="mb-0 small text-muted">Mañana, tarde y noche. El turno se abre y se cierra manualmente.</p>
+          </div>
+          <div className="d-flex align-items-center gap-2">
+            {shiftState.error ? <small className="text-danger">{shiftState.error}</small> : null}
+          </div>
+        </div>
+
+        <div className="panel-grid-6-v2 mb-3">
+          {shifts.map((shift) => (
+            <article key={shift.shiftType} className={`panel-metric-card-v2 ${shift.isOpen ? 'panel-shift-card-open' : ''}`}>
+              <p className="panel-metric-title mb-1">{shift.shiftLabel}</p>
+              <div className="d-flex align-items-center justify-content-between gap-2 mb-2">
+                <strong>{shift.isOpen ? 'Abierto' : 'Cerrado'}</strong>
+                <span className="small text-muted">{shift.salesCount} ventas</span>
+              </div>
+              <p className="mb-2 small text-muted">Total: {moneyNoDecimals(shift.salesTotal)}</p>
+              <div className="panel-shift-breakdown mb-2">
+                <div className="panel-shift-breakdown-row">
+                  <span>Efectivo</span>
+                  <strong>{moneyNoDecimals(shift.paymentSummary?.efectivo || 0)}</strong>
+                </div>
+                <div className="panel-shift-breakdown-row">
+                  <span>Tarjeta</span>
+                  <strong>{moneyNoDecimals(shift.paymentSummary?.tarjeta || 0)}</strong>
+                </div>
+                <div className="panel-shift-breakdown-row">
+                  <span>Crédito</span>
+                  <strong>{moneyNoDecimals(shift.paymentSummary?.credito || 0)}</strong>
+                </div>
+              </div>
+              <div className="d-flex gap-2 flex-wrap">
+                {shift.isOpen ? (
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-dark"
+                    disabled={controller.isSavingShift}
+                    onClick={() => {
+                      controller.closeShift(shift.id).catch((error) => {
+                        toast.error(error?.message || 'No se pudo cerrar el turno.', {
+                          toastId: `panel-close-shift-${shift.shiftType}`,
+                          autoClose: 2200
+                        });
+                      });
+                    }}
+                  >
+                    {controller.isSavingShift ? 'Cerrando...' : 'Cerrar turno'}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-outline-dark"
+                    disabled={controller.isSavingShift || Boolean(activeShift)}
+                    onClick={() => {
+                      controller.openShift(shift.shiftType).catch((error) => {
+                        toast.error(error?.message || 'No se pudo abrir el turno.', {
+                          toastId: `panel-open-shift-${shift.shiftType}`,
+                          autoClose: 2200
+                        });
+                      });
+                    }}
+                  >
+                    {controller.isSavingShift ? 'Abriendo...' : 'Abrir turno'}
+                  </button>
+                )}
+              </div>
+            </article>
+          ))}
+        </div>
+
+        <div className="panel-shift-summary d-flex align-items-center justify-content-between flex-wrap gap-2">
+          <div>
+            <p className="mb-1 small text-muted">Estado actual</p>
+            <strong>{activeShift ? `Turno ${activeShift.shiftLabel}` : 'Sin turno abierto'}</strong>
+          </div>
+          <div className="d-flex flex-column align-items-end gap-2">
+            <div className="small text-muted">
+              {activeShift
+                ? `Abierto por ${activeShift.openedBy?.displayName || activeShift.openedBy?.username || 'usuario'}`
+                : 'Abrir un turno para habilitar ventas.'}
+            </div>
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-danger"
+              disabled={controller.isSavingShift}
+              onClick={() => {
+                if (window.confirm('Esto borra los turnos de hoy para volver a probar. ¿Continuar?')) {
+                  controller.resetTodayShifts().catch((error) => {
+                    toast.error(error?.message || 'No se pudo reiniciar el turno.', {
+                      toastId: 'panel-reset-shifts-error',
+                      autoClose: 2200
+                    });
+                  });
+                }
+              }}
+            >
+              {controller.isSavingShift ? 'Procesando...' : 'Reiniciar turnos de hoy'}
+            </button>
+          </div>
+        </div>
+      </section>
     );
   }
 
@@ -361,6 +475,8 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
                   </div>
                 </section>
 
+                {renderShiftsPanel()}
+
                 {isMobileLayout ? (
                   <div className="panel-mobile-stack">
                     <section id="panel-section-live">{renderLivePanel()}</section>
@@ -408,6 +524,9 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
           <button type="button" className={`panel-mobile-bottom-btn ${activeMobileSection === 'payments' ? 'panel-mobile-bottom-btn-active' : ''}`} onClick={() => scrollToSection('payments')}>
             <HandCoins size={16} />
             <span>Pago</span>
+          </button>
+          <button type="button" className={`panel-mobile-bottom-btn ${activeMobileSection === 'shifts' ? 'panel-mobile-bottom-btn-active' : ''}`} onClick={() => scrollToSection('shifts')}>
+            <span>Turnos</span>
           </button>
           {controller.canViewDiagnostics ? (
             <button

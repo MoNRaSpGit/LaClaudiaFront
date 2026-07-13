@@ -1,11 +1,17 @@
 import { forwardRef } from 'react';
 
 const ScannerInput = forwardRef(function ScannerInput(
-  { barcode, onBarcodeChange, onSubmit, scanStatus, scanError = '' },
+  { barcode, onBarcodeChange, onSubmit, scanStatus, scanError = '', isShiftOpen = true, isShiftLoading = false, shiftLockMessage = '' },
   inputRef
 ) {
   return (
     <div className="scanner-input-dominant p-3 p-md-4 rounded-3 border bg-white shadow-sm">
+      {!isShiftOpen && !isShiftLoading ? (
+        <p className="scanner-inline-error mb-3 text-center">{shiftLockMessage || 'Abrir turno'}</p>
+      ) : null}
+      {isShiftLoading ? (
+        <p className="scanner-sync-hint mb-3 text-center">Verificando turno...</p>
+      ) : null}
       <form
         className="d-flex"
         onSubmit={(event) => {
@@ -17,10 +23,10 @@ const ScannerInput = forwardRef(function ScannerInput(
           ref={inputRef}
           type="text"
           className="form-control scanner-input-control text-center"
-          placeholder="Escanear aquí"
+          placeholder={!isShiftOpen ? 'Abrir turno' : 'Escanear aquí'}
           value={barcode}
           onChange={(event) => onBarcodeChange(event.target.value)}
-          disabled={scanStatus === 'loading'}
+          disabled={scanStatus === 'loading' || !isShiftOpen}
           autoFocus
         />
       </form>

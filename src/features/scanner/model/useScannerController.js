@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
   addScannedProduct,
@@ -16,25 +16,99 @@ import {
   updateLiveEditorDraft
 } from '../scannerSlice';
 import { createScannerProduct, fetchProductByBarcode, updateScannerProduct } from '../services/scanner.api';
+import { fetchScannerShiftState } from '../services/scanner.shifts.api';
 import { enqueueScannerSale } from '../services/scanner.salesQueue';
 import { parsePositiveAmount } from '../../../shared/lib/number';
 import { toUserErrorMessage } from '../../../shared/lib/userErrorMessages';
+
+const EMPTY_SHIFT_STATE = {
+  date: null,
+  shifts: [],
+  activeShift: null,
+  isLoading: true,
+  error: ''
+};
 
 export function useScannerController({ currentUser } = {}) {
   const dispatch = useDispatch();
   const scannerState = useSelector((state) => state.scanner);
   const totals = useSelector(selectScannerTotals);
+  const [shiftState, setShiftState] = useState(EMPTY_SHIFT_STATE);
+  const shiftStateRequestRef = useRef(0);
+  const shiftRefreshIntervalRef = useRef(null);
 
   function isBarcodeNotFoundError(error) {
     const message = String(error?.message || '').toLowerCase();
     return message.includes('no encontrado') || message.includes('404');
   }
 
+  const refreshShiftState = useCallback(async ({ silent = false } = {}) => {
+    if (!currentUser?.sessionToken) {
+      setShiftState(EMPTY_SHIFT_STATE);
+      return { ok: false, code: 'NO_TOKEN' };
+    }
+
+    const requestId = shiftStateRequestRef.current + 1;
+    shiftStateRequestRef.current = requestId;
+    if (!silent) {
+      setShiftState((current) => ({
+        ...current,
+        isLoading: true,
+        error: ''
+      }));
+    }
+
+    try {
+      const response = await fetchScannerShiftState({
+        token: currentUser.sessionToken
+      });
+      if (shiftStateRequestRef.current !== requestId) {
+        return { ok: false, code: 'STALE_RESPONSE' };
+      }
+
+      const nextShiftState = response?.shiftState || EMPTY_SHIFT_STATE;
+      setShiftState({
+        date: nextShiftState.date || null,
+        shifts: Array.isArray(nextShiftState.shifts) ? nextShiftState.shifts : [],
+        activeShift: nextShiftState.activeShift || null,
+        isLoading: false,
+        error: ''
+      });
+
+      return {
+        ok: true,
+        shiftState: nextShiftState
+      };
+    } catch (error) {
+      if (shiftStateRequestRef.current !== requestId) {
+        return { ok: false, code: 'STALE_RESPONSE' };
+      }
+
+      const message = toUserErrorMessage(error, { context: 'scanner_lookup' });
+      setShiftState((current) => ({
+        ...current,
+        isLoading: false,
+        error: message
+      }));
+      return {
+        ok: false,
+        error,
+        message
+      };
+    }
+  }, [currentUser?.sessionToken]);
+
   async function scanCurrentBarcode() {
     const normalizedBarcode = String(scannerState.scanBarcode || '').trim();
     if (!normalizedBarcode) {
       dispatch(setScanError('Ingresa un barcode valido para escanear.'));
       return { ok: false, code: 'EMPTY_BARCODE' };
+    }
+
+    const shiftSnapshot = await refreshShiftState({ silent: true });
+    if (!shiftSnapshot?.ok || !shiftSnapshot?.shiftState?.activeShift) {
+      dispatch(setScanError('Abrir turno'));
+      return { ok: false, code: 'SHIFT_CLOSED' };
     }
 
     dispatch(setScanLoading());
@@ -57,6 +131,11 @@ export function useScannerController({ currentUser } = {}) {
   }
 
   function addManualProduct(rawValue, options = {}) {
+    if (!shiftState.activeShift) {
+      dispatch(setScanError('Abrir turno'));
+      return false;
+    }
+
     const manualPrice = parsePositiveAmount(rawValue);
     const manualName = String(options?.manualName || 'Producto Manual').trim() || 'Producto Manual';
     const manualCategory = String(options?.manualCategory || 'manual').trim() || 'manual';
@@ -86,6 +165,11 @@ export function useScannerController({ currentUser } = {}) {
   }
 
   function addQuickBarcodeProduct({ barcode, rawName, rawValue }, options = {}) {
+    if (!shiftState.activeShift) {
+      dispatch(setScanError('Abrir turno'));
+      return false;
+    }
+
     const manualPrice = parsePositiveAmount(rawValue);
     if (manualPrice === null) {
       dispatch(setScanError('Ingresa un valor numerico valido mayor a 0.'));
@@ -171,6 +255,12 @@ export function useScannerController({ currentUser } = {}) {
       return { ok: false, code: 'EMPTY_CART' };
     }
 
+    const shiftSnapshot = await refreshShiftState({ silent: true });
+    if (!shiftSnapshot?.ok || !shiftSnapshot?.shiftState?.activeShift) {
+      dispatch(setScanError('Abrir turno'));
+      return { ok: false, code: 'SHIFT_CLOSED' };
+    }
+
     const chargedAtIso = new Date().toISOString();
     const externalId = `sale-${Date.now()}`;
     const chargeOptions = typeof rawChargeOptions === 'string'
@@ -186,6 +276,7 @@ export function useScannerController({ currentUser } = {}) {
       userId: currentUser?.id || null,
       paymentMethod,
       customerId: paymentMethod === 'cuenta' ? customerId : null,
+      shiftId: shiftSnapshot.shiftState.activeShift.id,
       items: snapshotItems.map((item) => ({
         id: item.id,
         productId: item.productId,
@@ -211,6 +302,7 @@ export function useScannerController({ currentUser } = {}) {
         operatorName: currentUser?.display_name || currentUser?.username || 'Operario',
         paymentMethod,
         customerId: paymentMethod === 'cuenta' ? customerId : null,
+        shiftId: shiftSnapshot.shiftState.activeShift.id,
         items: snapshotItems,
         total: snapshotItems.reduce((sum, item) => sum + Number(item.precio_venta || 0) * Number(item.quantity || 1), 0)
       }
@@ -245,6 +337,30 @@ export function useScannerController({ currentUser } = {}) {
       return true;
     }
   }
+
+  useEffect(() => {
+    if (!currentUser?.sessionToken) {
+      setShiftState(EMPTY_SHIFT_STATE);
+      return undefined;
+    }
+
+    refreshShiftState().catch(() => {});
+
+    if (shiftRefreshIntervalRef.current) {
+      window.clearInterval(shiftRefreshIntervalRef.current);
+    }
+
+    shiftRefreshIntervalRef.current = window.setInterval(() => {
+      refreshShiftState({ silent: true }).catch(() => {});
+    }, 15000);
+
+    return () => {
+      if (shiftRefreshIntervalRef.current) {
+        window.clearInterval(shiftRefreshIntervalRef.current);
+        shiftRefreshIntervalRef.current = null;
+      }
+    };
+  }, [currentUser?.sessionToken, refreshShiftState]);
 
   const addOneToCart = useCallback((item) => dispatch(addScannedProduct(item)), [dispatch]);
   const removeOneFromCart = useCallback((id) => dispatch(decrementCartItem(id)), [dispatch]);
@@ -295,6 +411,10 @@ export function useScannerController({ currentUser } = {}) {
   return {
     scannerState,
     totals,
+    shiftState,
+    isShiftOpen: Boolean(shiftState.activeShift),
+    isShiftLoading: Boolean(shiftState.isLoading),
+    refreshShiftState,
     actions: {
       scanCurrentBarcode,
       addManualProduct,

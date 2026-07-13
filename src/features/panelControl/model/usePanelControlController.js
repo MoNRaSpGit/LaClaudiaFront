@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { parsePositiveAmount } from '../../../shared/lib/number';
 import { toUserErrorMessage } from '../../../shared/lib/userErrorMessages';
 import { flushScannerDiagnosticQueue } from '../../scanner/services/scanner.diagnostics';
+import { closeScannerShift, fetchScannerShiftState, openScannerShift, resetScannerShifts } from '../../scanner/services/scanner.shifts.api';
 import {
   canViewPanelDiagnostics,
   normalizeDiagnosticEvent
@@ -75,8 +76,17 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
   const [diagnosticFilter, setDiagnosticFilter] = useState('all');
   const [diagnosticEventsError, setDiagnosticEventsError] = useState('');
   const [isLoadingDiagnosticEvents, setIsLoadingDiagnosticEvents] = useState(false);
+  const [shiftState, setShiftState] = useState({
+    date: null,
+    shifts: [],
+    activeShift: null,
+    isLoading: true,
+    error: ''
+  });
+  const [isSavingShift, setIsSavingShift] = useState(false);
   const lastLiveSnapshotKeyRef = useRef('');
   const diagnosticEventsRequestRef = useRef(0);
+  const shiftStateRequestRef = useRef(0);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -141,6 +151,171 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
     }
   }, [canViewDiagnostics, currentUser?.sessionToken]);
 
+  const loadShiftState = useCallback(async ({ silent = false } = {}) => {
+    if (!currentUser?.sessionToken) {
+      setShiftState({
+        date: null,
+        shifts: [],
+        activeShift: null,
+        isLoading: false,
+        error: ''
+      });
+      return { ok: false };
+    }
+
+    const requestId = shiftStateRequestRef.current + 1;
+    shiftStateRequestRef.current = requestId;
+    if (!silent) {
+      setShiftState((current) => ({
+        ...current,
+        isLoading: true,
+        error: ''
+      }));
+    }
+
+    try {
+      const response = await fetchScannerShiftState({
+        token: currentUser.sessionToken,
+        date: currentStoreDateLabel
+      });
+      if (shiftStateRequestRef.current !== requestId) {
+        return { ok: false };
+      }
+
+      const nextShiftState = response?.shiftState || {
+        date: currentStoreDateLabel,
+        shifts: [],
+        activeShift: null
+      };
+      setShiftState({
+        date: nextShiftState.date || currentStoreDateLabel,
+        shifts: Array.isArray(nextShiftState.shifts) ? nextShiftState.shifts : [],
+        activeShift: nextShiftState.activeShift || null,
+        isLoading: false,
+        error: ''
+      });
+      return {
+        ok: true,
+        shiftState: nextShiftState
+      };
+    } catch (error) {
+      if (shiftStateRequestRef.current !== requestId) {
+        return { ok: false };
+      }
+
+      const message = toUserErrorMessage(error, { context: 'panel_dashboard' });
+      setShiftState((current) => ({
+        ...current,
+        isLoading: false,
+        error: message
+      }));
+      return {
+        ok: false,
+        error,
+        message
+      };
+    }
+  }, [currentStoreDateLabel, currentUser?.sessionToken]);
+
+  useEffect(() => {
+    loadShiftState({ silent: false }).catch(() => {});
+
+    return undefined;
+  }, [currentStoreDateLabel, loadShiftState]);
+
+  async function openShift(shiftType) {
+    if (isSavingShift) {
+      return { ok: false, busy: true };
+    }
+
+    const normalizedShiftType = String(shiftType || '').trim().toLowerCase();
+    if (!['manana', 'tarde', 'noche'].includes(normalizedShiftType)) {
+      throw new Error('Turno invalido.');
+    }
+
+    setIsSavingShift(true);
+    try {
+      const result = await openScannerShift(normalizedShiftType, {
+        token: currentUser?.sessionToken || '',
+        date: currentStoreDateLabel
+      });
+      await loadShiftState({ silent: true });
+      return {
+        ok: true,
+        shift: result?.shift || null
+      };
+    } catch (error) {
+      const message = toUserErrorMessage(error, { context: 'panel_dashboard' });
+      setShiftState((current) => ({
+        ...current,
+        error: message
+      }));
+      throw new Error(message);
+    } finally {
+      setIsSavingShift(false);
+    }
+  }
+
+  async function closeShift(shiftId) {
+    const numericShiftId = Number(shiftId);
+    if (!Number.isInteger(numericShiftId) || numericShiftId <= 0) {
+      throw new Error('Turno invalido.');
+    }
+
+    if (isSavingShift) {
+      return { ok: false, busy: true };
+    }
+
+    setIsSavingShift(true);
+    try {
+      const result = await closeScannerShift(numericShiftId, {
+        token: currentUser?.sessionToken || ''
+      });
+      await loadShiftState({ silent: true });
+      return {
+        ok: true,
+        shift: result?.shift || null
+      };
+    } catch (error) {
+      const message = toUserErrorMessage(error, { context: 'panel_dashboard' });
+      setShiftState((current) => ({
+        ...current,
+        error: message
+      }));
+      throw new Error(message);
+    } finally {
+      setIsSavingShift(false);
+    }
+  }
+
+  async function resetTodayShifts() {
+    if (isSavingShift) {
+      return { ok: false, busy: true };
+    }
+
+    setIsSavingShift(true);
+    try {
+      const result = await resetScannerShifts({
+        token: currentUser?.sessionToken || '',
+        date: currentStoreDateLabel
+      });
+      await loadShiftState({ silent: true });
+      return {
+        ok: true,
+        result: result?.result || null
+      };
+    } catch (error) {
+      const message = toUserErrorMessage(error, { context: 'panel_dashboard' });
+      setShiftState((current) => ({
+        ...current,
+        error: message
+      }));
+      throw new Error(message);
+    } finally {
+      setIsSavingShift(false);
+    }
+  }
+
   useEffect(() => {
     if (!currentUser?.sessionToken || !canViewDiagnostics) {
       setDiagnosticEvents([]);
@@ -181,6 +356,7 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
           }
           setDashboard(response?.dashboard || EMPTY_DASHBOARD);
           setDashboardError('');
+          loadShiftState({ silent: true }).catch(() => {});
         },
         onLiveScanner: (response) => {
           if (!isMounted) {
@@ -519,6 +695,8 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
     paymentError,
     isRegisteringPayment,
     isSavingInitialCash,
+    shiftState,
+    isSavingShift,
     diagnosticEvents,
     diagnosticFilter,
     diagnosticEventsError,
@@ -531,6 +709,10 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
     saveInitialCash,
     updateProfitRate,
     refreshDiagnosticEvents,
+    loadShiftState,
+    openShift,
+    closeShift,
+    resetTodayShifts,
     setDiagnosticFilter,
     toggleMovementDetail,
     expandMovements,

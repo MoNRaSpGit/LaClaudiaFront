@@ -15,6 +15,7 @@ import {
 } from './services/scanner.diagnostics';
 import { printSaleTicket } from './services/scanner.print';
 import { printSaleTicketByQz } from './services/scanner.qzPrint';
+import { openScannerShift } from './services/scanner.shifts.api';
 import {
   flushScannerSalesQueue,
   getScannerSalesQueueDebugSnapshot,
@@ -62,7 +63,15 @@ function isRouteUnavailableError(error) {
 }
 
 function ScannerFeature({ currentUser, onUnauthorized }) {
-  const { scannerState, totals, actions } = useScannerController({ currentUser });
+  const {
+    scannerState,
+    totals,
+    actions,
+    shiftState,
+    isShiftOpen,
+    isShiftLoading,
+    refreshShiftState
+  } = useScannerController({ currentUser });
   const updateLiveEditorDraft = actions.updateLiveEditorDraft;
   const clearScanError = actions.clearScanError;
   const stopLiveEditor = actions.stopLiveEditor;
@@ -101,6 +110,41 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
   const lastChargeAtRef = useRef(0);
   const lastLiveStateSignatureRef = useRef('');
   const isWorkerDayBannerVisible = currentStoreDateLabel === WORKER_DAY_BANNER_DATE && !isWorkerDayBannerDismissed;
+  const isScannerLocked = !isShiftOpen;
+  const shiftLockMessage = isShiftLoading ? 'Verificando turno...' : 'Abrir turno';
+  const activeShiftLabel = shiftState.activeShift?.shiftLabel || '';
+  const activeShiftSales = Number(shiftState.activeShift?.salesTotal || 0);
+  const activeShiftCount = Number(shiftState.activeShift?.salesCount || 0);
+  const activeShiftPaymentSummary = shiftState.activeShift?.paymentSummary || { efectivo: 0, tarjeta: 0, credito: 0 };
+  const shiftTypeLabels = {
+    manana: 'Mañana',
+    tarde: 'Tarde',
+    noche: 'Noche'
+  };
+
+  async function handleOpenShift(shiftType) {
+    const normalizedShiftType = String(shiftType || '').trim().toLowerCase();
+    if (!normalizedShiftType) {
+      return;
+    }
+
+    try {
+      await openScannerShift(normalizedShiftType, {
+        token: currentUser?.sessionToken || '',
+        date: currentStoreDateLabel
+      });
+      await refreshShiftState({ silent: true });
+      toast.success(`Turno ${shiftTypeLabels[normalizedShiftType] || normalizedShiftType} abierto.`, {
+        toastId: `scanner-open-shift-${normalizedShiftType}`,
+        autoClose: 1800
+      });
+    } catch (error) {
+      toast.error(error?.message || 'No se pudo abrir el turno.', {
+        toastId: `scanner-open-shift-error-${normalizedShiftType}`,
+        autoClose: 2200
+      });
+    }
+  }
 
   const focusScannerInput = useCallback(() => {
     setTimeout(() => {
@@ -522,18 +566,85 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
               scanStatus={scannerState.scanStatus}
               onBarcodeChange={actions.setScanBarcode}
               onSubmit={handleScanSubmit}
+              isShiftOpen={isShiftOpen}
+              isShiftLoading={isShiftLoading}
+              shiftLockMessage={shiftLockMessage}
             />
+
+            <div className={`scanner-shift-banner mt-3 ${isScannerLocked ? 'scanner-shift-banner-locked' : 'scanner-shift-banner-open'}`}>
+              <div>
+                <p className="scanner-shift-banner-kicker mb-1">Turno</p>
+                {isShiftLoading ? (
+                  <p className="scanner-shift-banner-title mb-0">Cargando estado...</p>
+                ) : isShiftOpen ? (
+                  <>
+                    <p className="scanner-shift-banner-title mb-0">Turno {activeShiftLabel}</p>
+                    <p className="scanner-shift-banner-subtitle mb-0">
+                      Ventas: ${activeShiftSales.toFixed(2)} | Tickets: {activeShiftCount}
+                    </p>
+                    <div className="scanner-shift-payment-summary mt-2">
+                      <span>Efectivo {Number(activeShiftPaymentSummary.efectivo || 0).toFixed(2)}</span>
+                      <span>Tarjeta {Number(activeShiftPaymentSummary.tarjeta || 0).toFixed(2)}</span>
+                      <span>Crédito {Number(activeShiftPaymentSummary.credito || 0).toFixed(2)}</span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="scanner-shift-banner-title scanner-shift-banner-title-danger mb-0">Abrir turno</p>
+                    <p className="scanner-shift-banner-subtitle mb-0">No se puede vender hasta que se abra un turno.</p>
+                    <div className="scanner-shift-banner-actions mt-3">
+                      {['manana', 'tarde', 'noche'].map((shiftType) => {
+                        const shift = shiftState.shifts.find((item) => item.shiftType === shiftType);
+                        const isOpen = Boolean(shift?.isOpen);
+                        return (
+                          <button
+                            key={shiftType}
+                            type="button"
+                            className="btn btn-sm btn-danger"
+                            disabled={isShiftLoading || isOpen}
+                            onClick={() => {
+                              handleOpenShift(shiftType);
+                            }}
+                          >
+                            {isOpen ? `${shiftTypeLabels[shiftType]} abierto` : `Abrir ${shiftTypeLabels[shiftType]}`}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+              </div>
+              <div className="scanner-shift-banner-badges">
+                {shiftState.shifts.map((shift) => (
+                  <span
+                    key={shift.shiftType}
+                    className={`scanner-shift-pill ${shift.isOpen ? 'scanner-shift-pill-open' : ''}`}
+                  >
+                    {shift.shiftLabel}
+                  </span>
+                ))}
+              </div>
+            </div>
 
             <div className="text-center mt-4">
               <div className="scanner-manual-grid scanner-manual-grid--fuerte" role="group" aria-label="Productos manuales rápidos">
                 {MANUAL_PRODUCT_OPTIONS.map((option) => {
                   const Icon = option.icon;
+                  const isDisabled = isScannerLocked;
                   return (
                     <button
                       key={option.key}
                       type="button"
                       className={`btn scanner-manual-btn ${option.key === 'otros' ? 'scanner-manual-btn-centered' : ''}`}
+                      disabled={isDisabled}
                       onClick={() => {
+                        if (isDisabled) {
+                          toast.error('Abrir turno', {
+                            toastId: 'scanner-shift-closed-manual',
+                            autoClose: 1800
+                          });
+                          return;
+                        }
                         clearScanError();
                         setSelectedManualProduct(option);
                         startManualLiveEditor({
@@ -567,12 +678,12 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
             {scannerState.cartItems.length > 0 ? (
               <ScannerCheckout
                 total={totals.total}
-              pendingSalesCount={pendingSalesCount}
-              isChargeBlocked={isChargeBlocked}
-              chargeBlockMessage={chargeBlockMessage}
-              customerOptions={customerOptions}
-              isCustomerAccountsAvailable={isCustomerAccountsAvailable}
-              onCharge={executeCharge}
+                pendingSalesCount={pendingSalesCount}
+                isChargeBlocked={isChargeBlocked || isScannerLocked}
+                chargeBlockMessage={!isShiftOpen ? 'Abrir turno' : chargeBlockMessage}
+                customerOptions={customerOptions}
+                isCustomerAccountsAvailable={isCustomerAccountsAvailable}
+                onCharge={executeCharge}
               openConfirmSignal={openConfirmSignal}
               confirmByEnterSignal={confirmByEnterSignal}
               onConfirmModalOpenChange={setIsCheckoutConfirmOpen}

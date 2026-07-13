@@ -189,6 +189,7 @@ export function useAuthGateController() {
   const [backendReady, setBackendReady] = useState(false);
   const [user, setUser] = useState(null);
   const [adminFocusPasswordSignal, setAdminFocusPasswordSignal] = useState(0);
+  const isReloadNavigation = useMemo(() => getNavigationType() === 'reload', []);
 
   const logout = useCallback(() => {
     const token = String(user?.sessionToken || '').trim();
@@ -240,6 +241,10 @@ export function useAuthGateController() {
         return;
       }
       if (event?.type === 'pagehide' && event.persisted) {
+        return;
+      }
+      if (isReloadNavigation) {
+        handled = true;
         return;
       }
 
