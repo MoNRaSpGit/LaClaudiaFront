@@ -119,3 +119,36 @@ export async function printSaleTicketByQz(ticket) {
 
   return attemptPrinter(printerName);
 }
+
+function buildDrawerPulseData() {
+  return ['\x1B\x70\x00\x19\xFA'];
+}
+
+export async function openCashDrawerByQz() {
+  await ensureQzConnected();
+  const data = buildDrawerPulseData();
+
+  const attemptPrinter = async (printerName) => {
+    const config = qz.configs.create(printerName, { encoding: 'CP437' });
+    await qz.print(config, data);
+    cachedPrinterName = printerName;
+    return { printerName };
+  };
+
+  if (cachedPrinterName) {
+    try {
+      return await attemptPrinter(cachedPrinterName);
+    } catch {
+      // Si el cajon no responde en la impresora cacheada, reintentar con descubrimiento.
+    }
+  }
+
+  const printers = await qz.printers.find();
+  const printerName = pickPrinterName(printers);
+  if (!printerName) {
+    const detected = Array.isArray(printers) && printers.length ? printers.join(', ') : 'ninguna';
+    throw new Error(`QZ no encontro una impresora termica para abrir el cajon. Detectadas: ${detected}`);
+  }
+
+  return attemptPrinter(printerName);
+}
