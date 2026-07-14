@@ -184,6 +184,14 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
         token: currentUser?.sessionToken || ''
       });
       await refreshShiftState({ silent: true });
+      try {
+        await openCashDrawerByQz();
+      } catch (drawerError) {
+        toast.warn(`No se pudo abrir el cajon: ${drawerError?.message || 'Error de QZ.'}`, {
+          toastId: `scanner-close-shift-drawer-fail-${shiftState.activeShift.id}`,
+          autoClose: 2600
+        });
+      }
       toast.success('Turno cerrado.', {
         toastId: `scanner-close-shift-${shiftState.activeShift.id}`,
         autoClose: 1800

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { ToastContainer, toast } from 'react-toastify';
 import PaymentsFormCard from './components/PaymentsFormCard';
 import { usePaymentsController } from './model/usePaymentsController';
+import { openCashDrawerByQz } from '../scanner/services/scanner.qzPrint';
 
 function PaymentsFeature({ currentUser, onUnauthorized }) {
   const unauthorizedHandledRef = useRef(false);
@@ -56,6 +57,15 @@ function PaymentsFeature({ currentUser, onUnauthorized }) {
     });
 
     if (result?.ok) {
+      try {
+        await openCashDrawerByQz();
+      } catch (drawerError) {
+        toast.warn(`No se pudo abrir el cajon: ${drawerError?.message || 'Error de QZ.'}`, {
+          toastId: `operario-payment-drawer-fail-${Date.now()}`,
+          autoClose: 2600
+        });
+      }
+
       toast.success('Pago registrado correctamente', {
         toastId: `operario-payment-ok-${Date.now()}`,
         autoClose: 1800

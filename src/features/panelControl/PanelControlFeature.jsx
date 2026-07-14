@@ -10,6 +10,7 @@ import PaymentFormPanel from './components/PaymentFormPanel';
 import DiagnosticEventsPanel from './components/DiagnosticEventsPanel';
 import ScannerShiftCloseConfirmModal from '../scanner/components/ScannerShiftCloseConfirmModal';
 import ScannerShiftOpeningCashModal from '../scanner/components/ScannerShiftOpeningCashModal';
+import { openCashDrawerByQz } from '../scanner/services/scanner.qzPrint';
 import { moneyNoDecimals } from './model/panelControl.formatters';
 import { usePanelControlController } from './model/usePanelControlController';
 
@@ -237,6 +238,14 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
     try {
       await controller.closeShift(targetShift.id);
       closeShiftConfirmModal();
+      try {
+        await openCashDrawerByQz();
+      } catch (drawerError) {
+        toast.warn(`No se pudo abrir el cajon: ${drawerError?.message || 'Error de QZ.'}`, {
+          toastId: `panel-close-shift-drawer-fail-${targetShift.shiftType}`,
+          autoClose: 2600
+        });
+      }
       toast.success('Turno cerrado correctamente.', {
         toastId: `panel-close-shift-${targetShift.shiftType}`,
         autoClose: 1800
