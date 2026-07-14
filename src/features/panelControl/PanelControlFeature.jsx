@@ -358,7 +358,8 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
               </div>
               <p className="mb-1 small text-muted">Caja apertura turno: {moneyNoDecimals(shift.shiftOpeningCash ?? shift.openingCash ?? 0)}</p>
               <p className="mb-1 small text-muted">Ventas en efectivo: {moneyNoDecimals(shift.cashSalesTotal || 0)}</p>
-              <p className="mb-2 small text-muted">Caja total: {moneyNoDecimals(shift.cashTotal || 0)}</p>
+              <p className="mb-1 small text-muted">Pagos: {moneyNoDecimals(shift.cashPaymentsTotal || 0)}</p>
+              <p className="mb-2 small text-muted">Caja esperada: {moneyNoDecimals(shift.cashExpectedTotal ?? shift.cashTotal ?? 0)}</p>
               <div className="panel-shift-breakdown mb-2">
                 <div className="panel-shift-breakdown-row">
                   <span>Efectivo</span>
@@ -371,6 +372,10 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
                 <div className="panel-shift-breakdown-row">
                   <span>Crédito</span>
                   <strong>{moneyNoDecimals(shift.paymentSummary?.credito || 0)}</strong>
+                </div>
+                <div className="panel-shift-breakdown-row panel-shift-breakdown-row-highlight">
+                  <span>Caja actual</span>
+                  <strong>{moneyNoDecimals(shift.cashCurrentTotal ?? shift.cashTotal ?? 0)}</strong>
                 </div>
               </div>
               <div className="d-flex gap-2 flex-wrap">

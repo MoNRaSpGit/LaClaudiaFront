@@ -322,6 +322,19 @@
   border: 1px solid #d2dbe7;
 }
 
+.scanner-shift-banner-current-cash {
+  display: inline-flex;
+  align-self: flex-start;
+  margin-top: 0.1rem;
+  padding: 0.22rem 0.55rem;
+  border-radius: 999px;
+  background: #fff5d6;
+  color: #7a4b00;
+  border: 1px solid #efd38a;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
 @media (max-width: 575.98px) {
   .scanner-shift-banner {
     flex-direction: column;
@@ -704,6 +717,12 @@
 
 .scanner-shift-close-modal-card {
   max-width: 420px;
+}
+
+.panel-shift-breakdown-row-highlight {
+  margin-top: 0.15rem;
+  padding-top: 0.45rem;
+  border-top: 1px dashed #cbd5e1;
 }
 
 .scanner-payment-method-grid {
