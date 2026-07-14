@@ -125,9 +125,8 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
   const activeShiftCashSales = Number(shiftState.activeShift?.cashSalesTotal || 0);
   const activeShiftCashTotal = Number(shiftState.activeShift?.cashTotal || 0);
   const activeShiftPaymentSummary = shiftState.activeShift?.paymentSummary || { efectivo: 0, tarjeta: 0, credito: 0 };
-  const activeShiftOpenedById = Number(shiftState.activeShift?.openedBy?.id || shiftState.activeShift?.openedByUserId || 0);
   const currentUserId = Number(currentUser?.id || 0);
-  const canCloseActiveShift = Boolean(isShiftOpen) && (String(currentUser?.role || '').trim().toLowerCase() === 'admin' || (activeShiftOpenedById > 0 && activeShiftOpenedById === currentUserId));
+  const canCloseActiveShift = Boolean(isShiftOpen) && currentUserId > 0;
   const shiftTypeLabels = {
     manana: 'Mañana',
     tarde: 'Tarde',
@@ -711,6 +710,11 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
                     </div>
                   </>
                 )}
+                  <div className="scanner-shift-banner-actions mt-3">
+                    <span className="small text-muted">
+                      Cualquiera con sesion activa puede cerrar el turno.
+                    </span>
+                  </div>
                 </div>
                 {isShiftOpen && isShiftDetailsExpanded ? (
                   <div className="scanner-shift-banner-badges">

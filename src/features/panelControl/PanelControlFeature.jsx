@@ -334,7 +334,7 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
     const shifts = Array.isArray(shiftState.shifts) ? shiftState.shifts : [];
     const activeShift = shiftState.activeShift || null;
     const currentUserId = Number(currentUser?.id || 0);
-    const isAdminUser = String(currentUser?.role || '').trim().toLowerCase() === 'admin';
+    const canCloseShift = currentUserId > 0;
 
     return (
       <section className="panel-section mb-4" id="panel-section-shifts">
@@ -375,7 +375,7 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
               </div>
               <div className="d-flex gap-2 flex-wrap">
                 {shift.isOpen ? (
-                  isAdminUser || Number(shift.openedBy?.id || 0) === currentUserId ? (
+                  canCloseShift ? (
                     <button
                       type="button"
                       className="btn btn-sm btn-dark"
@@ -387,7 +387,7 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
                       {controller.isSavingShift ? 'Cerrando...' : 'Cerrar turno'}
                     </button>
                   ) : (
-                    <span className="small text-muted align-self-center">Solo lo puede cerrar quien lo abrió.</span>
+                    <span className="small text-muted align-self-center">Necesitas una sesion activa para cerrar el turno.</span>
                   )
                 ) : (
                   <button
