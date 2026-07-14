@@ -359,7 +359,6 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
               <p className="mb-1 small text-muted">Caja apertura turno: {moneyNoDecimals(shift.shiftOpeningCash ?? shift.openingCash ?? 0)}</p>
               <p className="mb-1 small text-muted">Ventas en efectivo: {moneyNoDecimals(shift.cashSalesTotal || 0)}</p>
               <p className="mb-1 small text-muted">Pagos: {moneyNoDecimals(shift.cashPaymentsTotal || 0)}</p>
-              <p className="mb-2 small text-muted">Caja esperada: {moneyNoDecimals(shift.cashExpectedTotal ?? shift.cashTotal ?? 0)}</p>
               <div className="panel-shift-breakdown mb-2">
                 <div className="panel-shift-breakdown-row">
                   <span>Efectivo</span>

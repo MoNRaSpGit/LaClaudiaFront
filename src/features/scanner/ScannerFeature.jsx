@@ -124,7 +124,6 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
   const activeShiftOpeningCash = Number(shiftState.activeShift?.shiftOpeningCash ?? shiftState.activeShift?.openingCash ?? 0);
   const activeShiftCashSales = Number(shiftState.activeShift?.cashSalesTotal || 0);
   const activeShiftPaymentsTotal = Number(shiftState.activeShift?.cashPaymentsTotal || 0);
-  const activeShiftCashExpected = Number(shiftState.activeShift?.cashExpectedTotal ?? shiftState.activeShift?.cashTotal ?? 0);
   const activeShiftCashCurrent = Number(shiftState.activeShift?.cashCurrentTotal ?? shiftState.activeShift?.cashTotal ?? 0);
   const activeShiftPaymentSummary = shiftState.activeShift?.paymentSummary || { efectivo: 0, tarjeta: 0, credito: 0 };
   const currentUserId = Number(currentUser?.id || 0);
@@ -682,9 +681,6 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
                           <p className="scanner-shift-banner-current-cash mb-0">
                             Caja actual: ${activeShiftCashCurrent.toFixed(2)}
                           </p>
-                          <p className="scanner-shift-banner-subtitle mb-0">
-                            Caja esperada sin pagos: ${activeShiftCashExpected.toFixed(2)}
-                          </p>
                           <div className="scanner-shift-payment-summary mt-2">
                             <span>Efectivo {Number(activeShiftPaymentSummary.efectivo || 0).toFixed(2)}</span>
                             <span>Tarjeta {Number(activeShiftPaymentSummary.tarjeta || 0).toFixed(2)}</span>
@@ -718,11 +714,6 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
                     </div>
                   </>
                 )}
-                  <div className="scanner-shift-banner-actions mt-3">
-                    <span className="small text-muted">
-                      Cualquiera con sesion activa puede cerrar el turno.
-                    </span>
-                  </div>
                 </div>
                 {isShiftOpen && isShiftDetailsExpanded ? (
                   <div className="scanner-shift-banner-badges">
