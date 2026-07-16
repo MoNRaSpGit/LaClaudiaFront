@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Apple, Beef, ChevronDown, CircleEllipsis, Cog, Scale, Wheat, X } from 'lucide-react';
 import { ToastContainer, toast } from 'react-toastify';
 import { useScannerController } from './model/useScannerController';
@@ -129,7 +129,7 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
   const currentUserId = Number(currentUser?.id || 0);
   const canCloseActiveShift = Boolean(isShiftOpen) && currentUserId > 0;
   const shiftTypeLabels = {
-    manana: 'Mañana',
+    manana: 'Manana',
     tarde: 'Tarde',
     noche: 'Noche'
   };
@@ -572,8 +572,8 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
     return Boolean(result?.ok);
   }, [actions, focusScannerInput]);
 
-  async function handleScanSubmit() {
-    const normalizedBarcode = String(scannerState.scanBarcode || '').trim();
+  async function handleScanSubmit(rawBarcode = '') {
+    const normalizedBarcode = String(rawBarcode || scannerState.scanBarcode || '').trim();
     if (!normalizedBarcode) {
       if (!scannerState.cartItems.length) {
         return;
@@ -589,7 +589,7 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
       return;
     }
 
-    const scanResult = await actions.scanCurrentBarcode();
+    const scanResult = await actions.scanCurrentBarcode(normalizedBarcode);
     if (scanResult?.code !== 'NOT_FOUND') {
       return;
     }
@@ -700,7 +700,7 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
                           <div className="scanner-shift-payment-summary mt-2">
                             <span>Efectivo {Number(activeShiftPaymentSummary.efectivo || 0).toFixed(2)}</span>
                             <span>Tarjeta {Number(activeShiftPaymentSummary.tarjeta || 0).toFixed(2)}</span>
-                            <span>Crédito {Number(activeShiftPaymentSummary.credito || 0).toFixed(2)}</span>
+                            <span>Credito {Number(activeShiftPaymentSummary.credito || 0).toFixed(2)}</span>
                           </div>
                         </>
                       ) : null}
@@ -766,7 +766,7 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
             />
 
             <div className="text-center mt-4">
-              <div className="scanner-manual-grid scanner-manual-grid--fuerte" role="group" aria-label="Productos manuales rápidos">
+              <div className="scanner-manual-grid scanner-manual-grid--fuerte" role="group" aria-label="Productos manuales rapidos">
                 {MANUAL_PRODUCT_OPTIONS.map((option) => {
                   const Icon = option.icon;
                   const isDisabled = isScannerLocked;
@@ -932,4 +932,3 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
 }
 
 export default ScannerFeature;
-

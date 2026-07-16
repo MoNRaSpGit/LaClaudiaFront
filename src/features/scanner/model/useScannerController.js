@@ -15,7 +15,7 @@ import {
   updateCartItem,
   updateLiveEditorDraft
 } from '../scannerSlice';
-import { createScannerProduct, fetchProductByBarcode, updateScannerProduct } from '../services/scanner.api';
+import { createScannerProduct, fetchProductByBarcode, preloadScannerProductLookupCache, updateScannerProduct, warmScannerProductLookupCache } from '../services/scanner.api';
 import { fetchScannerShiftState } from '../services/scanner.shifts.api';
 import { enqueueScannerSale } from '../services/scanner.salesQueue';
 import { parsePositiveAmount } from '../../../shared/lib/number';
@@ -98,15 +98,14 @@ export function useScannerController({ currentUser } = {}) {
     }
   }, [currentUser?.sessionToken]);
 
-  async function scanCurrentBarcode() {
-    const normalizedBarcode = String(scannerState.scanBarcode || '').trim();
+  async function scanCurrentBarcode(rawBarcode = '') {
+    const normalizedBarcode = String(rawBarcode || scannerState.scanBarcode || '').trim();
     if (!normalizedBarcode) {
       dispatch(setScanError('Ingresa un barcode valido para escanear.'));
       return { ok: false, code: 'EMPTY_BARCODE' };
     }
 
-    const shiftSnapshot = await refreshShiftState({ silent: true });
-    if (!shiftSnapshot?.ok || !shiftSnapshot?.shiftState?.activeShift) {
+    if (!shiftState.activeShift) {
       dispatch(setScanError('Abrir turno'));
       return { ok: false, code: 'SHIFT_CLOSED' };
     }
@@ -337,6 +336,22 @@ export function useScannerController({ currentUser } = {}) {
       return true;
     }
   }
+
+  useEffect(() => {
+    warmScannerProductLookupCache(scannerState.cartItems);
+  }, [scannerState.cartItems]);
+
+  useEffect(() => {
+    if (!currentUser?.sessionToken) {
+      return undefined;
+    }
+
+    preloadScannerProductLookupCache({
+      token: currentUser.sessionToken
+    }).catch(() => {});
+
+    return undefined;
+  }, [currentUser?.sessionToken]);
 
   useEffect(() => {
     if (!currentUser?.sessionToken) {

@@ -16,14 +16,14 @@ const ScannerInput = forwardRef(function ScannerInput(
         className="d-flex"
         onSubmit={(event) => {
           event.preventDefault();
-          onSubmit();
+          onSubmit(inputRef?.current?.value || barcode || '');
         }}
       >
         <input
           ref={inputRef}
           type="text"
           className="form-control scanner-input-control text-center"
-          placeholder={!isShiftOpen ? 'Abrir turno' : 'Escanear aquí'}
+          placeholder={!isShiftOpen ? 'Abrir turno' : 'Escanear aqui'}
           value={barcode}
           onChange={(event) => onBarcodeChange(event.target.value)}
           disabled={scanStatus === 'loading' || !isShiftOpen}
