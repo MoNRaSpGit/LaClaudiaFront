@@ -270,14 +270,6 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
 
     const parsedAmount = parsePositiveAmount(paymentFormValues.amount);
     const debtTotal = parseMoneyValue(selectedCustomerDetail?.customer?.debtTotal);
-    const isClosingPayment = Math.abs((parsedAmount || 0) - debtTotal) < 0.0001;
-    const closingTicketPayload = isClosingPayment
-      ? buildCustomerHistoryTicketPayload({
-        customer: selectedCustomerDetail?.customer,
-        accountSales: activeAccountSales,
-        currentUser
-      })
-      : null;
 
     if (!parsedAmount) {
       setPaymentError('Ingresa un monto valido.');
@@ -285,6 +277,9 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
       return;
     }
 
+    // Chequeo rapido en base a lo que hay en pantalla (UX). La validacion real
+    // ("no superar la deuda") la hace el backend con la deuda fresca al momento
+    // de registrar el pago, por si esta pantalla quedo desactualizada.
     if (parsedAmount > debtTotal) {
       const message = `El pago no puede superar la deuda actual (${formatMoney(debtTotal)}).`;
       setPaymentError(message);
@@ -295,7 +290,7 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
     setPaymentError('');
     setIsRegisteringPayment(true);
     try {
-      await createCustomerPayment(selectedCustomerId, {
+      const paymentResult = await createCustomerPayment(selectedCustomerId, {
         amount: parsedAmount,
         paymentMethod: paymentFormValues.paymentMethod,
         notes: paymentFormValues.notes
@@ -313,14 +308,31 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
       setPaymentError('');
       toast.success('Pago de cuenta registrado.');
 
-      if (isClosingPayment && closingTicketPayload?.hasSales) {
-        await printTicketWithFallback(closingTicketPayload.ticket, {
-          success: 'customer-payment-print-ok-history',
-          fallback: 'customer-payment-print-fallback-history',
-          failure: 'customer-payment-print-fail-history'
+      const payment = paymentResult?.payment;
+      if (payment?.isFullyClosing && Array.isArray(payment?.coveredItems) && payment.coveredItems.length) {
+        const closingTicketPayload = buildCustomerHistoryTicketPayload({
+          customer: selectedCustomerDetail?.customer,
+          coveredItems: payment.coveredItems,
+          currentUser
         });
+
+        if (closingTicketPayload.hasSales) {
+          await printTicketWithFallback(closingTicketPayload.ticket, {
+            success: 'customer-payment-print-ok-history',
+            fallback: 'customer-payment-print-fallback-history',
+            failure: 'customer-payment-print-fail-history'
+          });
+        }
       }
     } catch (error) {
+      if (Number(error?.status || 0) === 409) {
+        // El backend valida contra la deuda real al momento del pago: si esta
+        // pantalla estaba desactualizada (ej. se cargo otra venta a cuenta en
+        // el medio), refrescamos el detalle para que el operador vea el monto correcto.
+        toast.error(error?.message || 'El pago supera la deuda actual del cliente.');
+        loadCustomerDetail(selectedCustomerId).catch(() => {});
+        return;
+      }
       if (Number(error?.status || 0) === 401) {
         onUnauthorizedRef.current?.();
         return;

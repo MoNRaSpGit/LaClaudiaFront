@@ -20,6 +20,29 @@ function renderMovementDetail(item) {
     );
   }
 
+  if (item.detail.kind === 'customer_payment') {
+    const items = Array.isArray(item.detail.items) ? item.detail.items : [];
+    return (
+      <div className="panel-movement-detail">
+        <p className="panel-movement-detail-title mb-1">Descripción</p>
+        <p className="mb-0">{item.detail.description}</p>
+        {items.length ? (
+          <>
+            <p className="panel-movement-detail-title mb-1 mt-2">Productos que llevo</p>
+            <ul className="panel-movement-detail-list mb-0">
+              {items.map((product, index) => (
+                <li key={`${product.name}-${index}`}>
+                  <span>{product.name} x{Number(product.quantity || 1)}</span>
+                  <strong>{money(product.lineTotal)}</strong>
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : null}
+      </div>
+    );
+  }
+
   return (
     <div className="panel-movement-detail">
       <p className="panel-movement-detail-title mb-1">Descripción</p>

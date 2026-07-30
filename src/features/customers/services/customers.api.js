@@ -77,8 +77,32 @@ export async function createCustomer(payload, { token } = {}) {
   }
 }
 
+function normalizeCoveredItems(rawItems) {
+  return Array.isArray(rawItems)
+    ? rawItems.map((item) => ({
+      name: String(item?.name || '').trim(),
+      quantity: Number(item?.quantity || 0),
+      lineTotal: Number(item?.lineTotal || 0)
+    })).filter((item) => item.name)
+    : [];
+}
+
 export async function createCustomerPayment(customerId, payload, { token } = {}) {
-  return createScannerCustomerAccountPayment(customerId, payload, { token });
+  const result = await createScannerCustomerAccountPayment(customerId, payload, { token });
+  const payment = result?.payment || {};
+  const snapshot = payment?.covered_items_snapshot || null;
+
+  return {
+    ...result,
+    payment: {
+      ...payment,
+      amount: Number(payment?.amount || 0),
+      createdAt: payment?.created_at || null,
+      debtRemaining: Number(payment?.debt_remaining || 0),
+      coveredItems: normalizeCoveredItems(snapshot?.items),
+      isFullyClosing: Boolean(snapshot?.isFullyClosing)
+    }
+  };
 }
 
 export async function removeCustomer(customerId, { token } = {}) {

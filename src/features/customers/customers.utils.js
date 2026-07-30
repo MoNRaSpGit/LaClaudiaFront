@@ -97,33 +97,36 @@ export function getActiveCustomerHistory({ accountSales = [], accountPayments = 
   };
 }
 
-export function buildCustomerHistoryTicketPayload({ customer, accountSales = [], currentUser }) {
-  const sortedSales = accountSales
-    .slice()
-    .sort((left, right) => new Date(left.createdAt || 0).getTime() - new Date(right.createdAt || 0).getTime());
-
-  const ticketItems = sortedSales.flatMap((sale) => (
-    Array.isArray(sale?.items)
-      ? sale.items
-        .filter((item) => String(item?.name || '').trim())
-        .map((item) => ({
-          nombre: String(item.name || '').trim(),
-          quantity: Number(item.quantity || 0) || 1,
-          precio_venta: Number(item.unitPrice || 0)
-        }))
-      : []
-  ));
+/**
+ * Arma el comprobante de "cierre de cuenta" a partir del detalle de items
+ * cubiertos que devuelve el backend en la respuesta del pago (calculado en
+ * la misma transaccion que registra el pago, con la deuda real al momento
+ * del cobro). No usa el estado local de React: ese puede estar desactualizado
+ * si se cargo otra venta a la cuenta mientras la ficha del cliente estaba
+ * abierta, lo que antes generaba tickets con montos y fechas viejas.
+ */
+export function buildCustomerHistoryTicketPayload({ customer, coveredItems = [], currentUser }) {
+  const ticketItems = coveredItems
+    .filter((item) => String(item?.name || '').trim() && Number(item?.quantity || 0) > 0)
+    .map((item) => {
+      const quantity = Number(item.quantity || 0) || 1;
+      const lineTotal = Number(item.lineTotal || 0);
+      return {
+        nombre: String(item.name || '').trim(),
+        quantity,
+        precio_venta: quantity > 0 ? lineTotal / quantity : lineTotal
+      };
+    });
 
   return {
-    hasSales: sortedSales.length > 0 && ticketItems.length > 0,
-    salesCount: sortedSales.length,
+    hasSales: ticketItems.length > 0,
     ticket: {
       storeName: 'Super Nova',
       externalId: `CTA-${customer?.id || '-'}`,
-      chargedAtIso: sortedSales.at(-1)?.createdAt || new Date().toISOString(),
+      chargedAtIso: new Date().toISOString(),
       operatorName: currentUser?.name || currentUser?.username || 'Operario',
       items: ticketItems,
-      total: sortedSales.reduce((sum, sale) => sum + Number(sale?.totalAmount || 0), 0)
+      total: ticketItems.reduce((sum, item) => sum + item.quantity * item.precio_venta, 0)
     }
   };
 }
