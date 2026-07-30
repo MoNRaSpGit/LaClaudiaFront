@@ -25,7 +25,7 @@ describe('scanner.api contracts', () => {
 
     const result = await api.fetchProductByBarcode(' 123 ');
 
-    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('/api/scanner/products/lookup?barcode=123'));
+    expect(global.fetch.mock.calls[0][0]).toEqual(expect.stringContaining('/api/scanner/products/lookup?barcode=123'));
     expect(result?.item?.id).toBe(12);
   });
 

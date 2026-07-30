@@ -2,6 +2,7 @@ import { createScannerSale } from './scanner.api';
 
 const STORAGE_KEY = 'scanner_sales_queue_v1';
 const RETRY_DELAY_MS = 2000;
+const SHIFT_CLOSED_RETRY_DELAY_MS = 10000;
 
 let queueLoaded = false;
 let queue = [];
@@ -143,14 +144,18 @@ function isUnauthorizedError(error) {
   return message.includes('401') || message.includes('unauthorized') || message.includes('sesion expirada');
 }
 
-function scheduleRetry(token) {
+function isShiftClosedError(error) {
+  return String(error?.code || '').trim() === 'SHIFT_CLOSED';
+}
+
+function scheduleRetry(token, delayMs = RETRY_DELAY_MS) {
   if (retryTimer) {
     clearTimeout(retryTimer);
   }
 
   retryTimer = setTimeout(() => {
     flushScannerSalesQueue({ token }).catch(() => {});
-  }, RETRY_DELAY_MS);
+  }, delayMs);
 }
 
 export async function flushScannerSalesQueue({ token } = {}) {
@@ -187,6 +192,16 @@ export async function flushScannerSalesQueue({ token } = {}) {
       }
 
       if (isUnauthorizedError(error)) {
+        notifyQueueErrorListeners(enrichedError);
+        return { pending: queue.length, error: enrichedError };
+      }
+
+      if (isShiftClosedError(error)) {
+        // No hay turno abierto para asociar la venta: reintentar rapido cada 2s
+        // es inutil hasta que alguien abra un turno, asi que espaciamos el retry
+        // y avisamos con una causa clara en vez de un error generico de red.
+        enrichedError.errorFamily = 'SHIFT_CLOSED';
+        scheduleRetry(token, SHIFT_CLOSED_RETRY_DELAY_MS);
         notifyQueueErrorListeners(enrichedError);
         return { pending: queue.length, error: enrichedError };
       }

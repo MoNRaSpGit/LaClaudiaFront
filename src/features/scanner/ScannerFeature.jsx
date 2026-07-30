@@ -109,6 +109,7 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
   const [confirmByEnterSignal, setConfirmByEnterSignal] = useState(0);
   const [isShiftDetailsExpanded, setIsShiftDetailsExpanded] = useState(false);
   const [isShiftCloseConfirmOpen, setIsShiftCloseConfirmOpen] = useState(false);
+  const [isShiftActionPending, setIsShiftActionPending] = useState(false);
   const scannerInputRef = useRef(null);
   const lastSyncErrorToastAtRef = useRef(0);
   const syncErrorCountRef = useRef(0);
@@ -144,13 +145,14 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
   }
 
   async function confirmOpenShift(openingCash) {
-    if (!openingShiftTarget) {
+    if (!openingShiftTarget || isShiftActionPending) {
       return false;
     }
 
     const normalizedShiftType = String(openingShiftTarget || '').trim().toLowerCase();
     const shiftLabel = shiftTypeLabels[normalizedShiftType] || normalizedShiftType;
 
+    setIsShiftActionPending(true);
     try {
       await openScannerShift(normalizedShiftType, {
         token: currentUser?.sessionToken || '',
@@ -171,14 +173,17 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
         autoClose: 2200
       });
       return false;
+    } finally {
+      setIsShiftActionPending(false);
     }
   }
 
   async function handleCloseShift() {
-    if (!shiftState.activeShift?.id || !canCloseActiveShift) {
+    if (!shiftState.activeShift?.id || !canCloseActiveShift || isShiftActionPending) {
       return;
     }
 
+    setIsShiftActionPending(true);
     try {
       await closeScannerShift(shiftState.activeShift.id, {
         token: currentUser?.sessionToken || ''
@@ -201,6 +206,8 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
         toastId: `scanner-close-shift-error-${shiftState.activeShift.id}`,
         autoClose: 2200
       });
+    } finally {
+      setIsShiftActionPending(false);
     }
   }
 
@@ -396,6 +403,15 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
         window.setTimeout(() => {
           onUnauthorized?.();
         }, 900);
+        return;
+      }
+
+      const isShiftClosed = error?.code === 'SHIFT_CLOSED' || error?.errorFamily === 'SHIFT_CLOSED';
+      if (isShiftClosed) {
+        toast.warn('Hay una venta sin confirmar: no hay turno abierto. Abri el turno para sincronizarla.', {
+          toastId: 'scanner-sale-shift-closed',
+          autoClose: 4000
+        });
         return;
       }
 
@@ -754,6 +770,7 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
                 setOpeningShiftTarget('');
               }}
               onConfirm={confirmOpenShift}
+              isSubmitting={isShiftActionPending}
             />
             <ScannerShiftCloseConfirmModal
               isOpen={isShiftCloseConfirmOpen}

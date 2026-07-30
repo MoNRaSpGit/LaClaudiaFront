@@ -1,4 +1,4 @@
-import { apiUrl, buildHeaders, readJson } from '../../../shared/services/httpClient';
+import { apiUrl, buildHeaders, fetchJson } from '../../../shared/services/httpClient';
 import { fetchProductsCatalog } from '../../products/services/products.api';
 const productByBarcodeCache = new Map();
 const negativeBarcodeCache = new Map();
@@ -216,8 +216,7 @@ export async function fetchProductByBarcode(barcode) {
 
   const encoded = encodeURIComponent(normalized);
   try {
-    const response = await fetch(`${apiUrl}/api/scanner/products/lookup?barcode=${encoded}`);
-    const payload = await readJson(response);
+    const payload = await fetchJson(`${apiUrl}/api/scanner/products/lookup?barcode=${encoded}`);
     const foundBarcode = payload?.item?.barcode_normalized || payload?.item?.barcode || normalized;
     setCachedLookup(foundBarcode, payload);
     setCachedLookup(normalized, payload);
@@ -259,12 +258,11 @@ export async function updateScannerProduct(productId, payload, { token } = {}) {
     throw new Error('productId invalido para actualizar');
   }
 
-  const response = await fetch(`${apiUrl}/api/scanner/products/${normalizedId}`, {
+  const result = await fetchJson(`${apiUrl}/api/scanner/products/${normalizedId}`, {
     method: 'PUT',
     headers: buildHeaders({ token, json: true }),
     body: JSON.stringify(payload || {})
   });
-  const result = await readJson(response);
 
   if (result?.item) {
     const barcode = result.item.barcode_normalized || result.item.barcode;
@@ -275,12 +273,11 @@ export async function updateScannerProduct(productId, payload, { token } = {}) {
 }
 
 export async function createScannerProduct(payload, { token } = {}) {
-  const response = await fetch(`${apiUrl}/api/scanner/products`, {
+  const result = await fetchJson(`${apiUrl}/api/scanner/products`, {
     method: 'POST',
     headers: buildHeaders({ token, json: true }),
     body: JSON.stringify(payload || {})
   });
-  const result = await readJson(response);
 
   if (result?.item) {
     const barcode = result.item.barcode_normalized || result.item.barcode;
@@ -291,19 +288,17 @@ export async function createScannerProduct(payload, { token } = {}) {
 }
 
 export async function createScannerSale(payload, { token } = {}) {
-  const response = await fetch(`${apiUrl}/api/scanner/sales`, {
+  return fetchJson(`${apiUrl}/api/scanner/sales`, {
     method: 'POST',
     headers: buildHeaders({ token, json: true }),
     body: JSON.stringify(payload)
   });
-  return readJson(response);
 }
 
 export async function fetchScannerCustomers({ token } = {}) {
-  const response = await fetch(`${apiUrl}/api/scanner/customers`, {
+  return fetchJson(`${apiUrl}/api/scanner/customers`, {
     headers: buildHeaders({ token })
   });
-  return readJson(response);
 }
 
 export async function fetchScannerCustomerDetail(customerId, { token } = {}) {
@@ -312,19 +307,17 @@ export async function fetchScannerCustomerDetail(customerId, { token } = {}) {
     throw new Error('customerId invalido');
   }
 
-  const response = await fetch(`${apiUrl}/api/scanner/customers/${normalizedId}`, {
+  return fetchJson(`${apiUrl}/api/scanner/customers/${normalizedId}`, {
     headers: buildHeaders({ token })
   });
-  return readJson(response);
 }
 
 export async function createScannerCustomer(payload, { token } = {}) {
-  const response = await fetch(`${apiUrl}/api/scanner/customers`, {
+  return fetchJson(`${apiUrl}/api/scanner/customers`, {
     method: 'POST',
     headers: buildHeaders({ token, json: true }),
     body: JSON.stringify(payload || {})
   });
-  return readJson(response);
 }
 
 export async function deleteScannerCustomer(customerId, { token } = {}) {
@@ -333,11 +326,10 @@ export async function deleteScannerCustomer(customerId, { token } = {}) {
     throw new Error('customerId invalido');
   }
 
-  const response = await fetch(`${apiUrl}/api/scanner/customers/${normalizedId}`, {
+  return fetchJson(`${apiUrl}/api/scanner/customers/${normalizedId}`, {
     method: 'DELETE',
     headers: buildHeaders({ token })
   });
-  return readJson(response);
 }
 
 export async function createScannerCustomerAccountPayment(customerId, payload, { token } = {}) {
@@ -346,30 +338,27 @@ export async function createScannerCustomerAccountPayment(customerId, payload, {
     throw new Error('customerId invalido');
   }
 
-  const response = await fetch(`${apiUrl}/api/scanner/customers/${normalizedId}/payments`, {
+  return fetchJson(`${apiUrl}/api/scanner/customers/${normalizedId}/payments`, {
     method: 'POST',
     headers: buildHeaders({ token, json: true }),
     body: JSON.stringify(payload || {})
   });
-  return readJson(response);
 }
 
 export async function publishScannerLiveState(payload, { token } = {}) {
-  const response = await fetch(`${apiUrl}/api/scanner/live-state`, {
+  return fetchJson(`${apiUrl}/api/scanner/live-state`, {
     method: 'POST',
     headers: buildHeaders({ token, json: true }),
     body: JSON.stringify(payload || {})
   });
-  return readJson(response);
 }
 
 export async function createScannerDiagnosticEvent(payload, { token } = {}) {
-  const response = await fetch(`${apiUrl}/api/scanner/diagnostic-events`, {
+  return fetchJson(`${apiUrl}/api/scanner/diagnostic-events`, {
     method: 'POST',
     headers: buildHeaders({ token, json: true }),
     body: JSON.stringify(payload || {})
   });
-  return readJson(response);
 }
 
 export { isBarcodeTemporarilyMissing };

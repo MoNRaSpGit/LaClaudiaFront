@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 
-function ScannerShiftOpeningCashModal({ isOpen, shiftLabel, onClose, onConfirm, errorMessage = '' }) {
+function ScannerShiftOpeningCashModal({ isOpen, shiftLabel, onClose, onConfirm, errorMessage = '', isSubmitting = false }) {
   const [value, setValue] = useState('0');
   const inputRef = useRef(null);
 
@@ -45,6 +45,9 @@ function ScannerShiftOpeningCashModal({ isOpen, shiftLabel, onClose, onConfirm, 
         <form
           onSubmit={async (event) => {
             event.preventDefault();
+            if (isSubmitting) {
+              return;
+            }
             const ok = await handleConfirm();
             if (ok) {
               onClose();
@@ -61,16 +64,17 @@ function ScannerShiftOpeningCashModal({ isOpen, shiftLabel, onClose, onConfirm, 
               onChange={(event) => setValue(event.target.value)}
               placeholder="Ej: 1000"
               autoComplete="off"
+              disabled={isSubmitting}
             />
           </div>
           {errorMessage ? <p className="mb-3 scanner-inline-error">{errorMessage}</p> : null}
 
           <div className="d-flex gap-2">
-            <button type="button" className="btn btn-outline-secondary w-50" onClick={onClose}>
+            <button type="button" className="btn btn-outline-secondary w-50" onClick={onClose} disabled={isSubmitting}>
               Cancelar
             </button>
-            <button type="submit" className="btn btn-dark w-50">
-              Abrir turno
+            <button type="submit" className="btn btn-dark w-50" disabled={isSubmitting}>
+              {isSubmitting ? 'Abriendo...' : 'Abrir turno'}
             </button>
           </div>
         </form>
