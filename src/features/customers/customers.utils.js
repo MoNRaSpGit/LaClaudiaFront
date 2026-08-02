@@ -53,48 +53,31 @@ export function isRouteUnavailableError(error) {
   return status === 404 || message.includes('route not found') || message.includes('not found');
 }
 
-function sortMovementsDesc(left, right) {
-  const leftTime = new Date(left?.createdAt || 0).getTime();
-  const rightTime = new Date(right?.createdAt || 0).getTime();
-  if (leftTime !== rightTime) {
-    return rightTime - leftTime;
-  }
-  return Number(right?.id || 0) - Number(left?.id || 0);
-}
+/**
+ * Junta los items de un grupo de ventas a cuenta (agrupados por nombre de
+ * producto, sumando cantidad y subtotal) para armar un comprobante. Se usa
+ * para el "Imprimir comprobante" de deuda pendiente: el mismo formato que el
+ * backend arma para el ticket de cierre de pago, pero calculado del lado del
+ * cliente a partir de las ventas ya marcadas como pendientes (`isSettled:
+ * false`) que manda el backend en el detalle del cliente.
+ */
+export function aggregateSaleItems(sales = []) {
+  const itemsByName = new Map();
 
-export function getActiveCustomerHistory({ accountSales = [], accountPayments = [], debtTotal = 0 }) {
-  const normalizedDebt = parseMoneyValue(debtTotal);
-  if (normalizedDebt <= 0) {
-    return { sales: [], payments: [] };
-  }
+  sales.forEach((sale) => {
+    (Array.isArray(sale?.items) ? sale.items : []).forEach((item) => {
+      const name = String(item?.name || '').trim();
+      if (!name) {
+        return;
+      }
+      const current = itemsByName.get(name) || { name, quantity: 0, lineTotal: 0 };
+      current.quantity += Number(item.quantity || 0);
+      current.lineTotal += Number(item.lineTotal || 0);
+      itemsByName.set(name, current);
+    });
+  });
 
-  const movements = [
-    ...accountSales.map((sale) => ({ ...sale, movementType: 'sale', amount: Number(sale?.totalAmount || 0) })),
-    ...accountPayments.map((payment) => ({ ...payment, movementType: 'payment', amount: Number(payment?.amount || 0) }))
-  ].sort(sortMovementsDesc);
-
-  let debtCursor = normalizedDebt;
-  const activeSaleIds = new Set();
-  const activePaymentIds = new Set();
-
-  for (const movement of movements) {
-    if (movement.movementType === 'payment') {
-      activePaymentIds.add(Number(movement.id || 0));
-      debtCursor += Number(movement.amount || 0);
-      continue;
-    }
-
-    activeSaleIds.add(Number(movement.id || 0));
-    debtCursor -= Number(movement.amount || 0);
-    if (debtCursor <= 0) {
-      break;
-    }
-  }
-
-  return {
-    sales: accountSales.filter((sale) => activeSaleIds.has(Number(sale.id || 0))),
-    payments: accountPayments.filter((payment) => activePaymentIds.has(Number(payment.id || 0)))
-  };
+  return Array.from(itemsByName.values());
 }
 
 /**
@@ -105,7 +88,7 @@ export function getActiveCustomerHistory({ accountSales = [], accountPayments = 
  * si se cargo otra venta a la cuenta mientras la ficha del cliente estaba
  * abierta, lo que antes generaba tickets con montos y fechas viejas.
  */
-export function buildCustomerHistoryTicketPayload({ customer, coveredItems = [], currentUser }) {
+export function buildCustomerHistoryTicketPayload({ customer, coveredItems = [], currentUser, ticketKind = 'payment' }) {
   const ticketItems = coveredItems
     .filter((item) => String(item?.name || '').trim() && Number(item?.quantity || 0) > 0)
     .map((item) => {
@@ -118,11 +101,16 @@ export function buildCustomerHistoryTicketPayload({ customer, coveredItems = [],
       };
     });
 
+  // Prefijo distinto segun el tipo de comprobante: "EST" es una consulta de
+  // deuda pendiente (no mueve nada), "CTA" es un recibo de pago real. Asi se
+  // pueden distinguir a simple vista si alguna vez se imprimen los dos.
+  const prefix = ticketKind === 'statement' ? 'EST' : 'CTA';
+
   return {
     hasSales: ticketItems.length > 0,
     ticket: {
       storeName: 'Super Nova',
-      externalId: `CTA-${customer?.id || '-'}`,
+      externalId: `${prefix}-${customer?.id || '-'}`,
       chargedAtIso: new Date().toISOString(),
       operatorName: currentUser?.name || currentUser?.username || 'Operario',
       items: ticketItems,

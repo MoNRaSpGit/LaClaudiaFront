@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildCustomerHistoryTicketPayload } from './customers.utils';
+import { aggregateSaleItems, buildCustomerHistoryTicketPayload } from './customers.utils';
 
 describe('buildCustomerHistoryTicketPayload', () => {
   it('arma el ticket a partir de los items cubiertos que devuelve el backend, con fecha de ahora', () => {
@@ -37,5 +37,41 @@ describe('buildCustomerHistoryTicketPayload', () => {
 
     expect(result.hasSales).toBe(false);
     expect(result.ticket.items).toEqual([]);
+  });
+
+  it('usa prefijo EST para comprobantes de tipo statement, y CTA por defecto', () => {
+    const items = [{ name: 'Leche', quantity: 1, lineTotal: 100 }];
+
+    const statement = buildCustomerHistoryTicketPayload({
+      customer: { id: 9 },
+      coveredItems: items,
+      ticketKind: 'statement'
+    });
+    const payment = buildCustomerHistoryTicketPayload({
+      customer: { id: 9 },
+      coveredItems: items
+    });
+
+    expect(statement.ticket.externalId).toBe('EST-9');
+    expect(payment.ticket.externalId).toBe('CTA-9');
+  });
+});
+
+describe('aggregateSaleItems', () => {
+  it('junta items de varias ventas por nombre, sumando cantidad y subtotal', () => {
+    const sales = [
+      { id: 1, items: [{ name: 'Leche', quantity: 2, lineTotal: 200 }, { name: 'Pan', quantity: 1, lineTotal: 80 }] },
+      { id: 2, items: [{ name: 'Leche', quantity: 1, lineTotal: 100 }] }
+    ];
+
+    expect(aggregateSaleItems(sales)).toEqual([
+      { name: 'Leche', quantity: 3, lineTotal: 300 },
+      { name: 'Pan', quantity: 1, lineTotal: 80 }
+    ]);
+  });
+
+  it('ignora ventas sin items o con items sin nombre', () => {
+    const sales = [{ id: 1, items: [] }, { id: 2 }, { id: 3, items: [{ name: '  ', quantity: 1, lineTotal: 10 }] }];
+    expect(aggregateSaleItems(sales)).toEqual([]);
   });
 });

@@ -4,15 +4,15 @@ import { createCustomer, createCustomerPayment, getCustomerDetail, listCustomers
 import { printSaleTicket } from '../scanner/services/scanner.print';
 import { printSaleTicketByQz } from '../scanner/services/scanner.qzPrint';
 import CustomerDeleteModal from './CustomerDeleteModal';
+import CustomerPaymentConfirmModal from './CustomerPaymentConfirmModal';
 import {
+  aggregateSaleItems,
   buildCustomerHistoryTicketPayload,
   formatDateTime,
   formatMoney,
   formatSaleItems,
-  getActiveCustomerHistory,
   isRouteUnavailableError,
-  parseMoneyValue,
-  parsePositiveAmount
+  parseMoneyValue
 } from './customers.utils';
 import '../../styles/customers.css';
 
@@ -64,20 +64,16 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
   const [isSaving, setIsSaving] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [isRegisteringPayment, setIsRegisteringPayment] = useState(false);
+  const [isPrintingStatement, setIsPrintingStatement] = useState(false);
+  const [isPaymentConfirmOpen, setIsPaymentConfirmOpen] = useState(false);
   const [deletingCustomerId, setDeletingCustomerId] = useState(null);
   const [deleteConfirmCustomer, setDeleteConfirmCustomer] = useState(null);
   const [visibleSalesCount, setVisibleSalesCount] = useState(3);
   const [visiblePaymentsCount, setVisiblePaymentsCount] = useState(3);
   const [isCustomerRoutesUnavailable, setIsCustomerRoutesUnavailable] = useState(false);
-  const [paymentError, setPaymentError] = useState('');
   const [formValues, setFormValues] = useState({
     name: '',
     phone: ''
-  });
-  const [paymentFormValues, setPaymentFormValues] = useState({
-    amount: '',
-    paymentMethod: 'efectivo',
-    notes: ''
   });
 
   useEffect(() => {
@@ -205,7 +201,7 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
   useEffect(() => {
     setVisibleSalesCount(3);
     setVisiblePaymentsCount(3);
-    setPaymentError('');
+    setIsPaymentConfirmOpen(false);
   }, [selectedCustomerId]);
 
   async function handleSubmit(event) {
@@ -247,20 +243,16 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
 
   const accountSales = Array.isArray(selectedCustomerDetail?.accountSales) ? selectedCustomerDetail.accountSales : [];
   const accountPayments = Array.isArray(selectedCustomerDetail?.accountPayments) ? selectedCustomerDetail.accountPayments : [];
-  const activeHistory = getActiveCustomerHistory({
-    accountSales,
-    accountPayments,
-    debtTotal: selectedCustomerDetail?.customer?.debtTotal
-  });
-  const activeAccountSales = activeHistory.sales;
-  const activeAccountPayments = activeHistory.payments;
-  const visibleSales = activeAccountSales.slice(0, visibleSalesCount);
-  const visiblePayments = activeAccountPayments.slice(0, visiblePaymentsCount);
-  const canExpandSales = activeAccountSales.length > 3;
-  const canExpandPayments = activeAccountPayments.length > 3;
+  // El backend ya marca por venta si esta saldada o pendiente (misma
+  // reconciliacion FIFO que usa el pago y el ticket) - antes esto se
+  // adivinaba en el frontend con una heuristica que podia no coincidir.
+  const outstandingAccountSales = accountSales.filter((sale) => !sale.isSettled);
+  const visibleSales = outstandingAccountSales.slice(0, visibleSalesCount);
+  const visiblePayments = accountPayments.slice(0, visiblePaymentsCount);
+  const canExpandSales = outstandingAccountSales.length > 3;
+  const canExpandPayments = accountPayments.length > 3;
 
-  async function handleRegisterPayment(event) {
-    event.preventDefault();
+  async function handleRegisterPayment(paymentMethod) {
     if (!selectedCustomerId || isRegisteringPayment || isCustomerRoutesUnavailable) {
       if (isCustomerRoutesUnavailable) {
         toast.warn('Los pagos de cuenta no estan disponibles en este backend todavia.');
@@ -268,59 +260,46 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
       return;
     }
 
-    const parsedAmount = parsePositiveAmount(paymentFormValues.amount);
-    const debtTotal = parseMoneyValue(selectedCustomerDetail?.customer?.debtTotal);
-
-    if (!parsedAmount) {
-      setPaymentError('Ingresa un monto valido.');
-      toast.error('Ingresa un monto valido.');
-      return;
-    }
-
-    // Chequeo rapido en base a lo que hay en pantalla (UX). La validacion real
-    // ("no superar la deuda") la hace el backend con la deuda fresca al momento
-    // de registrar el pago, por si esta pantalla quedo desactualizada.
-    if (parsedAmount > debtTotal) {
-      const message = `El pago no puede superar la deuda actual (${formatMoney(debtTotal)}).`;
-      setPaymentError(message);
-      toast.error(message);
-      return;
-    }
-
-    setPaymentError('');
     setIsRegisteringPayment(true);
     try {
+      // Se paga siempre el total de la deuda (no hay pagos parciales). Se
+      // relee fresco justo antes de cobrar para minimizar la ventana de una
+      // pantalla desactualizada; igual el backend valida contra la deuda real.
+      const freshDetail = await loadCustomerDetail(selectedCustomerId);
+      const freshDebtTotal = parseMoneyValue(freshDetail?.customer?.debtTotal);
+
+      if (freshDebtTotal <= 0) {
+        toast.info('Este cliente no tiene deuda pendiente.', { toastId: 'customer-payment-no-debt' });
+        setIsPaymentConfirmOpen(false);
+        return;
+      }
+
       const paymentResult = await createCustomerPayment(selectedCustomerId, {
-        amount: parsedAmount,
-        paymentMethod: paymentFormValues.paymentMethod,
-        notes: paymentFormValues.notes
+        amount: freshDebtTotal,
+        paymentMethod
       }, { token });
 
       setIsCustomerRoutesUnavailable(false);
       await loadCustomers();
       setDetailLoading(true);
       await loadCustomerDetail(selectedCustomerId);
-      setPaymentFormValues({
-        amount: '',
-        paymentMethod: 'efectivo',
-        notes: ''
-      });
-      setPaymentError('');
+      setIsPaymentConfirmOpen(false);
       toast.success('Pago de cuenta registrado.');
 
       const payment = paymentResult?.payment;
-      if (payment?.isFullyClosing && Array.isArray(payment?.coveredItems) && payment.coveredItems.length) {
-        const closingTicketPayload = buildCustomerHistoryTicketPayload({
-          customer: selectedCustomerDetail?.customer,
+      if (Array.isArray(payment?.coveredItems) && payment.coveredItems.length) {
+        const paymentTicketPayload = buildCustomerHistoryTicketPayload({
+          customer: freshDetail?.customer,
           coveredItems: payment.coveredItems,
-          currentUser
+          currentUser,
+          ticketKind: 'payment'
         });
 
-        if (closingTicketPayload.hasSales) {
-          await printTicketWithFallback(closingTicketPayload.ticket, {
-            success: 'customer-payment-print-ok-history',
-            fallback: 'customer-payment-print-fallback-history',
-            failure: 'customer-payment-print-fail-history'
+        if (paymentTicketPayload.hasSales) {
+          await printTicketWithFallback(paymentTicketPayload.ticket, {
+            success: 'customer-payment-print-ok',
+            fallback: 'customer-payment-print-fallback',
+            failure: 'customer-payment-print-fail'
           });
         }
       }
@@ -346,6 +325,52 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
     } finally {
       setDetailLoading(false);
       setIsRegisteringPayment(false);
+    }
+  }
+
+  async function handlePrintStatement() {
+    if (!selectedCustomerId || isPrintingStatement) {
+      return;
+    }
+
+    // Accion de solo lectura: imprime lo que el cliente tiene pendiente ahora
+    // mismo, sin registrar ningun pago ni tocar la deuda. Se puede repetir
+    // las veces que haga falta para comparar contra lo que dice el sistema.
+    setIsPrintingStatement(true);
+    try {
+      const freshDetail = await loadCustomerDetail(selectedCustomerId);
+      const freshOutstandingSales = (Array.isArray(freshDetail?.accountSales) ? freshDetail.accountSales : [])
+        .filter((sale) => !sale.isSettled);
+
+      if (!freshOutstandingSales.length) {
+        toast.info('Este cliente no tiene deuda pendiente para imprimir.', {
+          toastId: 'customer-statement-empty'
+        });
+        return;
+      }
+
+      const statementTicketPayload = buildCustomerHistoryTicketPayload({
+        customer: freshDetail?.customer,
+        coveredItems: aggregateSaleItems(freshOutstandingSales),
+        currentUser,
+        ticketKind: 'statement'
+      });
+
+      if (statementTicketPayload.hasSales) {
+        await printTicketWithFallback(statementTicketPayload.ticket, {
+          success: 'customer-statement-print-ok',
+          fallback: 'customer-statement-print-fallback',
+          failure: 'customer-statement-print-fail'
+        });
+      }
+    } catch (error) {
+      if (Number(error?.status || 0) === 401) {
+        onUnauthorizedRef.current?.();
+        return;
+      }
+      toast.error(error?.message || 'No se pudo imprimir el comprobante.');
+    } finally {
+      setIsPrintingStatement(false);
     }
   }
 
@@ -420,6 +445,15 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
         onCancel={() => setDeleteConfirmCustomer(null)}
         onConfirm={confirmDeleteCustomer}
       />
+      {isPaymentConfirmOpen ? (
+        <CustomerPaymentConfirmModal
+          customer={selectedCustomerDetail?.customer}
+          debtTotal={selectedCustomerDetail?.customer?.debtTotal}
+          isSubmitting={isRegisteringPayment}
+          onCancel={() => setIsPaymentConfirmOpen(false)}
+          onConfirm={handleRegisterPayment}
+        />
+      ) : null}
       <div className="container py-4">
         <div className="row g-4">
           <div className="col-lg-4">
@@ -533,96 +567,55 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
                     <span className="customers-detail-debt">{formatMoney(selectedCustomerDetail.customer.debtTotal)}</span>
                   </div>
 
-                  <form className="customers-payment-box mb-3" onSubmit={handleRegisterPayment}>
-                    <div className="d-flex align-items-center justify-content-between gap-2 mb-2">
-                      <div>
-                        <p className="customers-detail-label mb-1">Registrar pago</p>
-                        <strong className="customers-payment-title">Descontar deuda</strong>
-                      </div>
-                    </div>
-                    <div className="d-grid gap-2">
-                      <input
-                        type="number"
-                        min="0.01"
-                        step="0.01"
-                        className="form-control"
-                        placeholder="Monto"
-                        value={paymentFormValues.amount}
-                        max={parseMoneyValue(selectedCustomerDetail?.customer?.debtTotal) || undefined}
-                        onChange={(event) => {
-                          const nextAmount = event.target.value;
-                          setPaymentFormValues((current) => ({ ...current, amount: nextAmount }));
-
-                          const parsedAmount = parsePositiveAmount(nextAmount);
-                          const debtTotal = parseMoneyValue(selectedCustomerDetail?.customer?.debtTotal);
-                          if (!nextAmount) {
-                            setPaymentError('');
-                            return;
-                          }
-                          if (!parsedAmount) {
-                            setPaymentError('Ingresa un monto valido.');
-                            return;
-                          }
-                          if (parsedAmount > debtTotal) {
-                            setPaymentError(`El pago no puede superar la deuda actual (${formatMoney(debtTotal)}).`);
-                            return;
-                          }
-                          setPaymentError('');
-                        }}
-                        required
-                      />
-                      <select
-                        className="form-select"
-                        value={paymentFormValues.paymentMethod}
-                        disabled={isCustomerRoutesUnavailable}
-                        onChange={(event) => setPaymentFormValues((current) => ({ ...current, paymentMethod: event.target.value }))}
-                      >
-                        <option value="efectivo">Efectivo</option>
-                        <option value="tarjeta">Tarjeta</option>
-                      </select>
-                      <input
-                        type="text"
-                        className="form-control"
-                        placeholder="Detalle opcional"
-                        value={paymentFormValues.notes}
-                        disabled={isCustomerRoutesUnavailable}
-                        onChange={(event) => setPaymentFormValues((current) => ({ ...current, notes: event.target.value }))}
-                        maxLength={255}
-                      />
-                      {paymentError ? <p className="app-inline-error mb-0">{paymentError}</p> : null}
-                      <button type="submit" className="btn btn-dark" disabled={isRegisteringPayment || Boolean(paymentError) || isCustomerRoutesUnavailable}>
-                        {isRegisteringPayment ? 'Registrando...' : 'Registrar pago'}
-                      </button>
-                    </div>
-                  </form>
+                  <div className="d-grid gap-2 mb-3">
+                    <button
+                      type="button"
+                      className="btn btn-outline-dark"
+                      onClick={handlePrintStatement}
+                      disabled={isPrintingStatement || isCustomerRoutesUnavailable}
+                    >
+                      {isPrintingStatement ? 'Imprimiendo...' : 'Imprimir'}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-dark"
+                      onClick={() => setIsPaymentConfirmOpen(true)}
+                      disabled={
+                        isCustomerRoutesUnavailable
+                        || parseMoneyValue(selectedCustomerDetail?.customer?.debtTotal) <= 0
+                      }
+                    >
+                      Pagar
+                    </button>
+                  </div>
 
                   <div className="mb-3">
                     <div className="customers-history-head mb-2">
                       <p className="customers-detail-label mb-0">Historial de ventas</p>
                       <div className="customers-history-actions">
-                        <span className="customers-history-count">{activeAccountSales.length}</span>
+                        <span className="customers-history-count">{outstandingAccountSales.length}</span>
                         {canExpandSales ? (
                           <button
                             type="button"
                             className="btn btn-sm btn-outline-secondary"
                             onClick={() => {
-                              if (visibleSalesCount >= activeAccountSales.length) {
+                              if (visibleSalesCount >= outstandingAccountSales.length) {
                                 setVisibleSalesCount(3);
                                 return;
                               }
                               if (visibleSalesCount <= 3) {
-                                setVisibleSalesCount(Math.min(6, activeAccountSales.length));
+                                setVisibleSalesCount(Math.min(6, outstandingAccountSales.length));
                                 return;
                               }
-                              setVisibleSalesCount(activeAccountSales.length);
+                              setVisibleSalesCount(outstandingAccountSales.length);
                             }}
                           >
-                            {resolveExpandLabel(visibleSalesCount, activeAccountSales.length, 3)}
+                            {resolveExpandLabel(visibleSalesCount, outstandingAccountSales.length, 3)}
                           </button>
                         ) : null}
                       </div>
                     </div>
-                    {activeAccountSales.length ? (
+                    {outstandingAccountSales.length ? (
                       <div className="customers-sales-list">
                         {visibleSales.map((sale) => (
                           <div key={sale.id} className="customers-sale-row">
@@ -656,29 +649,29 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
                     <div className="customers-history-head mb-2">
                       <p className="customers-detail-label mb-0">Historial de pagos</p>
                       <div className="customers-history-actions">
-                        <span className="customers-history-count">{activeAccountPayments.length}</span>
+                        <span className="customers-history-count">{accountPayments.length}</span>
                         {canExpandPayments ? (
                           <button
                             type="button"
                             className="btn btn-sm btn-outline-secondary"
                             onClick={() => {
-                              if (visiblePaymentsCount >= activeAccountPayments.length) {
+                              if (visiblePaymentsCount >= accountPayments.length) {
                                 setVisiblePaymentsCount(3);
                                 return;
                               }
                               if (visiblePaymentsCount <= 3) {
-                                setVisiblePaymentsCount(Math.min(6, activeAccountPayments.length));
+                                setVisiblePaymentsCount(Math.min(6, accountPayments.length));
                                 return;
                               }
-                              setVisiblePaymentsCount(activeAccountPayments.length);
+                              setVisiblePaymentsCount(accountPayments.length);
                             }}
                           >
-                            {resolveExpandLabel(visiblePaymentsCount, activeAccountPayments.length, 3)}
+                            {resolveExpandLabel(visiblePaymentsCount, accountPayments.length, 3)}
                           </button>
                         ) : null}
                       </div>
                     </div>
-                    {activeAccountPayments.length ? (
+                    {accountPayments.length ? (
                       <div className="customers-sales-list">
                         {visiblePayments.map((payment) => (
                           <div key={payment.id} className="customers-sale-row customers-sale-row-payment">
