@@ -9,6 +9,7 @@ import {
 } from './panelControl.diagnostics';
 import {
   fetchPanelDiagnosticEvents,
+  fetchScannerDashboard,
   registerPanelPayment,
   subscribePanelDashboard,
   updatePanelInitialCash
@@ -84,9 +85,11 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
     error: ''
   });
   const [isSavingShift, setIsSavingShift] = useState(false);
+  const [streamReconnectTick, setStreamReconnectTick] = useState(0);
   const lastLiveSnapshotKeyRef = useRef('');
   const diagnosticEventsRequestRef = useRef(0);
   const shiftStateRequestRef = useRef(0);
+  const dashboardRequestRef = useRef(0);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -222,6 +225,80 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
 
     return undefined;
   }, [currentStoreDateLabel, loadShiftState]);
+
+  /**
+   * Fetch REST plano del dashboard, independiente del stream SSE. El stream
+   * solo empuja datos cuando pasa algo (venta, pago) - si esa conexion se
+   * cae en silencio (el dispositivo se duerme, cambia de red, un proxy corta
+   * conexiones inactivas) el navegador no siempre detecta el corte y el
+   * panel queda pegado con el ultimo dato hasta un F5 manual. Esto sirve de
+   * respaldo: se llama al entrar a la pantalla y cada vez que la pestaña
+   * vuelve a estar visible.
+   */
+  const loadDashboard = useCallback(async ({ silent = false } = {}) => {
+    if (!currentUser?.sessionToken) {
+      return { ok: false };
+    }
+
+    const requestId = dashboardRequestRef.current + 1;
+    dashboardRequestRef.current = requestId;
+
+    try {
+      const response = await fetchScannerDashboard({
+        date: currentStoreDateLabel,
+        profitRate
+      }, {
+        token: currentUser.sessionToken
+      });
+      if (dashboardRequestRef.current !== requestId) {
+        return { ok: false };
+      }
+
+      setDashboard(response?.dashboard || EMPTY_DASHBOARD);
+      setDashboardError('');
+      return { ok: true };
+    } catch (error) {
+      if (dashboardRequestRef.current !== requestId) {
+        return { ok: false };
+      }
+
+      if (Number(error?.status) === 401) {
+        onUnauthorized?.();
+        return { ok: false };
+      }
+
+      if (!silent) {
+        setDashboardError(toUserErrorMessage(error, { context: 'panel_dashboard' }));
+      }
+      return { ok: false, error };
+    }
+  }, [currentStoreDateLabel, currentUser?.sessionToken, onUnauthorized, profitRate]);
+
+  useEffect(() => {
+    loadDashboard({ silent: false }).catch(() => {});
+  }, [loadDashboard]);
+
+  useEffect(() => {
+    function handleVisibilityChange() {
+      if (document.visibilityState !== 'visible') {
+        return;
+      }
+      loadDashboard({ silent: true }).catch(() => {});
+      loadShiftState({ silent: true }).catch(() => {});
+      // Fuerza que se rearme la conexion SSE: si quedo colgada en silencio,
+      // esta es la unica forma confiable de destrabarla sin esperar a que el
+      // usuario note el problema y haga F5 el solo.
+      setStreamReconnectTick((current) => current + 1);
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleVisibilityChange);
+    };
+  }, [loadDashboard, loadShiftState]);
 
   async function openShift(shiftType, { openingCash } = {}) {
     if (isSavingShift) {
@@ -435,7 +512,7 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
       clearTimeout(reconnectTimeout);
       unsubscribe();
     };
-  }, [currentUser?.sessionToken, currentStoreDateLabel, onUnauthorized, profitRate]);
+  }, [currentUser?.sessionToken, currentStoreDateLabel, onUnauthorized, profitRate, streamReconnectTick]);
 
   const panelMetrics = dashboard.metrics || EMPTY_DASHBOARD.metrics;
   const salesByPaymentMethod = dashboard.salesByPaymentMethod || EMPTY_DASHBOARD.salesByPaymentMethod;

@@ -37,6 +37,26 @@ export async function fetchPanelDiagnosticEvents({ limit = 12 } = {}, options = 
   return readJson(response);
 }
 
+export async function fetchScannerDashboard(params = {}, options = {}) {
+  const search = new URLSearchParams();
+  if (params?.initialCash != null) {
+    search.set('initialCash', String(params.initialCash));
+  }
+  if (params?.profitRate != null) {
+    search.set('profitRate', String(params.profitRate));
+  }
+  if (params?.date) {
+    search.set('date', String(params.date));
+  }
+
+  const query = search.toString();
+  const response = await fetch(`${apiUrl}/api/scanner/dashboard${query ? `?${query}` : ''}`, {
+    headers: buildHeaders({ token: options?.token })
+  });
+
+  return readJson(response);
+}
+
 export function subscribePanelDashboard(params) {
   const search = new URLSearchParams();
   if (params?.params?.initialCash != null) {
