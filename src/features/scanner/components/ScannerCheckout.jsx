@@ -31,6 +31,7 @@ function ScannerCheckout({
     : Number(String(cashReceivedInput).replace(',', '.'));
   const hasValidCashReceived = parsedCashReceived !== null && Number.isFinite(parsedCashReceived);
   const changeDue = hasValidCashReceived ? Number((parsedCashReceived - totalAmount).toFixed(2)) : null;
+  const isCashMissing = isCashPayment && !hasValidCashReceived;
   const isCashInsufficient = isCashPayment && hasValidCashReceived && changeDue < 0;
   const paymentMethodOptions = [
     { value: 'efectivo', label: 'Efectivo', className: 'scanner-payment-method-btn-cash' },
@@ -39,7 +40,7 @@ function ScannerCheckout({
   ];
 
   const handleConfirm = useCallback(async () => {
-    if (isSubmitting || isChargeBlocked || isMissingCustomer || isCashInsufficient) {
+    if (isSubmitting || isChargeBlocked || isMissingCustomer || isCashMissing || isCashInsufficient) {
       return;
     }
     setIsSubmitting(true);
@@ -54,7 +55,7 @@ function ScannerCheckout({
       setSelectedCustomerId('');
       setCashReceivedInput('');
     }
-  }, [isAccountPayment, isCashInsufficient, isChargeBlocked, isMissingCustomer, isSubmitting, onCharge, paymentMethod, selectedCustomerId]);
+  }, [isAccountPayment, isCashInsufficient, isCashMissing, isChargeBlocked, isMissingCustomer, isSubmitting, onCharge, paymentMethod, selectedCustomerId]);
 
   useEffect(() => {
     if (openConfirmSignal <= 0) {
@@ -196,7 +197,7 @@ function ScannerCheckout({
             {isCashPayment ? (
               <div className="mb-4">
                 <label className="form-label fw-semibold" htmlFor="scanner-cash-received">
-                  Paga con (opcional)
+                  Paga con
                 </label>
                 <input
                   id="scanner-cash-received"
@@ -210,6 +211,7 @@ function ScannerCheckout({
                   disabled={isSubmitting}
                   onChange={(event) => setCashReceivedInput(event.target.value)}
                   autoComplete="off"
+                  required
                 />
                 {isCashInsufficient ? (
                   <p className="scanner-inline-error mt-2">
@@ -265,7 +267,7 @@ function ScannerCheckout({
               <button
                 type="button"
                 className="btn btn-dark w-50"
-                disabled={isSubmitting || isChargeBlocked || isMissingCustomer || isCashInsufficient}
+                disabled={isSubmitting || isChargeBlocked || isMissingCustomer || isCashMissing || isCashInsufficient}
                 onClick={handleConfirm}
               >
                 {isSubmitting ? 'Confirmando...' : 'Confirmar'}
