@@ -19,10 +19,19 @@ function ScannerCheckout({
   const [confirmOpenedAt, setConfirmOpenedAt] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState('efectivo');
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
+  const [cashReceivedInput, setCashReceivedInput] = useState('');
   const lastHandledOpenSignalRef = useRef(0);
   const lastHandledConfirmSignalRef = useRef(0);
   const isAccountPayment = paymentMethod === 'cuenta';
+  const isCashPayment = paymentMethod === 'efectivo';
   const isMissingCustomer = isAccountPayment && !selectedCustomerId;
+  const totalAmount = Number(total || 0);
+  const parsedCashReceived = cashReceivedInput.trim() === ''
+    ? null
+    : Number(String(cashReceivedInput).replace(',', '.'));
+  const hasValidCashReceived = parsedCashReceived !== null && Number.isFinite(parsedCashReceived);
+  const changeDue = hasValidCashReceived ? Number((parsedCashReceived - totalAmount).toFixed(2)) : null;
+  const isCashInsufficient = isCashPayment && hasValidCashReceived && changeDue < 0;
   const paymentMethodOptions = [
     { value: 'efectivo', label: 'Efectivo', className: 'scanner-payment-method-btn-cash' },
     { value: 'tarjeta', label: 'Tarjeta', className: 'scanner-payment-method-btn-card' },
@@ -30,7 +39,7 @@ function ScannerCheckout({
   ];
 
   const handleConfirm = useCallback(async () => {
-    if (isSubmitting || isChargeBlocked || isMissingCustomer) {
+    if (isSubmitting || isChargeBlocked || isMissingCustomer || isCashInsufficient) {
       return;
     }
     setIsSubmitting(true);
@@ -43,8 +52,9 @@ function ScannerCheckout({
       setIsConfirmOpen(false);
       setPaymentMethod('efectivo');
       setSelectedCustomerId('');
+      setCashReceivedInput('');
     }
-  }, [isAccountPayment, isChargeBlocked, isMissingCustomer, isSubmitting, onCharge, paymentMethod, selectedCustomerId]);
+  }, [isAccountPayment, isCashInsufficient, isChargeBlocked, isMissingCustomer, isSubmitting, onCharge, paymentMethod, selectedCustomerId]);
 
   useEffect(() => {
     if (openConfirmSignal <= 0) {
@@ -81,6 +91,12 @@ function ScannerCheckout({
   useEffect(() => {
     onConfirmModalOpenChange?.(isConfirmOpen);
   }, [isConfirmOpen, onConfirmModalOpenChange]);
+
+  useEffect(() => {
+    if (isConfirmOpen) {
+      setCashReceivedInput('');
+    }
+  }, [isConfirmOpen]);
 
   useEffect(() => {
     if (!isCustomerAccountsAvailable && paymentMethod === 'cuenta') {
@@ -177,6 +193,34 @@ function ScannerCheckout({
               ) : null}
             </div>
 
+            {isCashPayment ? (
+              <div className="mb-4">
+                <label className="form-label fw-semibold" htmlFor="scanner-cash-received">
+                  Paga con (opcional)
+                </label>
+                <input
+                  id="scanner-cash-received"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  inputMode="decimal"
+                  className="form-control"
+                  placeholder={`Ej: ${Math.ceil(totalAmount / 100) * 100 || 100}`}
+                  value={cashReceivedInput}
+                  disabled={isSubmitting}
+                  onChange={(event) => setCashReceivedInput(event.target.value)}
+                  autoComplete="off"
+                />
+                {isCashInsufficient ? (
+                  <p className="scanner-inline-error mt-2">
+                    Falta ${Math.abs(changeDue).toFixed(2)} para cubrir el total.
+                  </p>
+                ) : hasValidCashReceived ? (
+                  <p className="mb-0 mt-2 h4">Vuelto: ${changeDue.toFixed(2)}</p>
+                ) : null}
+              </div>
+            ) : null}
+
             {isAccountPayment ? (
               <div className="mb-4">
                 <label className="form-label fw-semibold" htmlFor="scanner-account-customer">
@@ -221,7 +265,7 @@ function ScannerCheckout({
               <button
                 type="button"
                 className="btn btn-dark w-50"
-                disabled={isSubmitting || isChargeBlocked || isMissingCustomer}
+                disabled={isSubmitting || isChargeBlocked || isMissingCustomer || isCashInsufficient}
                 onClick={handleConfirm}
               >
                 {isSubmitting ? 'Confirmando...' : 'Confirmar'}
