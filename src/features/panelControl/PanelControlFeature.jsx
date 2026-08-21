@@ -49,6 +49,9 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
   const [openingShiftTarget, setOpeningShiftTarget] = useState('');
   const [isCloseShiftConfirmOpen, setIsCloseShiftConfirmOpen] = useState(false);
   const [closingShiftTarget, setClosingShiftTarget] = useState(null);
+  const [isCashDepositModalOpen, setIsCashDepositModalOpen] = useState(false);
+  const [cashDepositAmountDraft, setCashDepositAmountDraft] = useState('');
+  const [cashDepositDescriptionDraft, setCashDepositDescriptionDraft] = useState('');
 
   useEffect(() => {
     function syncMobileLayout() {
@@ -140,6 +143,38 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
     } catch (error) {
       toast.error(error?.message || 'No se pudo guardar la caja inicial.', {
         toastId: 'panel-initial-cash-invalid',
+        autoClose: 2200
+      });
+    }
+  }
+
+  function openCashDepositModal() {
+    setCashDepositAmountDraft('');
+    setCashDepositDescriptionDraft('');
+    setIsCashDepositModalOpen(true);
+  }
+
+  function closeCashDepositModal() {
+    setIsCashDepositModalOpen(false);
+    setCashDepositAmountDraft('');
+    setCashDepositDescriptionDraft('');
+  }
+
+  async function handleCashDepositSubmit(event) {
+    event.preventDefault();
+    try {
+      const result = await controller.registerCashDepositEntry(cashDepositAmountDraft, cashDepositDescriptionDraft);
+      if (result?.busy) {
+        return;
+      }
+      closeCashDepositModal();
+      toast.success('Ingreso de caja registrado.', {
+        toastId: 'panel-cash-deposit-ok',
+        autoClose: 1800
+      });
+    } catch (error) {
+      toast.error(error?.message || 'No se pudo registrar el ingreso.', {
+        toastId: 'panel-cash-deposit-invalid',
         autoClose: 2200
       });
     }
@@ -450,6 +485,13 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
             />
             <button
               type="button"
+              className="btn btn-sm btn-outline-dark"
+              onClick={openCashDepositModal}
+            >
+              Agregar ingreso
+            </button>
+            <button
+              type="button"
               className="btn btn-sm btn-outline-danger"
               disabled={controller.isSavingShift}
               onClick={() => {
@@ -698,6 +740,49 @@ function PanelControlFeature({ currentUser, onUnauthorized }) {
             </form>
           )}
           onClose={closeInitialCashModal}
+        />
+      ) : null}
+
+      {isCashDepositModalOpen ? (
+        <PanelModal
+          title="Agregar ingreso de caja"
+          body={(
+            <form className="d-grid gap-3" onSubmit={handleCashDepositSubmit}>
+              <p className="mb-0 small text-muted">Plata que entra a la caja sin ser una venta (ej. cambio traido a mitad de jornada).</p>
+              <div>
+                <label className="form-label" htmlFor="panel-cash-deposit-amount">Monto</label>
+                <input
+                  id="panel-cash-deposit-amount"
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  className="form-control"
+                  placeholder="Ej: 200"
+                  value={cashDepositAmountDraft}
+                  onChange={(event) => setCashDepositAmountDraft(event.target.value)}
+                  autoFocus
+                  required
+                />
+              </div>
+              <div>
+                <label className="form-label" htmlFor="panel-cash-deposit-description">Motivo</label>
+                <input
+                  id="panel-cash-deposit-description"
+                  type="text"
+                  className="form-control"
+                  placeholder="Ej: Cambio traido de casa"
+                  value={cashDepositDescriptionDraft}
+                  onChange={(event) => setCashDepositDescriptionDraft(event.target.value)}
+                  maxLength={255}
+                  required
+                />
+              </div>
+              <button type="submit" className="btn btn-dark w-100" disabled={controller.isSavingCashDeposit}>
+                {controller.isSavingCashDeposit ? 'Guardando...' : 'Guardar ingreso'}
+              </button>
+            </form>
+          )}
+          onClose={closeCashDepositModal}
         />
       ) : null}
 

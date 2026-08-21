@@ -1,4 +1,12 @@
-import { apiUrl, buildHeaders, readJson } from '../../../shared/services/httpClient';
+import { apiUrl, buildHeaders, fetchJson, readJson } from '../../../shared/services/httpClient';
+
+export async function registerCashDeposit(payload, options) {
+  return fetchJson(`${apiUrl}/api/scanner/cash-deposits`, {
+    method: 'POST',
+    headers: buildHeaders({ token: options?.token, json: true }),
+    body: JSON.stringify(payload)
+  });
+}
 
 export async function registerPanelPayment(payload, options) {
   const startedAt = typeof performance !== 'undefined' ? performance.now() : Date.now();

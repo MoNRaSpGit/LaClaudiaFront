@@ -10,6 +10,7 @@ import {
 import {
   fetchPanelDiagnosticEvents,
   fetchScannerDashboard,
+  registerCashDeposit,
   registerPanelPayment,
   subscribePanelDashboard,
   updatePanelInitialCash
@@ -34,6 +35,7 @@ const EMPTY_DASHBOARD = {
     customerAccountPaymentsTotal: 0,
     customerAccountPaymentsCashTotal: 0,
     customerAccountPaymentsCardTotal: 0,
+    cashDepositsTotal: 0,
     nonCashPendingTotal: 0,
     outstandingDebtTotal: 0,
     profitRate: 0.4
@@ -72,6 +74,7 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
   const [isRegisteringPayment, setIsRegisteringPayment] = useState(false);
   const [currentStoreDateLabel, setCurrentStoreDateLabel] = useState(() => getStoreDateLabel());
   const [isSavingInitialCash, setIsSavingInitialCash] = useState(false);
+  const [isSavingCashDeposit, setIsSavingCashDeposit] = useState(false);
   const [profitRate, setProfitRate] = useState(DEFAULT_PROFIT_RATE);
   const [diagnosticEvents, setDiagnosticEvents] = useState([]);
   const [diagnosticFilter, setDiagnosticFilter] = useState('all');
@@ -658,6 +661,56 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
     }
   }
 
+  /**
+   * Ingreso manual de efectivo a la caja en medio de la jornada (ej. cambio
+   * traido de afuera). Queda en movimientos y se suma al monto del turno en
+   * el que se cargo, igual que un cobro de cuenta en efectivo.
+   */
+  async function registerCashDepositEntry(rawAmount, rawDescription) {
+    const parsedAmount = parsePositiveAmount(rawAmount);
+    const trimmedDescription = String(rawDescription || '').trim();
+
+    if (parsedAmount === null) {
+      const error = new Error('Ingresa un monto valido mayor a 0.');
+      error.code = 'INVALID_CASH_DEPOSIT_AMOUNT';
+      throw error;
+    }
+
+    if (!trimmedDescription) {
+      const error = new Error('El motivo del ingreso es obligatorio.');
+      error.code = 'INVALID_CASH_DEPOSIT_DESCRIPTION';
+      throw error;
+    }
+
+    if (isSavingCashDeposit) {
+      return { ok: false, busy: true };
+    }
+
+    setIsSavingCashDeposit(true);
+    try {
+      const result = await registerCashDeposit({
+        externalId: `cash-deposit-${Date.now()}`,
+        userId: currentUser?.id || null,
+        amount: parsedAmount,
+        description: trimmedDescription
+      }, {
+        token: currentUser?.sessionToken || ''
+      });
+
+      await Promise.all([
+        loadDashboard({ silent: true }),
+        loadShiftState({ silent: true })
+      ]);
+
+      return {
+        ok: true,
+        deposit: result?.deposit || null
+      };
+    } finally {
+      setIsSavingCashDeposit(false);
+    }
+  }
+
   function updateProfitRate(rawPercent) {
     const parsedPercent = Number(String(rawPercent || '').replace(',', '.'));
     if (!Number.isFinite(parsedPercent) || parsedPercent < 0 || parsedPercent > 100) {
@@ -795,6 +848,8 @@ export function usePanelControlController({ currentUser, onUnauthorized }) {
     paymentError,
     isRegisteringPayment,
     isSavingInitialCash,
+    registerCashDepositEntry,
+    isSavingCashDeposit,
     shiftState,
     isSavingShift,
     diagnosticEvents,
