@@ -561,13 +561,16 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
 
       try {
         await printSaleTicketByQz(ticketPayload);
-        try {
-          await openCashDrawerByQz();
-        } catch (drawerError) {
-          toast.warn(`No se pudo abrir el cajon: ${drawerError?.message || 'Error de QZ.'}`, {
-            toastId: `scanner-drawer-open-fail-${Date.now()}`,
-            autoClose: 2600
-          });
+        // Con tarjeta no hay vuelto que dar: no tiene sentido abrir el cajon.
+        if (chargeOptions?.paymentMethod !== 'tarjeta') {
+          try {
+            await openCashDrawerByQz();
+          } catch (drawerError) {
+            toast.warn(`No se pudo abrir el cajon: ${drawerError?.message || 'Error de QZ.'}`, {
+              toastId: `scanner-drawer-open-fail-${Date.now()}`,
+              autoClose: 2600
+            });
+          }
         }
       } catch (error) {
         try {
