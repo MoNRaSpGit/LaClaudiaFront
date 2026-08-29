@@ -233,7 +233,12 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
 
   const focusScannerInput = useCallback(() => {
     setTimeout(() => {
+      // Seleccionar (no solo enfocar) evita que un scanner fisico, que solo
+      // tipea caracteres donde este el cursor, pegue un codigo nuevo detras
+      // de uno viejo que haya quedado sin limpiar y arme un numero gigante
+      // que no coincide con ningun codigo real.
       scannerInputRef.current?.focus();
+      scannerInputRef.current?.select?.();
     }, 0);
   }, []);
 
@@ -529,6 +534,7 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
     setIsManualModalOpen(false);
     setSelectedManualProduct(null);
     clearScanError();
+    actions.setScanBarcode('');
     stopLiveEditor();
     focusScannerInput();
   }
@@ -538,6 +544,7 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
       isOpen: false,
       barcode: ''
     });
+    actions.setScanBarcode('');
     stopLiveEditor();
     focusScannerInput();
   }
