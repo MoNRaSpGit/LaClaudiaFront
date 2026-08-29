@@ -6,7 +6,6 @@ import { printSaleTicketByQz } from '../scanner/services/scanner.qzPrint';
 import CustomerDeleteModal from './CustomerDeleteModal';
 import CustomerPaymentConfirmModal from './CustomerPaymentConfirmModal';
 import {
-  aggregateSaleItems,
   buildCustomerHistoryTicketPayload,
   formatDateTime,
   formatMoney,
@@ -339,10 +338,12 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
     setIsPrintingStatement(true);
     try {
       const freshDetail = await loadCustomerDetail(selectedCustomerId);
-      const freshOutstandingSales = (Array.isArray(freshDetail?.accountSales) ? freshDetail.accountSales : [])
-        .filter((sale) => !sale.isSettled);
+      // printableDebtItems ya viene calculado y topeado del backend (nunca
+      // suma mas plata en productos de la que la deuda real indica), en vez
+      // de armarse acá con las ventas sueltas.
+      const freshPrintableItems = Array.isArray(freshDetail?.printableDebtItems) ? freshDetail.printableDebtItems : [];
 
-      if (!freshOutstandingSales.length) {
+      if (!freshPrintableItems.length) {
         toast.info('Este cliente no tiene deuda pendiente para imprimir.', {
           toastId: 'customer-statement-empty'
         });
@@ -351,7 +352,7 @@ function CustomersFeature({ currentUser, onUnauthorized }) {
 
       const statementTicketPayload = buildCustomerHistoryTicketPayload({
         customer: freshDetail?.customer,
-        coveredItems: aggregateSaleItems(freshOutstandingSales),
+        coveredItems: freshPrintableItems,
         currentUser,
         ticketKind: 'statement'
       });

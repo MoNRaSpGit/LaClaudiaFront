@@ -54,33 +54,6 @@ export function isRouteUnavailableError(error) {
 }
 
 /**
- * Junta los items de un grupo de ventas a cuenta (agrupados por nombre de
- * producto, sumando cantidad y subtotal) para armar un comprobante. Se usa
- * para el "Imprimir comprobante" de deuda pendiente: el mismo formato que el
- * backend arma para el ticket de cierre de pago, pero calculado del lado del
- * cliente a partir de las ventas ya marcadas como pendientes (`isSettled:
- * false`) que manda el backend en el detalle del cliente.
- */
-export function aggregateSaleItems(sales = []) {
-  const itemsByName = new Map();
-
-  sales.forEach((sale) => {
-    (Array.isArray(sale?.items) ? sale.items : []).forEach((item) => {
-      const name = String(item?.name || '').trim();
-      if (!name) {
-        return;
-      }
-      const current = itemsByName.get(name) || { name, quantity: 0, lineTotal: 0 };
-      current.quantity += Number(item.quantity || 0);
-      current.lineTotal += Number(item.lineTotal || 0);
-      itemsByName.set(name, current);
-    });
-  });
-
-  return Array.from(itemsByName.values());
-}
-
-/**
  * Arma el comprobante de "cierre de cuenta" a partir del detalle de items
  * cubiertos que devuelve el backend en la respuesta del pago (calculado en
  * la misma transaccion que registra el pago, con la deuda real al momento
