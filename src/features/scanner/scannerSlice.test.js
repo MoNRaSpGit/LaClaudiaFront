@@ -67,6 +67,27 @@ describe('scannerSlice', () => {
     expect(state.cartItems[0].thumbnail_url).toBe('https://img.local/leche.jpg');
   });
 
+  it('no vuelve a aplicar un precio editado en una venta vieja al re-escanear el mismo producto despues (caso real: Grasa vacuna Dori)', () => {
+    // Antes, editar el precio en el carrito quedaba "pegado" localmente para
+    // siempre y se reaplicaba en cada escaneo futuro, aunque el catalogo real
+    // (la base) ya tuviera otro precio. El precio de cada escaneo tiene que
+    // venir siempre del lookup fresco, nunca de una edicion vieja.
+    let state = scannerReducer(undefined, { type: 'init' });
+
+    // Primera venta: escanea el producto a $50 y lo edita a $30 (oferta puntual).
+    state = scannerReducer(state, addScannedProduct(createProduct({ id: 40, nombre: 'Grasa vacuna Dori', precio_venta: 50 })));
+    state = scannerReducer(state, updateCartItem({ id: 40, precio_venta: 30 }));
+    expect(state.cartItems[0].precio_venta).toBe(30);
+
+    // Se cobra esa venta y el carrito se limpia (como pasa siempre al cobrar).
+    state = { ...state, cartItems: [] };
+
+    // Venta nueva, otro dia: el catalogo real volvio a $50 (la oferta ya paso).
+    // El lookup devuelve $50 - no debe reaparecer el $30 editado antes.
+    state = scannerReducer(state, addScannedProduct(createProduct({ id: 40, nombre: 'Grasa vacuna Dori', precio_venta: 50 })));
+    expect(state.cartItems[0].precio_venta).toBe(50);
+  });
+
   it('resetea estado scanner al cerrar sesion', () => {
     let state = scannerReducer(undefined, { type: 'init' });
     state = scannerReducer(state, addScannedProduct(createProduct({ id: 99 })));

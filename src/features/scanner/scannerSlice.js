@@ -12,8 +12,7 @@ const initialState = {
   cartItems: [],
   lastScannedItemId: null,
   lastScannedAt: null,
-  liveEditor: null,
-  productOverrides: {}
+  liveEditor: null
 };
 
 function readPersistedScannerState() {
@@ -53,8 +52,7 @@ function persistScannerState(state) {
     cartItems: Array.isArray(state.cartItems) ? state.cartItems : [],
     lastScannedItemId: state.lastScannedItemId || null,
     lastScannedAt: state.lastScannedAt || null,
-    liveEditor: state.liveEditor || null,
-    productOverrides: state.productOverrides || {}
+    liveEditor: state.liveEditor || null
   };
 
   if (persistTimeoutId) {
@@ -100,45 +98,6 @@ function calculateTotals(cartItems = []) {
   );
 }
 
-function getProductOverrideKey(product = {}) {
-  if (product?.isManual) {
-    return '';
-  }
-
-  if (product?.productId != null && String(product.productId).trim() !== '') {
-    return `product:${String(product.productId).trim()}`;
-  }
-
-  if (product?.id != null && String(product.id).trim() !== '') {
-    return `product:${String(product.id).trim()}`;
-  }
-
-  const normalizedBarcode = String(product?.barcode_normalized || '').trim();
-  if (normalizedBarcode) {
-    return `barcode:${normalizedBarcode}`;
-  }
-
-  const barcode = String(product?.barcode || '').trim();
-  if (barcode) {
-    return `barcode:${barcode}`;
-  }
-
-  return '';
-}
-
-function applyProductOverride(product, override) {
-  if (!override) {
-    return product;
-  }
-
-  return {
-    ...product,
-    nombre: override.nombre != null ? override.nombre : product.nombre,
-    precio_venta: override.precio_venta != null ? override.precio_venta : product.precio_venta,
-    thumbnail_url: override.thumbnail_url !== undefined ? override.thumbnail_url : product.thumbnail_url
-  };
-}
-
 const scannerSlice = createSlice({
   name: 'scanner',
   initialState: hydratedInitialState,
@@ -152,9 +111,11 @@ const scannerSlice = createSlice({
       persistScannerState(state);
     },
     addScannedProduct(state, action) {
-      const sourceProduct = action.payload || {};
-      const overrideKey = getProductOverrideKey(sourceProduct);
-      const product = applyProductOverride(sourceProduct, overrideKey ? state.productOverrides[overrideKey] : null);
+      // El precio/nombre viene siempre del lookup fresco (backend/cache de
+      // lookup, que ya se actualiza solo al editar un producto) - no se pisa
+      // con ninguna "correccion" guardada localmente en este dispositivo. Asi
+      // el catalogo real (la base) manda siempre, en cualquier caja.
+      const product = action.payload || {};
       state.scanStatus = 'ok';
       state.scanError = '';
       state.scanBarcode = '';
@@ -218,14 +179,6 @@ const scannerSlice = createSlice({
         item.thumbnail_url = payload.thumbnail_url || null;
       }
 
-      const overrideKey = getProductOverrideKey(item);
-      if (overrideKey) {
-        state.productOverrides[overrideKey] = {
-          nombre: item.nombre,
-          precio_venta: item.precio_venta,
-          thumbnail_url: item.thumbnail_url || null
-        };
-      }
       persistScannerState(state);
     },
     setQuickAddSyncState(state, action) {
