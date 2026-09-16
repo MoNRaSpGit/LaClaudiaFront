@@ -568,8 +568,8 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
 
       try {
         await printSaleTicketByQz(ticketPayload);
-        // Con tarjeta no hay vuelto que dar: no tiene sentido abrir el cajon.
-        if (chargeOptions?.paymentMethod !== 'tarjeta') {
+        // Con tarjeta o a cuenta no entra/sale efectivo: no tiene sentido abrir el cajon.
+        if (chargeOptions?.paymentMethod !== 'tarjeta' && chargeOptions?.paymentMethod !== 'cuenta') {
           try {
             await openCashDrawerByQz();
           } catch (drawerError) {
