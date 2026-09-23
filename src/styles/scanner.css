@@ -2,6 +2,59 @@
   margin-top: 8px;
 }
 
+.scanner-caja-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem;
+  border: 1px solid #d6dde7;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.scanner-caja-tab-btn {
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: #334155;
+  padding: 0.4rem 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.scanner-caja-tab-btn-active {
+  border-color: #c5d5e8;
+  background: linear-gradient(180deg, #f9fbff 0%, #eaf2fd 100%);
+  color: #0f3356;
+  box-shadow: inset 0 0 0 1px rgba(95, 136, 186, 0.08);
+}
+
+.scanner-caja-tab-btn:disabled {
+  opacity: 0.5;
+}
+
+.scanner-caja-tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
 .scanner-worker-day-banner {
   display: flex;
   align-items: flex-start;

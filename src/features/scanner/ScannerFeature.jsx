@@ -67,6 +67,7 @@ function isRouteUnavailableError(error) {
 function ScannerFeature({ currentUser, onUnauthorized }) {
   const {
     scannerState,
+    cajaSummaries,
     totals,
     actions,
     shiftState,
@@ -129,6 +130,9 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
   const activeShiftPaymentSummary = shiftState.activeShift?.paymentSummary || { efectivo: 0, tarjeta: 0, credito: 0 };
   const currentUserId = Number(currentUser?.id || 0);
   const canCloseActiveShift = Boolean(isShiftOpen) && currentUserId > 0;
+  // No dejar cambiar de caja mientras haya un modal de edicion/alta o el
+  // cobro abiertos: evita dejar algo a medias en la caja que se abandona.
+  const isCajaSwitchBlocked = Boolean(scannerState.liveEditor) || isManualModalOpen || quickAddState.isOpen || isCheckoutConfirmOpen;
   const shiftTypeLabels = {
     manana: 'Manana',
     tarde: 'Tarde',
@@ -671,6 +675,23 @@ function ScannerFeature({ currentUser, onUnauthorized }) {
                 </button>
               </section>
             ) : null}
+
+            <div className="scanner-caja-tabs d-flex justify-content-center gap-2 mb-2" role="tablist" aria-label="Caja activa">
+              {cajaSummaries.map((caja) => (
+                <button
+                  key={caja.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={caja.isActive}
+                  className={`btn btn-sm scanner-caja-tab-btn ${caja.isActive ? 'scanner-caja-tab-btn-active' : ''}`}
+                  disabled={isCajaSwitchBlocked && !caja.isActive}
+                  onClick={() => actions.switchActiveCaja(caja.id)}
+                >
+                  {caja.label}
+                  {caja.itemCount > 0 ? <span className="scanner-caja-tab-badge">{caja.itemCount}</span> : null}
+                </button>
+              ))}
+            </div>
 
             <ScannerInput
               ref={scannerInputRef}

@@ -6,7 +6,10 @@ import {
   clearCart,
   decrementCartItem,
   reconcileQuickAddProduct,
+  selectActiveCajaId,
+  selectCajaSummaries,
   selectScannerTotals,
+  setActiveCaja,
   setScanBarcode,
   setScanError,
   setQuickAddSyncState,
@@ -31,7 +34,12 @@ const EMPTY_SHIFT_STATE = {
 
 export function useScannerController({ currentUser } = {}) {
   const dispatch = useDispatch();
-  const scannerState = useSelector((state) => state.scanner);
+  const activeCajaId = useSelector(selectActiveCajaId);
+  // scannerState siempre refleja la caja activa: todo el resto del hook (y de
+  // ScannerFeature/ScannerCart/ScannerCheckout) sigue leyendo "el carrito
+  // actual" sin enterarse de que hay dos cajas por debajo.
+  const scannerState = useSelector((state) => state.scanner.cajas[state.scanner.activeCajaId]);
+  const cajaSummaries = useSelector(selectCajaSummaries);
   const totals = useSelector(selectScannerTotals);
   const [shiftState, setShiftState] = useState(EMPTY_SHIFT_STATE);
   const shiftStateRequestRef = useRef(0);
@@ -377,6 +385,7 @@ export function useScannerController({ currentUser } = {}) {
     };
   }, [currentUser?.sessionToken, refreshShiftState]);
 
+  const switchActiveCaja = useCallback((cajaId) => dispatch(setActiveCaja(cajaId)), [dispatch]);
   const addOneToCart = useCallback((item) => dispatch(addScannedProduct(item)), [dispatch]);
   const removeOneFromCart = useCallback((id) => dispatch(decrementCartItem(id)), [dispatch]);
   const setScanBarcodeValue = useCallback((value) => dispatch(setScanBarcode(value)), [dispatch]);
@@ -425,6 +434,8 @@ export function useScannerController({ currentUser } = {}) {
 
   return {
     scannerState,
+    activeCajaId,
+    cajaSummaries,
     totals,
     shiftState,
     isShiftOpen: Boolean(shiftState.activeShift),
@@ -438,6 +449,7 @@ export function useScannerController({ currentUser } = {}) {
       addOneToCart,
       removeOneFromCart,
       applyCartItemEdit,
+      switchActiveCaja,
       setScanBarcode: setScanBarcodeValue,
       clearScanError: clearScanErrorNow,
       clearCartNow,
