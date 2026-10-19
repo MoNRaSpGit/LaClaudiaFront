@@ -1,0 +1,32 @@
+.recount-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.75rem;
+}
+
+.recount-item {
+  display: grid;
+  grid-template-columns: 3.5rem 1fr auto;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 0.6rem;
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.recount-item-label {
+  font-weight: 600;
+}
+
+.recount-item-input {
+  text-align: right;
+}
+
+.recount-item-subtotal {
+  min-width: 5rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: #495057;
+}

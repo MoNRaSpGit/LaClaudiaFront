@@ -10,6 +10,7 @@ import ProductsFeature from './features/products/ProductsFeature';
 import CustomersFeature from './features/customers/CustomersFeature';
 import StockFeature from './features/stock/StockFeature';
 import CashFeature from './features/cash/CashFeature';
+import RecountFeature from './features/recount/RecountFeature';
 import { resetScannerState } from './features/scanner/scannerSlice';
 import {
   checkForAppUpdate,
@@ -30,6 +31,7 @@ function Workspace({ user, onLogout }) {
   const canAccessPayments = userRole === 'operario';
   const canAccessCustomers = userRole === 'admin' || userRole === 'operario';
   const canAccessCash = userRole === 'operario';
+  const canAccessRecount = userRole === 'admin' || userRole === 'operario';
   const canAccessScannerTab = userRole !== 'admin';
   const [activeTab, setActiveTab] = useState(canAccessPanel ? 'panel' : 'scanner');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -256,6 +258,16 @@ function Workspace({ user, onLogout }) {
                   Caja
                 </button>
               ) : null}
+              {canAccessRecount ? (
+                <button
+                  type="button"
+                  className={`btn nav-tab-btn nav-tab-btn-dark ${activeTab === 'recount' ? 'nav-tab-btn-active' : ''}`}
+                  onClick={() => setActiveTab('recount')}
+                  aria-current={activeTab === 'recount' ? 'page' : undefined}
+                >
+                  Recuento
+                </button>
+              ) : null}
               {canAccessCustomers ? (
                 <button
                   type="button"
@@ -367,6 +379,18 @@ function Workspace({ user, onLogout }) {
                       <span>Caja</span>
                     </button>
                   ) : null}
+                  {canAccessRecount ? (
+                    <button
+                      type="button"
+                      className={`scanner-user-dropdown-item scanner-user-dropdown-nav-item ${activeTab === 'recount' ? 'scanner-user-dropdown-nav-item-active' : ''}`}
+                      onClick={() => {
+                        setActiveTab('recount');
+                        setIsMenuOpen(false);
+                      }}
+                    >
+                      <span>Recuento</span>
+                    </button>
+                  ) : null}
                   {canAccessCustomers ? (
                     <button
                       type="button"
@@ -430,6 +454,9 @@ function Workspace({ user, onLogout }) {
       )}
       {activeTab === 'cash' && canAccessCash && (
         <CashFeature currentUser={user} onUnauthorized={handleLogout} />
+      )}
+      {activeTab === 'recount' && canAccessRecount && (
+        <RecountFeature currentUser={user} onUnauthorized={handleLogout} />
       )}
       {activeTab === 'customers' && canAccessCustomers && (
         <CustomersFeature currentUser={user} onUnauthorized={handleLogout} />
